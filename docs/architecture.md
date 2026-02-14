@@ -347,6 +347,7 @@ Design goals:
 
 1. HTMX/Jinja `/app` workspace is in production as a transitional implementation.
 2. React + MUI rewrite has not yet cut over.
+3. `/app-react` now runs a true React preview shell backed by MUI components, TanStack Router search-state, and TanStack Query API fetching as migration foundations.
 
 **Target**
 
