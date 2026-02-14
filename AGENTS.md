@@ -96,18 +96,18 @@ This file stores persistent project context for future Codex sessions.
 - Persisted ingest rules are implemented and enforced during ingestion.
 - Keyword streams are implemented with persisted definitions and matched article views.
 - Stream classifier foundation is implemented (rules/classifier/hybrid modes + plugin confidence threshold).
+- Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
 - Feed folders are not implemented yet (planned as per-user organization feature).
 
 ## Next Delivery Sequence
 
-1. Add cross-feed canonical dedup improvements and scoring.
-2. Add feed folders (per-user folder objects and feed-to-folder mapping).
-3. Add scheduler and ingestion observability (metrics, latency, failures).
-4. Add stream-level ranking and prioritization controls.
-5. Add classifier run persistence and model/version tracking.
-6. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-7. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
+1. Add feed folders (per-user folder objects and feed-to-folder mapping).
+2. Add scheduler and ingestion observability (metrics, latency, failures).
+3. Add stream-level ranking and prioritization controls.
+4. Add classifier run persistence and model/version tracking.
+5. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+6. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
 
 ## Feature Notes
 

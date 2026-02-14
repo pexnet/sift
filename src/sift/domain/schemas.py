@@ -34,6 +34,7 @@ class FeedIngestResult(BaseModel):
     fetched_count: int = 0
     inserted_count: int = 0
     duplicate_count: int = 0
+    canonical_duplicate_count: int = 0
     filtered_count: int = 0
     stream_match_count: int = 0
     plugin_processed_count: int = 0
@@ -50,6 +51,7 @@ class ArticleOut(BaseModel):
     language: str | None
     published_at: datetime | None
     duplicate_of_id: UUID | None
+    dedup_confidence: float
     created_at: datetime
     updated_at: datetime
 

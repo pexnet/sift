@@ -69,21 +69,26 @@
   - Added committed templates: `.vscode/extensions.local.example.json`, `.vscode/settings.local.example.json`
   - Added helper installer script: `scripts/setup-local-vscode.ps1`
   - Updated README + AGENTS with local setup instructions
+- Implemented cross-feed canonical dedup foundation:
+  - Added article dedup metadata fields + migration `20260214_0006_article_canonical_dedup`
+  - Added canonical URL normalization + content fingerprinting service (`src/sift/services/dedup_service.py`)
+  - Integrated canonical duplicate lookup into ingestion flow with confidence scoring
+  - Added `canonical_duplicate_count` in ingest result payload
+  - Added dedup unit tests in `tests/test_ingestion_service.py`
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (classifier stream tests added)
+  - `python -m pytest` passed (dedup tests added; 30 total)
   - `python -m mypy src` passed
-  - `python -m alembic upgrade head` passed against a temporary SQLite DB
+  - `python -m alembic upgrade head` passed against a temporary SQLite DB (through `20260214_0006`)
   - `docker compose -f .devcontainer/docker-compose.yml config` passed
 
 ## Current Priority Plan
 
-1. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
-2. Add feed folders (per-user folders and feed organization).
-3. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
-4. Add stream-level ranking and prioritization controls.
-5. Add classifier run persistence and model/version tracking.
-6. Explore vector database integration as plugin capability for semantic matching/classification.
+1. Add feed folders (per-user folders and feed organization).
+2. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
+3. Add stream-level ranking and prioritization controls.
+4. Add classifier run persistence and model/version tracking.
+5. Explore vector database integration as plugin capability for semantic matching/classification.
 
 ## Deferred Items
 

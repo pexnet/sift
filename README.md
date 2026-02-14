@@ -126,6 +126,14 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Built-in example classifier plugin:
   - `keyword_heuristic_classifier`
 
+## Canonical Dedup Foundation
+
+- Ingestion computes:
+  - normalized canonical URL (tracking params removed, stable query ordering)
+  - content fingerprint (hash of normalized title/content)
+- Cross-feed duplicates are linked via `articles.duplicate_of_id` with `dedup_confidence`.
+- Ingest response includes `canonical_duplicate_count`.
+
 ## Background Processing
 
 - Scheduler polls active feeds and enqueues due ingest jobs in Redis/RQ.

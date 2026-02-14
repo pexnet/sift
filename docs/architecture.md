@@ -75,6 +75,7 @@ Design goals:
 - `subscriptions`: user to feed mapping
 - `raw_entries`: immutable source payloads (unique feed/source key for ingest dedupe)
 - `articles`: normalized canonical content (unique feed/source key for ingest dedupe)
+  - includes canonical dedup metadata (`canonical_url_normalized`, `content_fingerprint`, `duplicate_of_id`, `dedup_confidence`)
 - `article_states`: per-user read/star/archive state
 - `users`: account identity
 - `auth_identities`: provider-aware identities (`local` now, OIDC providers later)
@@ -122,15 +123,18 @@ Design goals:
    - stream config supports `classifier_plugin` + `classifier_min_confidence`
    - plugin manager can dispatch classifier plugins by name
    - built-in heuristic classifier plugin included as reference implementation
+9. Cross-feed canonical dedup foundation:
+   - normalize article URLs (tracking-parameter stripping + stable query ordering)
+   - compute content fingerprint hash over normalized title/content text
+   - assign `duplicate_of_id` and confidence when canonical duplicate candidates are found
 
 ## Planned Next Moves
 
-1. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
-2. Add feed folders (per-user folder objects and feed mappings).
-3. Add scheduler and ingest observability (metrics + structured logs).
-4. Add stream ranking/prioritization and rule evaluation metrics.
-5. Add classifier run persistence and model/version tracking for traceability.
-6. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+1. Add feed folders (per-user folder objects and feed mappings).
+2. Add scheduler and ingest observability (metrics + structured logs).
+3. Add stream ranking/prioritization and rule evaluation metrics.
+4. Add classifier run persistence and model/version tracking for traceability.
+5. Add optional vector database plugin layer for semantic retrieval/matching workflows.
 
 ## Deferred
 

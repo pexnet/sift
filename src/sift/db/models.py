@@ -61,11 +61,14 @@ class Article(TimestampMixin, Base):
     feed_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("feeds.id", ondelete="SET NULL"), nullable=True, index=True)
     source_id: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
     canonical_url: Mapped[str | None] = mapped_column(String(2000), index=True)
+    canonical_url_normalized: Mapped[str | None] = mapped_column(String(2000), index=True)
+    content_fingerprint: Mapped[str | None] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(1000), nullable=False)
     content_text: Mapped[str] = mapped_column(Text, default="")
     language: Mapped[str | None] = mapped_column(String(32), index=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("articles.id", ondelete="SET NULL"), index=True)
+    dedup_confidence: Mapped[float] = mapped_column(Float, default=1.0)
 
 
 class ArticleState(TimestampMixin, Base):

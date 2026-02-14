@@ -13,6 +13,7 @@ from sift.db.models import Article, Feed, RawEntry
 from sift.domain.schemas import FeedIngestResult
 from sift.plugins.base import ArticleContext
 from sift.plugins.manager import PluginManager
+from sift.services.dedup_service import build_content_fingerprint, dedup_service, normalize_canonical_url
 from sift.services.rule_service import rule_service
 from sift.services.stream_service import stream_service
 
@@ -190,17 +191,34 @@ class IngestionService:
             article_context = await plugin_manager.run_ingested_hooks(article_context)
             result.plugin_processed_count += 1
 
+            final_title = article_context.title or title
+            final_content = article_context.content_text or content_text
+            canonical_url_normalized = normalize_canonical_url(canonical_url)
+            content_fingerprint = build_content_fingerprint(title=final_title, content_text=final_content)
+            dedup_decision = await dedup_service.resolve_canonical_duplicate(
+                session=session,
+                canonical_url_normalized=canonical_url_normalized,
+                content_fingerprint=content_fingerprint,
+            )
+
             article = Article(
                 feed_id=feed.id,
                 source_id=source_id,
                 canonical_url=canonical_url,
-                title=article_context.title or title,
-                content_text=article_context.content_text or content_text,
+                canonical_url_normalized=canonical_url_normalized,
+                content_fingerprint=content_fingerprint,
+                title=final_title,
+                content_text=final_content,
                 language=language,
                 published_at=published_at,
+                duplicate_of_id=dedup_decision.duplicate_of_id,
+                dedup_confidence=dedup_decision.confidence if dedup_decision.duplicate_of_id else 1.0,
             )
             session.add(article)
             await session.flush()
+
+            if dedup_decision.duplicate_of_id:
+                result.canonical_duplicate_count += 1
 
             matching_stream_ids = await stream_service.collect_matching_stream_ids(
                 active_streams,
