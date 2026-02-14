@@ -126,12 +126,9 @@
 
 ## Current Priority Plan
 
-1. Complete reader UI polish (saved-view refinements, explicit loading/error/empty states, accessibility hardening).
-2. Define React rewrite requirements for the reader workspace:
-   - Require TanStack Query for server-state fetching/caching/mutation flows.
-   - Require TanStack Router for URL-driven scope/filter/search state in the `/app` workspace.
-   - Keep TanStack Virtual optional and only add it if article-list rendering performance requires virtualization.
-3. Define and implement dashboard card UI v2 (deferred from reader-first scope).
+1. Build React + MUI reader workspace v1 with responsive layouts, saved-view refinements, and accessibility hardening.
+2. Implement a modern responsive React + MUI reader workspace for `/app` using TanStack Query + Router.
+3. Define and implement dashboard card UI v2 in React + MUI.
 4. Add stream-level ranking and prioritization controls.
 5. Add classifier run persistence and model/version tracking.
 

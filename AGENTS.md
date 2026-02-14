@@ -6,14 +6,14 @@ This file stores persistent project context for future Codex sessions.
 
 - Build a self-hosted RSS/content aggregation portal.
 - Prioritize backend quality and extension points.
-- Keep frontend simple, sleek, and maintainable without heavy JS frameworks.
+- Build a modern, responsive, sleek frontend using React and MUI (Material UI).
 
 ## Technical Direction (Current)
 
 - Python backend using FastAPI.
 - Database-backed ingestion pipeline with SQLAlchemy.
 - Plugin-ready core for enrichment/transformation/integration use cases.
-- UI with Jinja2 + HTMX.
+- UI with React + MUI as the primary frontend stack.
 - Tooling standards: uv + Ruff + Pytest + Mypy.
 - Ruff width: 120 chars.
 - Alembic is the source of truth for schema changes.
@@ -124,11 +124,8 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Complete reader UI polish pass:
-   - saved view refinement
-   - explicit loading/error/empty states
-   - keyboard and focus accessibility hardening
-2. Write and implement dashboard card UI v2 spec (deferred from reader-first scope).
+1. Build the React + MUI reader workspace v1 with responsive layouts and polished loading/error/empty states.
+2. Write and implement dashboard card UI v2 spec in React + MUI.
 3. Add stream-level ranking and prioritization controls.
 4. Add classifier run persistence and model/version tracking.
 5. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
