@@ -57,11 +57,16 @@ Design goals:
 ## Data Model (Initial)
 
 - `feeds`: source catalog
+  - includes owner reference (`owner_id`)
   - includes fetch metadata (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_error`)
 - `subscriptions`: user to feed mapping
 - `raw_entries`: immutable source payloads (unique feed/source key for ingest dedupe)
 - `articles`: normalized canonical content (unique feed/source key for ingest dedupe)
 - `article_states`: per-user read/star/archive state
+- `users`: account identity
+- `auth_identities`: provider-aware identities (`local` now, OIDC providers later)
+- `user_sessions`: server-side session records for cookie auth
+- `api_tokens`: token records for future machine-to-machine access
 
 ## Implemented Service Slices
 
@@ -75,10 +80,14 @@ Design goals:
    - scheduler polls active feeds and enqueues due jobs
    - worker executes ingest jobs via RQ
    - queue dedupe by stable job id (`ingest:<feed_id>`)
+4. Authentication and account foundation:
+   - local account registration/login/logout/me endpoints
+   - provider-ready identity schema to support Google/Azure/Apple later
+   - feed/article endpoints now require authenticated user context
 
 ## Planned Next Moves
 
-1. Add auth and ownership constraints.
+1. Add first OIDC provider integration (Google) on top of `auth_identities`.
 2. Persist filter/rule definitions per user.
 3. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
 4. Add first production plugin (translation or summary) with plugin run history.

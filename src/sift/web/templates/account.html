@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <header class="panel-header">
+    <h1>Account</h1>
+    <p>Profile and identity summary.</p>
+  </header>
+
+  <dl class="meta-list">
+    <dt>Email</dt>
+    <dd>{{ current_user.email }}</dd>
+    <dt>Display Name</dt>
+    <dd>{{ current_user.display_name or "(not set)" }}</dd>
+    <dt>Admin</dt>
+    <dd>{{ "yes" if current_user.is_admin else "no" }}</dd>
+  </dl>
+</section>
+{% endblock %}
+

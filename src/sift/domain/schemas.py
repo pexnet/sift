@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 
 class FeedCreate(BaseModel):
@@ -12,6 +12,7 @@ class FeedCreate(BaseModel):
 
 class FeedOut(BaseModel):
     id: UUID
+    owner_id: UUID | None
     title: str
     url: str
     site_url: str | None
@@ -56,4 +57,27 @@ class KeywordFilterPreviewRequest(BaseModel):
     include_keywords: list[str] = Field(default_factory=list)
     exclude_keywords: list[str] = Field(default_factory=list)
     limit: int = Field(default=50, ge=1, le=500)
+
+
+class AuthRegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=256)
+    display_name: str = Field(default="", max_length=255)
+
+
+class AuthLoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=256)
+
+
+class UserOut(BaseModel):
+    id: UUID
+    email: EmailStr
+    display_name: str
+    is_active: bool
+    is_admin: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
 

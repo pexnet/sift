@@ -45,10 +45,21 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 
 ## API Notes (Current)
 
+- Register: `POST /api/v1/auth/register`
+- Login: `POST /api/v1/auth/login`
+- Logout: `POST /api/v1/auth/logout`
+- Current user: `GET /api/v1/auth/me`
 - List feeds: `GET /api/v1/feeds`
 - Create feed: `POST /api/v1/feeds`
 - Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`
 - Keyword filter preview: `POST /api/v1/articles/filter-preview`
+
+## Authentication and Identity Providers
+
+- Local accounts use Argon2 password hashing and secure session cookies.
+- Identity model is provider-aware via `auth_identities` table.
+- Current provider: `local`.
+- Planned providers (same user model): Google, Azure AD/Microsoft, Apple, and other OIDC-compliant providers.
 
 ## Background Processing
 

@@ -1,9 +1,10 @@
 from collections.abc import Sequence
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Article
+from sift.db.models import Article, Feed
 
 
 def _normalize_keywords(keywords: list[str]) -> list[str]:
@@ -28,6 +29,7 @@ class KeywordFilterService:
     async def preview(
         self,
         session: AsyncSession,
+        user_id: UUID,
         include_keywords: list[str],
         exclude_keywords: list[str],
         limit: int = 50,
@@ -36,7 +38,13 @@ class KeywordFilterService:
         normalized_exclude = _normalize_keywords(exclude_keywords)
 
         scan_limit = max(limit * 5, 100)
-        query = select(Article).order_by(Article.created_at.desc()).limit(scan_limit)
+        query = (
+            select(Article)
+            .join(Feed, Feed.id == Article.feed_id)
+            .where(Feed.owner_id == user_id)
+            .order_by(Article.created_at.desc())
+            .limit(scan_limit)
+        )
         result = await session.execute(query)
         candidates = result.scalars().all()
 
@@ -51,4 +59,3 @@ class KeywordFilterService:
 
 
 keyword_filter_service = KeywordFilterService()
-

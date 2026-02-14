@@ -3,7 +3,7 @@
 <section class="panel">
   <header class="panel-header">
     <h1>Sift</h1>
-    <p>Self-hosted RSS portal foundation</p>
+    <p>Self-hosted RSS portal foundation for {{ current_user.email }}</p>
   </header>
 
   <section class="feed-list">
@@ -17,7 +17,7 @@
       {% endfor %}
       </ul>
     {% else %}
-      <p class="muted">No feeds added yet. Use the API to create one.</p>
+      <p class="muted">No feeds added yet. Use `POST /api/v1/feeds` to create one.</p>
     {% endif %}
   </section>
 </section>

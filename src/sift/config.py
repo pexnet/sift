@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     ingest_queue_name: str = "ingest"
     scheduler_poll_interval_seconds: int = 30
     scheduler_batch_size: int = 200
+    auth_session_cookie_name: str = "sift_session"
+    auth_session_ttl_days: int = 30
+    auth_cookie_secure: bool = False
     auto_create_tables: bool = False
     plugin_paths: list[str] = Field(default_factory=lambda: ["sift.plugins.builtin.noop:NoopPlugin"])
 

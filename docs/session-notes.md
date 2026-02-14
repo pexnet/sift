@@ -21,15 +21,26 @@
   - Scheduler due-feed enqueue loop in `src/sift/tasks/scheduler.py`
   - Worker startup for ingest queue in `src/sift/tasks/worker.py`
 - Added scheduler due-feed tests (`tests/test_scheduler.py`).
+- Implemented provider-ready authentication and account foundation:
+  - Added models: `users`, `auth_identities`, `user_sessions`, `api_tokens`
+  - Added feed ownership column: `feeds.owner_id`
+  - Added Alembic migration: `20260214_0002_auth_accounts`
+  - Added auth service with Argon2 hashing + cookie session lifecycle
+  - Added API auth routes: register/login/logout/me
+  - Added web routes/templates: login/register/account/logout
+  - Protected feed/article APIs behind authenticated sessions
+  - Added auth service tests
+- Current limitation:
+  - `feeds.url` remains globally unique; cross-account shared-feed model is not yet implemented.
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (11 tests)
+  - `python -m pytest` passed (auth tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
 
 ## Current Priority Plan
 
-1. Add user/auth foundation and enforce feed/subscription ownership.
+1. Add external OIDC provider integration (Google first) using `auth_identities`.
 2. Persist filter/rule definitions (`include/exclude`, source, language) and apply them at ingest time.
 3. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
 4. Add first real plugin (translation or LLM summary) with persisted plugin run logs.

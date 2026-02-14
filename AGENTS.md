@@ -33,6 +33,10 @@ This file stores persistent project context for future Codex sessions.
 ## Current API Surface (MVP Core)
 
 - `GET /api/v1/health`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
 - `GET /api/v1/feeds`
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
@@ -54,6 +58,14 @@ This file stores persistent project context for future Codex sessions.
 
 ## Current Implementation Status
 
+- Authentication:
+  - local provider implemented (`auth_identities.provider = "local"`)
+  - Argon2 password hashing
+  - cookie sessions backed by `user_sessions`
+  - schema ready for external providers (Google/Azure/Apple/OIDC)
+- Feed and article APIs now require authenticated sessions.
+- Feed ownership is tracked via `feeds.owner_id`.
+- Current limitation: feed URL is globally unique until shared-feed/subscription model is revisited.
 - Feed ingestion pipeline exists:
   - fetch RSS/Atom
   - parse entries
