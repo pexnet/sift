@@ -51,19 +51,27 @@
   - Integrated stream matching into `ingestion_service` for newly ingested articles
   - Added `stream_match_count` to ingestion result payload
   - Added stream service tests
+- Implemented stream classifier plugin foundation:
+  - Added stream classifier fields + migration `20260214_0005_stream_classifier_fields`
+  - Extended stream models/schemas/services with `rules_only`/`classifier_only`/`hybrid` modes
+  - Added classifier plugin contract + plugin manager dispatch by plugin name
+  - Added built-in `keyword_heuristic_classifier` plugin as reference
+  - Integrated classifier-aware stream matching into `ingestion_service`
+  - Added stream classifier mode tests
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (stream tests added)
+  - `python -m pytest` passed (classifier stream tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
 
 ## Current Priority Plan
 
-1. Add classifier plugin foundation for advanced stream classification (LLM/ML/rule plugins).
-2. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
+1. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
+2. Add feed folders (per-user folders and feed organization).
 3. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
 4. Add stream-level ranking and prioritization controls.
 5. Add classifier run persistence and model/version tracking.
+6. Explore vector database integration as plugin capability for semantic matching/classification.
 
 ## Deferred Items
 

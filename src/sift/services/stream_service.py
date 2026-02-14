@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Literal, cast
 from uuid import UUID
 
 from sqlalchemy import select
@@ -15,6 +16,8 @@ from sift.domain.schemas import (
     KeywordStreamUpdate,
     StreamArticleOut,
 )
+from sift.plugins.base import ArticleContext, StreamClassifierContext
+from sift.plugins.manager import PluginManager
 
 
 class StreamConflictError(Exception):
@@ -38,6 +41,9 @@ class CompiledKeywordStream:
     exclude_keywords: list[str]
     source_contains: str | None
     language_equals: str | None
+    classifier_mode: Literal["rules_only", "classifier_only", "hybrid"]
+    classifier_plugin: str | None
+    classifier_min_confidence: float
 
 
 def _normalize_keywords(keywords: list[str]) -> list[str]:
@@ -77,12 +83,33 @@ def _normalize_optional_lower(value: str | None) -> str | None:
     return normalized.lower() if normalized else None
 
 
-def _validate_criteria(include_keywords: list[str], source_contains: str | None, language_equals: str | None) -> None:
+def _normalize_classifier_mode(value: str) -> Literal["rules_only", "classifier_only", "hybrid"]:
+    mode = value.strip().lower()
+    if mode in {"rules_only", "classifier_only", "hybrid"}:
+        return cast(Literal["rules_only", "classifier_only", "hybrid"], mode)
+    raise StreamValidationError("Invalid classifier mode")
+
+
+def _validate_criteria(
+    include_keywords: list[str],
+    source_contains: str | None,
+    language_equals: str | None,
+    *,
+    classifier_mode: str,
+    classifier_plugin: str | None,
+) -> None:
+    normalized_mode = _normalize_classifier_mode(classifier_mode)
+
+    if normalized_mode in {"classifier_only", "hybrid"} and not classifier_plugin:
+        raise StreamValidationError("classifier_plugin is required when classifier mode is enabled")
+
     if include_keywords:
         return
     if source_contains:
         return
     if language_equals:
+        return
+    if normalized_mode in {"classifier_only", "hybrid"} and classifier_plugin:
         return
     raise StreamValidationError(
         "A stream needs at least one positive criterion (include keyword, source, or language)"
@@ -98,6 +125,9 @@ def compile_stream(stream: KeywordStream) -> CompiledKeywordStream:
         exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
         source_contains=_normalize_optional_lower(stream.source_contains),
         language_equals=_normalize_optional_lower(stream.language_equals),
+        classifier_mode=_normalize_classifier_mode(stream.classifier_mode),
+        classifier_plugin=stream.classifier_plugin,
+        classifier_min_confidence=stream.classifier_min_confidence,
     )
 
 
@@ -149,7 +179,14 @@ class StreamService:
         source_contains = _normalize_optional_text(payload.source_contains)
         language_equals = _normalize_optional_lower(payload.language_equals)
 
-        _validate_criteria(include_keywords, source_contains, language_equals)
+        classifier_plugin = _normalize_optional_text(payload.classifier_plugin)
+        _validate_criteria(
+            include_keywords,
+            source_contains,
+            language_equals,
+            classifier_mode=payload.classifier_mode,
+            classifier_plugin=classifier_plugin,
+        )
 
         stream = KeywordStream(
             user_id=user_id,
@@ -161,6 +198,9 @@ class StreamService:
             exclude_keywords_json=_keywords_to_json(exclude_keywords),
             source_contains=source_contains,
             language_equals=language_equals,
+            classifier_mode=_normalize_classifier_mode(payload.classifier_mode),
+            classifier_plugin=classifier_plugin,
+            classifier_min_confidence=payload.classifier_min_confidence,
         )
         session.add(stream)
         try:
@@ -199,11 +239,23 @@ class StreamService:
             stream.source_contains = _normalize_optional_text(payload.source_contains)
         if payload.language_equals is not None:
             stream.language_equals = _normalize_optional_lower(payload.language_equals)
+        if payload.classifier_mode is not None:
+            stream.classifier_mode = _normalize_classifier_mode(payload.classifier_mode)
+        if payload.classifier_plugin is not None:
+            stream.classifier_plugin = _normalize_optional_text(payload.classifier_plugin)
+        if payload.classifier_min_confidence is not None:
+            stream.classifier_min_confidence = payload.classifier_min_confidence
 
         include_keywords = _keywords_from_json(stream.include_keywords_json)
         source_contains = _normalize_optional_text(stream.source_contains)
         language_equals = _normalize_optional_lower(stream.language_equals)
-        _validate_criteria(include_keywords, source_contains, language_equals)
+        _validate_criteria(
+            include_keywords,
+            source_contains,
+            language_equals,
+            classifier_mode=stream.classifier_mode,
+            classifier_plugin=stream.classifier_plugin,
+        )
 
         try:
             await session.commit()
@@ -264,11 +316,14 @@ class StreamService:
             exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
             source_contains=stream.source_contains,
             language_equals=stream.language_equals,
+            classifier_mode=_normalize_classifier_mode(stream.classifier_mode),
+            classifier_plugin=stream.classifier_plugin,
+            classifier_min_confidence=stream.classifier_min_confidence,
             created_at=stream.created_at,
             updated_at=stream.updated_at,
         )
 
-    def collect_matching_stream_ids(
+    async def collect_matching_stream_ids(
         self,
         streams: list[CompiledKeywordStream],
         *,
@@ -276,16 +331,54 @@ class StreamService:
         content_text: str,
         source_url: str | None,
         language: str | None,
+        plugin_manager: PluginManager,
     ) -> list[UUID]:
         matching_ids: list[UUID] = []
+        article_context = ArticleContext(
+            article_id="",
+            title=title,
+            content_text=content_text,
+            metadata={"source_url": source_url or "", "language": language or ""},
+        )
         for stream in streams:
-            if stream_matches(
+            rules_match = stream_matches(
                 stream,
                 title=title,
                 content_text=content_text,
                 source_url=source_url,
                 language=language,
-            ):
+            )
+
+            classifier_match = False
+            if stream.classifier_mode in {"classifier_only", "hybrid"} and stream.classifier_plugin:
+                decision = await plugin_manager.classify_stream(
+                    plugin_name=stream.classifier_plugin,
+                    article=article_context,
+                    stream=StreamClassifierContext(
+                        stream_id=str(stream.id),
+                        stream_name=stream.name,
+                        include_keywords=stream.include_keywords,
+                        exclude_keywords=stream.exclude_keywords,
+                        source_contains=stream.source_contains,
+                        language_equals=stream.language_equals,
+                        metadata={"source_url": source_url or "", "language": language or ""},
+                    ),
+                )
+                classifier_match = bool(
+                    decision
+                    and decision.matched
+                    and decision.confidence >= stream.classifier_min_confidence
+                )
+
+            final_match = False
+            if stream.classifier_mode == "rules_only":
+                final_match = rules_match
+            elif stream.classifier_mode == "classifier_only":
+                final_match = classifier_match
+            elif stream.classifier_mode == "hybrid":
+                final_match = rules_match or classifier_match
+
+            if final_match:
                 matching_ids.append(stream.id)
         return matching_ids
 

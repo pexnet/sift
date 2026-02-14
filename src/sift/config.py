@@ -20,7 +20,12 @@ class Settings(BaseSettings):
     auth_session_ttl_days: int = 30
     auth_cookie_secure: bool = False
     auto_create_tables: bool = False
-    plugin_paths: list[str] = Field(default_factory=lambda: ["sift.plugins.builtin.noop:NoopPlugin"])
+    plugin_paths: list[str] = Field(
+        default_factory=lambda: [
+            "sift.plugins.builtin.noop:NoopPlugin",
+            "sift.plugins.builtin.keyword_heuristic_classifier:KeywordHeuristicClassifierPlugin",
+        ]
+    )
 
 
 @lru_cache

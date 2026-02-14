@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sift.db.base import Base
 from sift.db.models import Article, Feed, User
 from sift.domain.schemas import KeywordStreamCreate, KeywordStreamUpdate
+from sift.plugins.base import StreamClassificationDecision
 from sift.services.stream_service import (
     CompiledKeywordStream,
     StreamConflictError,
@@ -13,6 +14,16 @@ from sift.services.stream_service import (
     stream_matches,
     stream_service,
 )
+
+
+class FakePluginManager:
+    async def classify_stream(self, **kwargs):
+        plugin_name = kwargs["plugin_name"]
+        if plugin_name == "always_match":
+            return StreamClassificationDecision(matched=True, confidence=0.95, reason="test")
+        if plugin_name == "low_conf":
+            return StreamClassificationDecision(matched=True, confidence=0.25, reason="low")
+        return None
 
 
 @pytest.mark.asyncio
@@ -84,6 +95,9 @@ def test_stream_matches_include_exclude_source_language() -> None:
         exclude_keywords=["sports"],
         source_contains="example.com",
         language_equals="en",
+        classifier_mode="rules_only",
+        classifier_plugin=None,
+        classifier_min_confidence=0.7,
     )
     match = stream_matches(
         stream=compiled_stream,
@@ -102,6 +116,62 @@ def test_stream_matches_include_exclude_source_language() -> None:
         language="en",
     )
     assert mismatch is False
+
+
+@pytest.mark.asyncio
+async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
+    plugin_manager = FakePluginManager()
+
+    streams = [
+        CompiledKeywordStream(
+            id=uuid4(),
+            name="rules",
+            priority=10,
+            include_keywords=["ai"],
+            exclude_keywords=[],
+            source_contains=None,
+            language_equals=None,
+            classifier_mode="rules_only",
+            classifier_plugin=None,
+            classifier_min_confidence=0.7,
+        ),
+        CompiledKeywordStream(
+            id=uuid4(),
+            name="classifier",
+            priority=20,
+            include_keywords=[],
+            exclude_keywords=[],
+            source_contains=None,
+            language_equals=None,
+            classifier_mode="classifier_only",
+            classifier_plugin="always_match",
+            classifier_min_confidence=0.7,
+        ),
+        CompiledKeywordStream(
+            id=uuid4(),
+            name="low-conf",
+            priority=30,
+            include_keywords=[],
+            exclude_keywords=[],
+            source_contains=None,
+            language_equals=None,
+            classifier_mode="classifier_only",
+            classifier_plugin="low_conf",
+            classifier_min_confidence=0.7,
+        ),
+    ]
+
+    matched = await stream_service.collect_matching_stream_ids(
+        streams,
+        title="AI update",
+        content_text="new model launch",
+        source_url="https://example.com/feed",
+        language="en",
+        plugin_manager=plugin_manager,  # type: ignore[arg-type]
+    )
+    assert streams[0].id in matched
+    assert streams[1].id in matched
+    assert streams[2].id not in matched
 
 
 @pytest.mark.asyncio

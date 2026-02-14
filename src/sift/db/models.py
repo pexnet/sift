@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import UUID, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import UUID, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from sift.db.base import Base
@@ -162,6 +162,9 @@ class KeywordStream(TimestampMixin, Base):
     exclude_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
     source_contains: Mapped[str | None] = mapped_column(String(1000))
     language_equals: Mapped[str | None] = mapped_column(String(32), index=True)
+    classifier_mode: Mapped[str] = mapped_column(String(32), default="rules_only", index=True)
+    classifier_plugin: Mapped[str | None] = mapped_column(String(128), index=True)
+    classifier_min_confidence: Mapped[float] = mapped_column(Float, default=0.7)
 
 
 class KeywordStreamMatch(Base):

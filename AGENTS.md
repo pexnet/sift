@@ -88,15 +88,19 @@ This file stores persistent project context for future Codex sessions.
 - OPML import endpoint exists with per-user dedupe/import report (`POST /api/v1/imports/opml`).
 - Persisted ingest rules are implemented and enforced during ingestion.
 - Keyword streams are implemented with persisted definitions and matched article views.
+- Stream classifier foundation is implemented (rules/classifier/hybrid modes + plugin confidence threshold).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
+- Feed folders are not implemented yet (planned as per-user organization feature).
 
 ## Next Delivery Sequence
 
-1. Extend streams with classifier plugins (LLM/ML/rule classifiers with confidence + reasoning).
-2. Add cross-feed canonical dedup improvements and scoring.
+1. Add cross-feed canonical dedup improvements and scoring.
+2. Add feed folders (per-user folder objects and feed-to-folder mapping).
 3. Add scheduler and ingestion observability (metrics, latency, failures).
 4. Add stream-level ranking and prioritization controls.
-5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
+5. Add classifier run persistence and model/version tracking.
+6. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+7. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
 
 ## Feature Notes
 
@@ -107,6 +111,14 @@ This file stores persistent project context for future Codex sessions.
 - Classifier plugin direction:
   - implement as plugin hooks, not hard-coded core logic
   - support provider/model versioning, score/confidence, and failure isolation
+- Feed folders direction:
+  - add folder object per user
+  - support OPML folder mapping on import
+  - allow unfiled feeds as a default state
+- Vector database direction:
+  - keep vector storage behind plugin boundaries
+  - start with pluggable providers (e.g., pgvector, Qdrant, Weaviate)
+  - use for semantic matching/classification plugins, not as a hard dependency of core ingestion
 
 ## Planning Workflow For Future Sessions
 

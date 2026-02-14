@@ -202,12 +202,13 @@ class IngestionService:
             session.add(article)
             await session.flush()
 
-            matching_stream_ids = stream_service.collect_matching_stream_ids(
+            matching_stream_ids = await stream_service.collect_matching_stream_ids(
                 active_streams,
                 title=article.title,
                 content_text=article.content_text,
                 source_url=article.canonical_url,
                 language=article.language,
+                plugin_manager=plugin_manager,
             )
             if matching_stream_ids:
                 session.add_all(stream_service.make_match_rows(matching_stream_ids, article.id))

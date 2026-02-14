@@ -71,6 +71,15 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Current provider: `local`.
 - Planned providers (same user model): Google, Azure AD/Microsoft, Apple, and other OIDC-compliant providers.
 
+## Stream Classifier Foundation
+
+- Streams support classifier configuration:
+  - `classifier_mode`: `rules_only` | `classifier_only` | `hybrid`
+  - `classifier_plugin`: plugin name
+  - `classifier_min_confidence`: confidence threshold
+- Built-in example classifier plugin:
+  - `keyword_heuristic_classifier`
+
 ## Background Processing
 
 - Scheduler polls active feeds and enqueues due ingest jobs in Redis/RQ.

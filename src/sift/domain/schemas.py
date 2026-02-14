@@ -150,6 +150,9 @@ class KeywordStreamCreate(BaseModel):
     exclude_keywords: list[str] = Field(default_factory=list)
     source_contains: str | None = Field(default=None, max_length=1000)
     language_equals: str | None = Field(default=None, max_length=32)
+    classifier_mode: Literal["rules_only", "classifier_only", "hybrid"] = "rules_only"
+    classifier_plugin: str | None = Field(default=None, max_length=128)
+    classifier_min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
 class KeywordStreamUpdate(BaseModel):
@@ -161,6 +164,9 @@ class KeywordStreamUpdate(BaseModel):
     exclude_keywords: list[str] | None = None
     source_contains: str | None = Field(default=None, max_length=1000)
     language_equals: str | None = Field(default=None, max_length=32)
+    classifier_mode: Literal["rules_only", "classifier_only", "hybrid"] | None = None
+    classifier_plugin: str | None = Field(default=None, max_length=128)
+    classifier_min_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class KeywordStreamOut(BaseModel):
@@ -174,6 +180,9 @@ class KeywordStreamOut(BaseModel):
     exclude_keywords: list[str]
     source_contains: str | None
     language_equals: str | None
+    classifier_mode: Literal["rules_only", "classifier_only", "hybrid"]
+    classifier_plugin: str | None
+    classifier_min_confidence: float
     created_at: datetime
     updated_at: datetime
 

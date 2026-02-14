@@ -40,9 +40,10 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 ## Plugin Contract
 
-Plugins implement `ArticlePlugin` and are loaded by dotted path:
+Plugins are loaded by dotted path and may implement one or more hooks:
 
-- Hook now: `on_article_ingested`
+- `on_article_ingested(article)` for ingest-time enrichment/transformation.
+- `classify_stream(article, stream)` for stream relevance decisions with confidence.
 - Planned hooks:
   - scoring
   - post-filter action
@@ -67,6 +68,15 @@ Design goals:
 - `auth_identities`: provider-aware identities (`local` now, OIDC providers later)
 - `user_sessions`: server-side session records for cookie auth
 - `api_tokens`: token records for future machine-to-machine access
+
+## Planned Model Extensions
+
+- feed folders (not implemented yet):
+  - `feed_folders`: per-user folder objects
+  - `feed_folder_items` or `feeds.folder_id`: feed organization mapping
+- vector storage (optional, plugin-driven):
+  - keep embeddings/index references outside core ingest contract
+  - expose through plugin interfaces for semantic matching/classification
 
 ## Implemented Service Slices
 
@@ -95,14 +105,20 @@ Design goals:
    - endpoints: `GET/POST/PATCH/DELETE /api/v1/streams`, `GET /api/v1/streams/{stream_id}/articles`
    - per-user saved stream expressions (include/exclude keywords, source, language)
    - stream memberships recorded for matching ingested articles
+8. Stream classifier foundation:
+   - stream config supports `classifier_mode` (`rules_only`, `classifier_only`, `hybrid`)
+   - stream config supports `classifier_plugin` + `classifier_min_confidence`
+   - plugin manager can dispatch classifier plugins by name
+   - built-in heuristic classifier plugin included as reference implementation
 
 ## Planned Next Moves
 
-1. Add classifier plugin framework for advanced stream classification (LLM/ML/rule classifiers).
-2. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
+1. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
+2. Add feed folders (per-user folder objects and feed mappings).
 3. Add scheduler and ingest observability (metrics + structured logs).
 4. Add stream ranking/prioritization and rule evaluation metrics.
 5. Add classifier run persistence and model/version tracking for traceability.
+6. Add optional vector database plugin layer for semantic retrieval/matching workflows.
 
 ## Deferred
 
