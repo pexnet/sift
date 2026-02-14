@@ -7,11 +7,13 @@
     <link rel="stylesheet" href="/static/css/app.css" />
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   </head>
-  <body>
-    <main class="layout">
+  <body class="{% block body_class %}{% endblock %}">
+    <main class="layout {% block layout_class %}{% endblock %}">
+      {% if not disable_topnav %}
       <nav class="topnav">
-        <a class="brand" href="/">Sift</a>
+        <a class="brand" href="/app">Sift</a>
         <div class="actions">
+          <button type="button" id="theme-toggle" class="icon-btn" title="Toggle theme">Theme</button>
           {% if current_user %}
             <a href="/account">{{ current_user.display_name or current_user.email }}</a>
             <form action="/logout" method="post">
@@ -23,6 +25,7 @@
           {% endif %}
         </div>
       </nav>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
     <script src="/static/js/app.js"></script>

@@ -19,6 +19,38 @@ This keeps deployment simple while preserving clean seams for future service ext
 4. `db`: PostgreSQL (SQLite default for local bootstrap)
 5. `redis`: queue broker
 
+## Web UI Architecture (3-Pane HTMX Workspace)
+
+Reader UX is implemented as server-rendered HTML with HTMX partial swaps:
+
+1. Left navigation pane:
+   - system scopes (All, Fresh, Saved, Archived, Recently read)
+   - user folders with feed children and unread counts
+   - monitoring streams with unread counts
+2. Center list pane:
+   - scoped article listing with search/state/sort controls
+   - compact row density default with optional comfortable density
+   - row-level read/save actions
+3. Right reader pane:
+   - article detail view and open-original action
+
+Routing model:
+
+1. `GET /app` renders the workspace shell.
+2. HTMX partial endpoints update independent panes:
+   - `GET /web/partials/nav-tree`
+   - `GET /web/partials/article-list`
+   - `GET /web/partials/article-reader/{article_id}`
+3. HTMX action endpoints apply article state transitions:
+   - `PATCH /web/actions/article/{article_id}/state`
+   - `POST /web/actions/article/bulk-state`
+
+State model:
+
+1. URL query parameters carry scope/filter selection (`scope_type`, `scope_id`, `state`, `sort`, `q`, pagination).
+2. UI-only preferences (theme, list density) are persisted in local storage.
+3. Keyboard shortcuts are implemented with minimal vanilla JS (`j/k`, `o`, `m`, `s`, `/`).
+
 ## Developer Topology (Dev Container Standard)
 
 For day-to-day development, use the Dev Container stack in `.devcontainer/`:

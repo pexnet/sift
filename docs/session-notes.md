@@ -96,19 +96,41 @@
   - Added committed sanitized sample `dev-data/public-sample.opml`
   - Added `dev-data/README.md` with local/public seed-file guidance
   - Added gitignore entries for personal OPML filenames
+- Implemented reader-first 3-pane UI workspace:
+  - Added authenticated `/app` shell with icon rail + nav tree + article list + reader pane
+  - Added light/dark theme toggle and compact/comfortable density preference persistence
+  - Added HTMX partial endpoints:
+    - `GET /web/partials/nav-tree`
+    - `GET /web/partials/article-list`
+    - `GET /web/partials/article-reader/{article_id}`
+  - Added HTMX state action endpoints:
+    - `PATCH /web/actions/article/{article_id}/state`
+    - `POST /web/actions/article/bulk-state`
+  - Added essential keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
+- Added article + navigation API surface for UI data flow:
+  - `GET /api/v1/articles`
+  - `GET /api/v1/articles/{article_id}`
+  - `PATCH /api/v1/articles/{article_id}/state`
+  - `POST /api/v1/articles/state/bulk`
+  - `GET /api/v1/navigation`
+- Added UI/service regression coverage:
+  - `tests/test_article_service.py`
+  - `tests/test_navigation_service.py`
+  - `tests/test_article_state_api.py`
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (dev seed tests added)
+  - `python -m pytest` passed (43 tests)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB (through latest migration)
   - `docker compose -f .devcontainer/docker-compose.yml config` passed
 
 ## Current Priority Plan
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Explore vector database integration as plugin capability for semantic matching/classification.
-4. Add scheduler observability metrics (queue depth, success/failure, ingest latency) after core features.
+1. Complete reader UI polish (saved-view refinements, explicit loading/error/empty states, accessibility hardening).
+2. Define and implement dashboard card UI v2 (deferred from reader-first scope).
+3. Add stream-level ranking and prioritization controls.
+4. Add classifier run persistence and model/version tracking.
+5. Explore vector database integration as plugin capability for semantic matching/classification.
 
 ## Deferred Items
 

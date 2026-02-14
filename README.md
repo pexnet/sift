@@ -16,7 +16,7 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 2. Create env file:
    - `copy .env.example .env`
 3. Create virtual environment and sync dependencies:
-   - `uv sync --dev`
+   - `uv sync --extra dev`
 4. Run migrations:
    - `uv run alembic upgrade head`
 5. Run API and web app:
@@ -37,7 +37,7 @@ How to start:
 
 1. Open this repository in VS Code.
 2. Run `Dev Containers: Reopen in Container`.
-3. Wait for the workspace build and `postCreateCommand` (`uv sync --dev`) to finish.
+3. Wait for the workspace build and `postCreateCommand` (`uv sync --extra dev`) to finish.
 4. Dev services are started automatically from `.devcontainer/docker-compose.yml`:
    - `dev` (workspace)
    - `app` (FastAPI + auto-migrations + reload)
@@ -96,6 +96,25 @@ To apply extension installs from your local file:
 - Run worker: `uv run python -m sift.tasks.worker`
 - Run scheduler: `uv run python -m sift.tasks.scheduler`
 
+## Reader Workspace UI
+
+- Main authenticated UI: `GET /app`
+- Layout:
+  - left navigation tree (system folders, folders/feeds, monitoring streams)
+  - center article list (search, scope state, sort, density)
+  - right reader panel (article content and actions)
+- Preferences persisted locally:
+  - theme: light/dark
+  - list density: compact/comfortable (compact default)
+
+Keyboard shortcuts:
+
+- `j` / `k`: move selection down/up
+- `o`: open selected article in reader pane
+- `m`: toggle read/unread on selected article
+- `s`: toggle saved/starred on selected article
+- `/`: focus article search
+
 ## Docker (App + Worker + Scheduler + Postgres + Redis)
 
 - `docker compose up --build`
@@ -130,6 +149,11 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Update folder: `PATCH /api/v1/folders/{folder_id}`
 - Delete folder: `DELETE /api/v1/folders/{folder_id}`
 - Keyword filter preview: `POST /api/v1/articles/filter-preview`
+- List scoped articles: `GET /api/v1/articles`
+- Get article detail: `GET /api/v1/articles/{article_id}`
+- Patch article state: `PATCH /api/v1/articles/{article_id}/state`
+- Bulk patch article state: `POST /api/v1/articles/state/bulk`
+- Get navigation tree: `GET /api/v1/navigation`
 - Import OPML: `POST /api/v1/imports/opml` (multipart file upload)
 
 ## Authentication and Identity Providers

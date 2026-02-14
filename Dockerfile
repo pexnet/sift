@@ -12,7 +12,7 @@ COPY src ./src
 COPY docs ./docs
 COPY AGENTS.md ./
 
-RUN uv sync --dev
+RUN uv sync --extra dev
 
 CMD ["uv", "run", "uvicorn", "sift.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

@@ -87,6 +87,95 @@ class ArticleOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ArticleListItemOut(BaseModel):
+    id: UUID
+    feed_id: UUID | None
+    feed_title: str | None
+    title: str
+    canonical_url: str | None
+    published_at: datetime | None
+    created_at: datetime
+    is_read: bool
+    is_starred: bool
+    is_archived: bool
+    stream_ids: list[UUID] = Field(default_factory=list)
+
+
+class ArticleDetailOut(BaseModel):
+    id: UUID
+    feed_id: UUID | None
+    feed_title: str | None
+    source_id: str
+    canonical_url: str | None
+    title: str
+    content_text: str
+    language: str | None
+    published_at: datetime | None
+    created_at: datetime
+    is_read: bool
+    is_starred: bool
+    is_archived: bool
+    stream_ids: list[UUID] = Field(default_factory=list)
+
+
+class ArticleStatePatch(BaseModel):
+    is_read: bool | None = None
+    is_starred: bool | None = None
+    is_archived: bool | None = None
+
+
+class ArticleStateBulkPatch(BaseModel):
+    article_ids: list[UUID] = Field(min_length=1, max_length=500)
+    is_read: bool | None = None
+    is_starred: bool | None = None
+    is_archived: bool | None = None
+
+
+class ArticleStateOut(BaseModel):
+    article_id: UUID
+    is_read: bool
+    is_starred: bool
+    is_archived: bool
+
+
+class ArticleListResponse(BaseModel):
+    items: list[ArticleListItemOut]
+    total: int
+    limit: int
+    offset: int
+
+
+class NavigationFeedNodeOut(BaseModel):
+    id: UUID
+    title: str
+    unread_count: int
+
+
+class NavigationFolderNodeOut(BaseModel):
+    id: UUID | None
+    name: str
+    unread_count: int
+    feeds: list[NavigationFeedNodeOut] = Field(default_factory=list)
+
+
+class NavigationStreamNodeOut(BaseModel):
+    id: UUID
+    name: str
+    unread_count: int
+
+
+class NavigationSystemNodeOut(BaseModel):
+    key: Literal["all", "fresh", "saved", "archived", "recent"]
+    title: str
+    unread_count: int
+
+
+class NavigationTreeOut(BaseModel):
+    systems: list[NavigationSystemNodeOut]
+    folders: list[NavigationFolderNodeOut]
+    streams: list[NavigationStreamNodeOut]
+
+
 class KeywordFilterPreviewRequest(BaseModel):
     include_keywords: list[str] = Field(default_factory=list)
     exclude_keywords: list[str] = Field(default_factory=list)

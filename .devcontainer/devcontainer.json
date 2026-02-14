@@ -6,7 +6,7 @@
   "workspaceFolder": "/workspaces/sift",
   "shutdownAction": "stopCompose",
   "overrideCommand": false,
-  "postCreateCommand": "uv sync --dev",
+  "postCreateCommand": "uv sync --extra dev",
   "customizations": {
     "vscode": {
       "extensions": [

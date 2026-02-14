@@ -62,6 +62,11 @@ This file stores persistent project context for future Codex sessions.
 - `PATCH /api/v1/folders/{folder_id}`
 - `DELETE /api/v1/folders/{folder_id}`
 - `POST /api/v1/articles/filter-preview`
+- `GET /api/v1/articles`
+- `GET /api/v1/articles/{article_id}`
+- `PATCH /api/v1/articles/{article_id}/state`
+- `POST /api/v1/articles/state/bulk`
+- `GET /api/v1/navigation`
 - `POST /api/v1/imports/opml`
 
 ## Queue/Scheduler Status
@@ -104,6 +109,12 @@ This file stores persistent project context for future Codex sessions.
 - Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
 - Feed folders are implemented (per-user folders + feed-to-folder assignment endpoint).
+- Reader-first web UI workspace is implemented:
+  - `/app` authenticated 3-pane shell (tree/list/reader)
+  - HTMX partials for nav tree, article list, and reader panel
+  - Light/dark theme toggle with local persistence
+  - Compact/comfortable density toggle (compact default)
+  - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -113,11 +124,16 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
+1. Complete reader UI polish pass:
+   - saved view refinement
+   - explicit loading/error/empty states
+   - keyboard and focus accessibility hardening
+2. Write and implement dashboard card UI v2 spec (deferred from reader-first scope).
+3. Add stream-level ranking and prioritization controls.
+4. Add classifier run persistence and model/version tracking.
+5. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+6. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+7. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
 
 ## Feature Notes
 

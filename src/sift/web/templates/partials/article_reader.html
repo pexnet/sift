@@ -1,0 +1,59 @@
+{% if article_detail %}
+<article class="reader-article" data-reader-article-id="{{ article_detail.id }}">
+  <header class="reader-header">
+    <h2>{{ article_detail.title }}</h2>
+    <p class="muted">{{ article_detail.feed_title or "Unknown feed" }} · {{ article_detail.published_at or article_detail.created_at }}</p>
+    <div class="reader-actions">
+      <form
+        hx-patch="/web/actions/article/{{ article_detail.id }}/state"
+        hx-target="#article-list"
+        hx-swap="innerHTML"
+        class="inline-form"
+      >
+        <input type="hidden" name="scope_type" value="{{ query.scope_type }}" />
+        <input type="hidden" name="scope_id" value="{{ query.scope_id or '' }}" />
+        <input type="hidden" name="state" value="{{ query.state }}" />
+        <input type="hidden" name="sort" value="{{ query.sort }}" />
+        <input type="hidden" name="q" value="{{ query.q or '' }}" />
+        <input type="hidden" name="limit" value="{{ query.limit }}" />
+        <input type="hidden" name="offset" value="{{ query.offset }}" />
+        <input type="hidden" name="article_id" value="{{ article_detail.id }}" />
+        <input type="hidden" name="is_read" value="{{ 'false' if article_detail.is_read else 'true' }}" />
+        <button type="submit" class="state-btn-text">{{ "Mark unread" if article_detail.is_read else "Mark read" }}</button>
+      </form>
+      <form
+        hx-patch="/web/actions/article/{{ article_detail.id }}/state"
+        hx-target="#article-list"
+        hx-swap="innerHTML"
+        class="inline-form"
+      >
+        <input type="hidden" name="scope_type" value="{{ query.scope_type }}" />
+        <input type="hidden" name="scope_id" value="{{ query.scope_id or '' }}" />
+        <input type="hidden" name="state" value="{{ query.state }}" />
+        <input type="hidden" name="sort" value="{{ query.sort }}" />
+        <input type="hidden" name="q" value="{{ query.q or '' }}" />
+        <input type="hidden" name="limit" value="{{ query.limit }}" />
+        <input type="hidden" name="offset" value="{{ query.offset }}" />
+        <input type="hidden" name="article_id" value="{{ article_detail.id }}" />
+        <input type="hidden" name="is_starred" value="{{ 'false' if article_detail.is_starred else 'true' }}" />
+        <button type="submit" class="state-btn-text">{{ "Unsave" if article_detail.is_starred else "Save" }}</button>
+      </form>
+      {% if article_detail.canonical_url %}
+        <a class="state-btn-text" href="{{ article_detail.canonical_url }}" target="_blank" rel="noreferrer">Open original</a>
+      {% endif %}
+    </div>
+  </header>
+  <section class="reader-body">
+    {% if article_detail.content_text %}
+      <pre>{{ article_detail.content_text }}</pre>
+    {% else %}
+      <p class="muted">No article body captured.</p>
+    {% endif %}
+  </section>
+</article>
+{% else %}
+<section class="reader-empty">
+  <h2>Select an article</h2>
+  <p class="muted">Choose an item from the list to read it here.</p>
+</section>
+{% endif %}
