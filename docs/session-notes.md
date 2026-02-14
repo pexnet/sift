@@ -130,6 +130,11 @@
   - Wired TanStack Router search params for scope/article selection URL-state behavior.
   - Wired TanStack Query for navigation list, article list, and article detail loading/error/empty states.
   - Kept `/app-react` server-rendered shell + auth guard behavior unchanged while improving client-side fidelity.
+- Executed React workspace route cutover for `/app`:
+  - Switched authenticated `/app` to render the React + MUI workspace shell (`app_react.html`) instead of the HTMX/Jinja template.
+  - Converted `/app-react` into a temporary redirect to `/app` to preserve legacy links during migration.
+  - Expanded React workspace interactions with API-driven article state actions (mark read/unread + save/unsave) and in-pane search/state controls.
+  - Added state endpoint config wiring in template data attributes and adjusted web route auth/redirect tests for the cutover behavior.
 - Verified quality gates:
   - `python -m ruff check .` passed
   - `python -m pytest` passed (43 tests)
@@ -143,8 +148,8 @@
 
 > Source of truth: This roadmap order is canonical and must be mirrored in `AGENTS.md` and `docs/architecture.md` at the end of each session.
 
-1. Execute big-bang frontend rewrite: ship complete React + MUI `/app` workspace cutover with TanStack Router + Query, parity for existing reader workflows, and polished responsive/loading/error/empty/accessibility states.
-2. Remove legacy HTMX/Jinja workspace implementation after cutover (`/web/partials/*`, `/web/actions/*`, workspace templates/static behavior).
+1. Complete React `/app` parity hardening (keyboard shortcuts, density/theme preference parity, and responsive UX polish).
+2. Remove legacy HTMX/Jinja workspace implementation after parity sign-off (`/web/partials/*`, `/web/actions/*`, workspace templates/static behavior).
 3. Define and implement dashboard card UI v2 in React + MUI.
 4. Add stream-level ranking and prioritization controls.
 5. Add classifier run persistence and model/version tracking.

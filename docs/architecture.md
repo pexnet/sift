@@ -345,9 +345,10 @@ Design goals:
 
 **Current**
 
-1. HTMX/Jinja `/app` workspace is in production as a transitional implementation.
-2. React + MUI rewrite has not yet cut over.
-3. `/app-react` now runs a true React preview shell backed by MUI components, TanStack Router search-state, and TanStack Query API fetching as migration foundations.
+1. `/app` now serves the React + MUI workspace shell and is the active cutover surface.
+2. The React workspace currently supports API-backed navigation, article listing/reader loading, URL-state via TanStack Router, and state mutations for read/saved toggles.
+3. Legacy HTMX/Jinja workspace routes/templates still exist in-tree and remain scheduled for follow-up removal once parity hardening is complete.
+4. `/app-react` now performs a temporary redirect to `/app` to preserve migration-era entry points.
 
 **Target**
 
@@ -367,8 +368,8 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Execute full React + MUI `/app` cutover (big-bang rewrite).
-2. Remove the legacy HTMX/Jinja workspace implementation after cutover parity is complete.
+1. Complete React `/app` parity hardening (keyboard shortcuts, density/theme preference parity, and responsive UX polish).
+2. Remove the legacy HTMX/Jinja workspace implementation after parity sign-off.
 3. Define and implement dashboard card UI v2 in React + MUI.
 4. Add stream ranking/prioritization and rule evaluation metrics.
 5. Add classifier run persistence and model/version tracking for traceability.
