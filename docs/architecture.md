@@ -13,15 +13,34 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 ## Runtime Components
 
-1. `app`: FastAPI API + React + MUI frontend delivery
-2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`)
-3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`)
-4. `db`: PostgreSQL (SQLite default for local bootstrap)
-5. `redis`: queue broker
+**Current**
 
-## Web UI Architecture (React + MUI Workspace)
+1. `app`: FastAPI API plus transitional HTMX/Jinja `/app` workspace delivery.
+2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`).
+3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`).
+4. `db`: PostgreSQL (SQLite default for local bootstrap).
+5. `redis`: queue broker.
 
-Frontend direction is a big-bang rewrite: replace the current HTMX/Jinja `/app` workspace with a complete React + MUI implementation in one cutover release.
+**Target**
+
+1. `app`: FastAPI API plus React + MUI `/app` workspace delivery after big-bang cutover.
+2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`).
+3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`).
+4. `db`: PostgreSQL (SQLite default for local bootstrap).
+5. `redis`: queue broker.
+
+## Web UI Architecture
+
+**Current**
+
+- `/app` is an authenticated, reader-first transitional workspace implemented with HTMX + Jinja templates.
+- It delivers a 3-pane shell (navigation tree, article list, reader pane), theme/density preferences, and core keyboard shortcuts.
+- Transitional HTMX web routes power this workspace (`/web/partials/*`, `/web/actions/*`) and are scheduled for removal after cutover.
+
+**Target**
+
+- Ship a complete React + MUI `/app` workspace in a big-bang cutover release and retire the HTMX/Jinja implementation.
+- Keep the same core reader UX model with improved responsive behavior and polished loading/error/empty/accessibility states.
 
 Reader UX target is a modern, responsive React workspace built with MUI components:
 
@@ -162,10 +181,17 @@ Design goals:
 
 ## Frontend Cutover Plan (Big-Bang Rewrite)
 
-1. Build a complete React + MUI `/app` workspace with feature parity for navigation tree, article list, reader pane, keyboard shortcuts, and user preferences.
+**Current**
+
+1. HTMX/Jinja `/app` workspace is in production as a transitional implementation.
+2. React + MUI rewrite has not yet cut over.
+
+**Target**
+
+1. Execute a big-bang cutover to a complete React + MUI `/app` workspace with parity for navigation tree, article list, reader pane, keyboard shortcuts, and user preferences.
 2. Use TanStack Router for URL-driven state and TanStack Query for API caching/mutations/invalidation.
-3. Gate release on parity + UX quality: responsive behavior, loading/error/empty states, and accessibility checks.
-4. Remove HTMX/Jinja `/app` implementation after cutover, including partial/action routes, templates, and legacy workspace JS/CSS behavior that is no longer needed.
+3. Gate release on parity + UX quality: responsive behavior, loading/error/empty/accessibility states.
+4. Remove legacy HTMX/Jinja workspace implementation after cutover (`/web/partials/*`, `/web/actions/*`, templates, and workspace static behavior).
 5. Keep backend API routes (`/api/v1/navigation`, `/api/v1/articles`, article state endpoints) as the stable UI data contract.
 
 ## Planned Next Moves
@@ -179,4 +205,3 @@ Design goals:
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
-
