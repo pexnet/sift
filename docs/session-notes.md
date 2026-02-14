@@ -173,3 +173,8 @@
 - Documented minimal frontend plugin surface in architecture docs:
   - Added extension points: `nav_badge_provider`, `article_row_action`, `reader_panel_tab`, `dashboard_card`, `command_palette_action`
   - Defined shared registration contract (id/title/mount/capabilities), endpoint dependencies, auth constraints, and per-extension failure isolation behavior
+- Simplified top-level README into a concise project introduction and docs index.
+- Split setup/development/deployment guidance into dedicated docs pages:
+  - `docs/getting-started.md`
+  - `docs/development.md`
+  - `docs/deployment.md`
