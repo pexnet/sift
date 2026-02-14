@@ -1,0 +1,40 @@
+{
+  "name": "sift-dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  "runServices": ["dev", "app", "worker", "scheduler", "db", "redis", "traefik"],
+  "workspaceFolder": "/workspaces/sift",
+  "shutdownAction": "stopCompose",
+  "overrideCommand": false,
+  "postCreateCommand": "uv sync --dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "ms-azuretools.vscode-docker",
+        "ms-python.debugpy"
+      ]
+    }
+  },
+  "forwardPorts": [80, 8000, 8081, 5432, 6379],
+  "portsAttributes": {
+    "80": {
+      "label": "Traefik Web (sift.localhost)"
+    },
+    "8000": {
+      "label": "FastAPI direct"
+    },
+    "8081": {
+      "label": "Traefik dashboard"
+    },
+    "5432": {
+      "label": "PostgreSQL"
+    },
+    "6379": {
+      "label": "Redis"
+    }
+  },
+  "remoteUser": "vscode"
+}

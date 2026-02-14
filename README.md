@@ -24,6 +24,51 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 6. Open:
    - `http://127.0.0.1:8000`
 
+## Recommended Development Workflow (Dev Container)
+
+This project now standardizes development on a Dev Container with full supporting services.
+
+Prerequisites:
+
+- Docker Desktop
+- VS Code with the `Dev Containers` extension
+
+How to start:
+
+1. Open this repository in VS Code.
+2. Run `Dev Containers: Reopen in Container`.
+3. Wait for the workspace build and `postCreateCommand` (`uv sync --dev`) to finish.
+4. Dev services are started automatically from `.devcontainer/docker-compose.yml`:
+   - `dev` (workspace)
+   - `app` (FastAPI + auto-migrations + reload)
+   - `worker`
+   - `scheduler`
+   - `db` (PostgreSQL 17)
+   - `redis` (Redis 8)
+   - `traefik` (edge router)
+
+Primary URLs:
+
+- App via Traefik: `http://sift.localhost`
+- App direct: `http://localhost:8000`
+- Traefik dashboard: `http://localhost:8081`
+
+## Local VS Code Overrides (Not in Git)
+
+Use personal local files for machine-specific VS Code setup:
+
+- `.vscode/extensions.local.json`
+- `.vscode/settings.local.json`
+
+These files are intentionally gitignored. Starter templates are committed:
+
+- `.vscode/extensions.local.example.json`
+- `.vscode/settings.local.example.json`
+
+To apply extension installs from your local file:
+
+- `powershell -ExecutionPolicy Bypass -File scripts/setup-local-vscode.ps1`
+
 ## Dev Commands
 
 - Lint: `uv run ruff check .`
@@ -37,6 +82,7 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 ## Docker (App + Worker + Scheduler + Postgres + Redis)
 
 - `docker compose up --build`
+- Dev container stack (without VS Code): `docker compose -f .devcontainer/docker-compose.yml up --build`
 
 ## Plugin Direction
 

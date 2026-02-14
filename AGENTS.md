@@ -17,6 +17,7 @@ This file stores persistent project context for future Codex sessions.
 - Tooling standards: uv + Ruff + Pytest + Mypy.
 - Ruff width: 120 chars.
 - Alembic is the source of truth for schema changes.
+- Preferred dev environment is Dev Container-based full stack (`.devcontainer/`).
 
 ## Working Agreements
 
@@ -29,6 +30,12 @@ This file stores persistent project context for future Codex sessions.
 - All major changes should update:
   - `docs/architecture.md` for architecture-impacting decisions.
   - `docs/session-notes.md` for decision log + next steps.
+- Default development flow:
+  - Open in Dev Container (`.devcontainer/devcontainer.json`).
+  - Use `.devcontainer/docker-compose.yml` stack for `app`, `worker`, `scheduler`, `db`, `redis`, and `traefik`.
+- Local IDE personalization:
+  - Keep personal VS Code config in `.vscode/extensions.local.json` and `.vscode/settings.local.json` (gitignored).
+  - Use `.vscode/*.example.json` as templates.
 
 ## Current API Surface (MVP Core)
 

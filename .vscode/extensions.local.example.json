@@ -1,0 +1,11 @@
+{
+  "extensions": [
+    "openai.chatgpt",
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "ms-python.mypy-type-checker",
+    "ms-azuretools.vscode-docker",
+    "ms-python.debugpy",
+    "eamodio.gitlens"
+  ]
+}

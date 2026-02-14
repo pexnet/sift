@@ -58,11 +58,23 @@
   - Added built-in `keyword_heuristic_classifier` plugin as reference
   - Integrated classifier-aware stream matching into `ingestion_service`
   - Added stream classifier mode tests
+- Implemented Dev Container-first development stack:
+  - Added `.devcontainer/devcontainer.json` with full run-services configuration
+  - Added `.devcontainer/docker-compose.yml` with `dev`, `app`, `worker`, `scheduler`, `db`, `redis`, `traefik`
+  - Added `.devcontainer/Dockerfile` to provide Python 3.13 + `uv` in workspace container
+  - Standardized local routing via Traefik (`http://sift.localhost`)
+  - Updated README + AGENTS + architecture docs with the new default dev workflow
+- Added local-only VS Code personalization support:
+  - Added gitignored local override files: `.vscode/extensions.local.json`, `.vscode/settings.local.json`
+  - Added committed templates: `.vscode/extensions.local.example.json`, `.vscode/settings.local.example.json`
+  - Added helper installer script: `scripts/setup-local-vscode.ps1`
+  - Updated README + AGENTS with local setup instructions
 - Verified quality gates:
   - `python -m ruff check .` passed
   - `python -m pytest` passed (classifier stream tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
+  - `docker compose -f .devcontainer/docker-compose.yml config` passed
 
 ## Current Priority Plan
 
@@ -81,6 +93,7 @@
 
 - In dev, run migrations before app start:
   - `python -m alembic upgrade head`
+- Preferred day-to-day dev flow is now Dev Container + `.devcontainer/docker-compose.yml`.
 - During transition, avoid mixing `create_all` with migrations in shared environments.
 - Keep this file concise: what changed, what was verified, and the next 3-5 concrete steps.
 

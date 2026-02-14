@@ -19,6 +19,18 @@ This keeps deployment simple while preserving clean seams for future service ext
 4. `db`: PostgreSQL (SQLite default for local bootstrap)
 5. `redis`: queue broker
 
+## Developer Topology (Dev Container Standard)
+
+For day-to-day development, use the Dev Container stack in `.devcontainer/`:
+
+1. `dev`: workspace container for editing/testing (`uv`, lint, tests, migrations)
+2. `app`: FastAPI runtime with reload and migration-on-start
+3. `worker`: RQ worker process
+4. `scheduler`: periodic enqueue loop
+5. `db`: PostgreSQL 17
+6. `redis`: Redis 8
+7. `traefik`: local edge router to simplify service access (`http://sift.localhost`)
+
 ## Database Lifecycle
 
 - Migrations are managed with Alembic.

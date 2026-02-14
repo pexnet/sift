@@ -210,3 +210,7 @@ __marimo__/
 *.sqlite3
 *.db
 .DS_Store
+
+# Local VS Code developer overrides (personal machine only)
+.vscode/extensions.local.json
+.vscode/settings.local.json
