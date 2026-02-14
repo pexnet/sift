@@ -44,6 +44,167 @@ Routing and data model:
 4. UI-only preferences (theme, list density) are persisted in local storage.
 5. Keyboard shortcuts remain a first-class UX feature (`j/k`, `o`, `m`, `s`, `/`).
 
+## Frontend Plugin Surface (Minimal Extension Registry)
+
+React + MUI cutover should expose a narrow, typed plugin registry for UI customization without coupling plugin code to
+internal state layout. The host app owns routing, data-fetch orchestration, auth checks, and error boundaries.
+
+### Shared registration contract
+
+Every frontend extension point registers items using a common base shape plus point-specific fields:
+
+- `id: string` (globally unique and stable; recommended namespace `plugin_name.feature_name`)
+- `title: string` (human-readable label used in UI and diagnostics)
+- `mount: React.ComponentType<Props>` (render entry component for this extension point)
+- `capabilities: { ... }` (boolean feature flags declared by plugin and validated by host)
+
+Host-side validation requirements:
+
+1. Unknown capability flags are ignored and logged at debug level.
+2. Duplicate `id` registrations are rejected deterministically (first registration wins, later registrations disabled).
+3. Invalid registrations (missing required keys) are skipped and surfaced in diagnostics.
+
+Failure isolation baseline for all extension points:
+
+1. Each mounted plugin runs inside a per-item error boundary.
+2. Runtime exceptions disable only the failing plugin item; the rest of the page remains interactive.
+3. The host renders a compact fallback placeholder (`Plugin unavailable`) and logs structured telemetry with `plugin_id`,
+   extension point, and error metadata.
+
+### 1) `nav_badge_provider`
+
+Purpose: augment navigation labels/counts (for example, custom unread counters or status chips) for built-in nav nodes.
+
+Registration shape:
+
+- Base fields (`id`, `title`, `mount`, `capabilities`)
+- `targetScopes: Array<"system" | "folder" | "feed" | "stream">`
+- `capabilities` flags:
+  - `supportsCountOverride` (replace default count)
+  - `supportsLabelSuffix` (append extra label text)
+
+Data dependencies:
+
+- Primary: `GET /api/v1/navigation`
+- Optional plugin-owned fetches (if needed) must be read-only and scoped to currently visible nav entities.
+
+Permission/auth constraints:
+
+- Runs only for authenticated sessions.
+- Plugin receives only user-scoped nav entities already returned by the API; no cross-user identifiers are exposed.
+
+Failure isolation behavior:
+
+- On plugin failure, host falls back to core nav label/count rendering for affected nodes.
+
+### 2) `article_row_action`
+
+Purpose: add row-level actions in the article list (for example, send to external workflow, quick annotate, triage).
+
+Registration shape:
+
+- Base fields (`id`, `title`, `mount`, `capabilities`)
+- `placement: "leading" | "trailing" | "overflow"`
+- `capabilities` flags:
+  - `requiresSelection` (action expects multi-select context)
+  - `mutatesArticleState` (action may update read/saved/archived state)
+
+Data dependencies:
+
+- `GET /api/v1/articles`
+- `PATCH /api/v1/articles/{article_id}/state` (if `mutatesArticleState=true`)
+- `POST /api/v1/articles/state/bulk` (if `requiresSelection=true`)
+
+Permission/auth constraints:
+
+- Runs only for authenticated sessions.
+- Action visibility is gated by user access to the row article in current scope/filter context.
+
+Failure isolation behavior:
+
+- On plugin failure, host removes the failing action control for that row and keeps built-in row actions available.
+
+### 3) `reader_panel_tab`
+
+Purpose: add tabs in the right reader pane (for example, metadata, enrichment output, related links).
+
+Registration shape:
+
+- Base fields (`id`, `title`, `mount`, `capabilities`)
+- `tabOrder?: number` (optional stable sort hint; default after built-ins)
+- `capabilities` flags:
+  - `requiresArticleContent`
+  - `supportsBackgroundRefresh`
+
+Data dependencies:
+
+- `GET /api/v1/articles/{article_id}`
+- Optional: plugin may request additional read-only APIs related to selected article.
+
+Permission/auth constraints:
+
+- Runs only for authenticated sessions.
+- Plugin only receives currently selected article payload already authorized by backend.
+
+Failure isolation behavior:
+
+- On plugin failure, host replaces that tab panel with inline error fallback while keeping other tabs functional.
+
+### 4) `dashboard_card`
+
+Purpose: define dashboard v2 card registry entries for top-level summary widgets.
+
+Registration shape:
+
+- Base fields (`id`, `title`, `mount`, `capabilities`)
+- `cardSize: "sm" | "md" | "lg"`
+- `defaultLayout: { column: number; row: number; w: number; h: number }`
+- `capabilities` flags:
+  - `supportsManualRefresh`
+  - `supportsTimeRange`
+
+Data dependencies:
+
+- Core dashboard context expected from host: `GET /api/v1/navigation` and scoped `GET /api/v1/articles` summaries.
+- Card-specific fetches must remain read-only unless explicitly mediated by host mutations.
+
+Permission/auth constraints:
+
+- Runs only for authenticated sessions.
+- Cards must honor same per-user data boundaries as dashboard host; no global aggregate endpoints are exposed directly.
+
+Failure isolation behavior:
+
+- On plugin failure, host renders a standard failed-card shell with title + retry affordance and excludes only that card
+  from layout calculations until recovery.
+
+### 5) `command_palette_action`
+
+Purpose: register extra commands in command palette for power-user flows and integrations.
+
+Registration shape:
+
+- Base fields (`id`, `title`, `mount`, `capabilities`)
+- `keywords: string[]` (search aliases)
+- `capabilities` flags:
+  - `requiresArticleContext`
+  - `opensExternalUrl`
+
+Data dependencies:
+
+- Baseline palette context uses current route/scope (no required API call).
+- If contextual, may consume `GET /api/v1/articles/{article_id}` for active selection.
+
+Permission/auth constraints:
+
+- Runs only for authenticated sessions when command operates on protected resources.
+- Commands that open external URLs must use allowlisted host validation to avoid untrusted redirect abuse.
+
+Failure isolation behavior:
+
+- On plugin failure during execution, host surfaces non-blocking toast error and keeps palette open/usable for other
+  commands.
+
 ## Developer Topology (Dev Container Standard)
 
 For day-to-day development, use the Dev Container stack in `.devcontainer/`:
@@ -179,4 +340,3 @@ Design goals:
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
-
