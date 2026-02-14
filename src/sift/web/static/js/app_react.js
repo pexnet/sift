@@ -1,201 +1,259 @@
-(function () {
-  function parseSearch() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      scope_type: params.get("scope_type") || "system",
-      scope_id: params.get("scope_id") || "",
-      state: params.get("state") || "all",
-      sort: params.get("sort") || "newest",
-      q: params.get("q") || "",
-      article_id: params.get("article_id") || "",
-      limit: params.get("limit") || "50",
-      offset: params.get("offset") || "0",
-    };
+import React from "https://esm.sh/react@18.3.1";
+import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from "https://esm.sh/@tanstack/react-query@5.66.4";
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  useNavigate,
+} from "https://esm.sh/@tanstack/react-router@1.114.26";
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  CssBaseline,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Stack,
+  ThemeProvider,
+  Typography,
+  createTheme,
+} from "https://esm.sh/@mui/material@5.16.14?deps=react@18.3.1,react-dom@18.3.1";
+
+const rootElement = document.getElementById("react-workspace-root");
+const appElement = document.getElementById("react-workspace-app");
+
+if (!(rootElement instanceof HTMLElement) || !(appElement instanceof HTMLElement)) {
+  throw new Error("React workspace root is missing");
+}
+
+const apiConfig = {
+  navigationEndpoint: rootElement.dataset.navigationEndpoint || "/api/v1/navigation",
+  articlesEndpoint: rootElement.dataset.articlesEndpoint || "/api/v1/articles",
+  articleEndpointTemplate: rootElement.dataset.articleEndpointTemplate || "/api/v1/articles/{article_id}",
+};
+
+const queryClient = new QueryClient();
+const theme = createTheme({
+  palette: { mode: document.documentElement.dataset.theme === "dark" ? "dark" : "light" },
+});
+
+async function fetchJson(url) {
+  const response = await fetch(url, { credentials: "same-origin" });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
   }
+  return response.json();
+}
 
-  function toApiQuery(search) {
-    const query = new URLSearchParams();
-    query.set("scope_type", search.scope_type);
-    if (search.scope_id) {
-      query.set("scope_id", search.scope_id);
-    }
-    query.set("state", search.state);
-    query.set("sort", search.sort);
-    query.set("limit", search.limit);
-    query.set("offset", search.offset);
-    if (search.q) {
-      query.set("q", search.q);
-    }
-    return query;
-  }
+function flattenNavigation(navigation) {
+  return [
+    ...(navigation.system || []).map((item) => ({ ...item, scope_type: "system" })),
+    ...(navigation.folders || []).map((item) => ({ ...item, scope_type: "folder" })),
+    ...(navigation.streams || []).map((item) => ({ ...item, scope_type: "stream" })),
+  ];
+}
 
-  async function fetchJson(url) {
-    const response = await fetch(url, { credentials: "same-origin" });
-    if (!response.ok) {
-      throw new Error(`Request failed: ${response.status}`);
-    }
-    return response.json();
-  }
+function WorkspacePage() {
+  const navigate = useNavigate({ from: "/" });
+  const search = Route.useSearch();
 
-  function renderNav(root, navigation) {
-    const navState = root.querySelector("#react-nav-state");
-    const navList = root.querySelector("#react-nav-list");
-    if (!(navState instanceof HTMLElement) || !(navList instanceof HTMLElement)) {
-      return;
-    }
-
-    const topItems = [
-      ...(navigation.system || []),
-      ...(navigation.folders || []),
-      ...(navigation.streams || []),
-    ];
-
-    if (topItems.length === 0) {
-      navState.textContent = "No navigation items.";
-      navList.hidden = true;
-      return;
-    }
-
-    navList.innerHTML = "";
-    for (const item of topItems) {
-      const li = document.createElement("li");
-      li.textContent = item.title || item.name || item.key || "Untitled";
-      navList.appendChild(li);
-    }
-
-    navState.hidden = true;
-    navList.hidden = false;
-  }
-
-  function renderArticles(root, articleList) {
-    const state = root.querySelector("#react-list-state");
-    const list = root.querySelector("#react-article-list");
-    if (!(state instanceof HTMLElement) || !(list instanceof HTMLElement)) {
-      return;
-    }
-
-    if (!Array.isArray(articleList.items) || articleList.items.length === 0) {
-      state.textContent = "No articles found for this scope.";
-      list.hidden = true;
-      return null;
-    }
-
-    list.innerHTML = "";
-    for (const article of articleList.items) {
-      const li = document.createElement("li");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "react-article-button";
-      button.textContent = article.title || "Untitled article";
-      button.dataset.articleId = article.id;
-      li.appendChild(button);
-      list.appendChild(li);
-    }
-
-    state.hidden = true;
-    list.hidden = false;
-    return articleList.items[0]?.id ?? null;
-  }
-
-  function renderReader(root, detail) {
-    const state = root.querySelector("#react-reader-state");
-    const panel = root.querySelector("#react-reader");
-    if (!(state instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
-      return;
-    }
-
-    panel.innerHTML = "";
-    const title = document.createElement("h3");
-    title.textContent = detail.title || "Untitled article";
-    panel.appendChild(title);
-
-    const byline = document.createElement("p");
-    byline.className = "muted";
-    byline.textContent = detail.author || detail.feed_title || "";
-    panel.appendChild(byline);
-
-    const content = document.createElement("p");
-    content.textContent = detail.content_text || "No content available.";
-    panel.appendChild(content);
-
-    state.hidden = true;
-    panel.hidden = false;
-  }
-
-  async function bootstrap() {
-    const root = document.getElementById("react-workspace-root");
-    if (!(root instanceof HTMLElement)) {
-      return;
-    }
-
-    const search = parseSearch();
-    const query = toApiQuery(search).toString();
-    const navEndpoint = root.dataset.navigationEndpoint;
-    const articlesEndpoint = root.dataset.articlesEndpoint;
-    const detailTemplate = root.dataset.articleEndpointTemplate || "";
-
-    if (!navEndpoint || !articlesEndpoint || !detailTemplate) {
-      return;
-    }
-
-    try {
-      const navigation = await fetchJson(navEndpoint);
-      renderNav(root, navigation);
-    } catch (error) {
-      const navState = root.querySelector("#react-nav-state");
-      if (navState instanceof HTMLElement) {
-        navState.textContent = "Failed to load navigation.";
-      }
-    }
-
-    let selectedArticleId = search.article_id || null;
-    try {
-      const articleList = await fetchJson(`${articlesEndpoint}?${query}`);
-      const firstId = renderArticles(root, articleList);
-      if (!selectedArticleId) {
-        selectedArticleId = firstId;
-      }
-    } catch (error) {
-      const listState = root.querySelector("#react-list-state");
-      if (listState instanceof HTMLElement) {
-        listState.textContent = "Failed to load articles.";
-      }
-    }
-
-    async function loadReader(articleId) {
-      if (!articleId) {
-        return;
-      }
-      try {
-        const detail = await fetchJson(detailTemplate.replace("{article_id}", articleId));
-        renderReader(root, detail);
-      } catch (error) {
-        const state = root.querySelector("#react-reader-state");
-        if (state instanceof HTMLElement) {
-          state.textContent = "Failed to load article details.";
-        }
-      }
-    }
-
-    root.addEventListener("click", (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) {
-        return;
-      }
-      const button = target.closest(".react-article-button");
-      if (!(button instanceof HTMLButtonElement)) {
-        return;
-      }
-      const articleId = button.dataset.articleId;
-      if (articleId) {
-        void loadReader(articleId);
-      }
-    });
-
-    await loadReader(selectedArticleId);
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    void bootstrap();
+  const navigationQuery = useQuery({
+    queryKey: ["navigation"],
+    queryFn: () => fetchJson(apiConfig.navigationEndpoint),
   });
-})();
+
+  const articlesQuery = useQuery({
+    queryKey: ["articles", search.scope_type, search.scope_id, search.state, search.sort, search.q],
+    queryFn: () => {
+      const query = new URLSearchParams({
+        scope_type: search.scope_type,
+        state: search.state,
+        sort: search.sort,
+        limit: "50",
+        offset: "0",
+      });
+      if (search.scope_id) {
+        query.set("scope_id", search.scope_id);
+      }
+      if (search.q) {
+        query.set("q", search.q);
+      }
+      return fetchJson(`${apiConfig.articlesEndpoint}?${query.toString()}`);
+    },
+  });
+
+  const selectedArticleId = search.article_id || articlesQuery.data?.items?.[0]?.id || "";
+
+  const articleDetailQuery = useQuery({
+    queryKey: ["article", selectedArticleId],
+    queryFn: () => fetchJson(apiConfig.articleEndpointTemplate.replace("{article_id}", selectedArticleId)),
+    enabled: Boolean(selectedArticleId),
+  });
+
+  const navItems = navigationQuery.data ? flattenNavigation(navigationQuery.data) : [];
+
+  return React.createElement(
+    Stack,
+    { className: "react-workspace__grid", spacing: 2 },
+    React.createElement(
+      Paper,
+      { className: "react-pane", component: "section", elevation: 0 },
+      React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Navigation"),
+      navigationQuery.isLoading
+        ? React.createElement(CircularProgress, { size: 20 })
+        : null,
+      navigationQuery.isError
+        ? React.createElement(Alert, { severity: "error" }, "Failed to load navigation.")
+        : null,
+      !navigationQuery.isLoading && !navigationQuery.isError && navItems.length === 0
+        ? React.createElement(Typography, { variant: "body2", color: "text.secondary" }, "No navigation items.")
+        : null,
+      React.createElement(
+        List,
+        { dense: true },
+        navItems.map((item) =>
+          React.createElement(
+            ListItem,
+            { disablePadding: true, key: `${item.scope_type}:${item.id || item.key}` },
+            React.createElement(
+              ListItemButton,
+              {
+                selected: search.scope_type === item.scope_type && search.scope_id === (item.id || ""),
+                onClick: () =>
+                  navigate({
+                    to: "/",
+                    search: {
+                      ...search,
+                      scope_type: item.scope_type,
+                      scope_id: item.id || "",
+                      article_id: "",
+                    },
+                  }),
+              },
+              React.createElement(ListItemText, {
+                primary: item.title || item.name || item.key || "Untitled",
+                secondary: item.scope_type,
+              })
+            )
+          )
+        )
+      )
+    ),
+    React.createElement(
+      Paper,
+      { className: "react-pane", component: "section", elevation: 0 },
+      React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Articles"),
+      articlesQuery.isLoading ? React.createElement(CircularProgress, { size: 20 }) : null,
+      articlesQuery.isError ? React.createElement(Alert, { severity: "error" }, "Failed to load articles.") : null,
+      !articlesQuery.isLoading && !articlesQuery.isError && (articlesQuery.data?.items || []).length === 0
+        ? React.createElement(Typography, { variant: "body2", color: "text.secondary" }, "No articles found.")
+        : null,
+      React.createElement(
+        List,
+        { dense: true },
+        (articlesQuery.data?.items || []).map((article) =>
+          React.createElement(
+            ListItem,
+            { disablePadding: true, key: article.id },
+            React.createElement(
+              ListItemButton,
+              {
+                selected: selectedArticleId === article.id,
+                onClick: () =>
+                  navigate({
+                    to: "/",
+                    search: { ...search, article_id: article.id },
+                  }),
+              },
+              React.createElement(ListItemText, {
+                primary: article.title || "Untitled article",
+                secondary: article.feed_title || article.author || "",
+              })
+            )
+          )
+        )
+      )
+    ),
+    React.createElement(
+      Paper,
+      { className: "react-pane", component: "section", elevation: 0 },
+      React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Reader"),
+      !selectedArticleId
+        ? React.createElement(
+            Typography,
+            { variant: "body2", color: "text.secondary" },
+            "Select an article to load reader content."
+          )
+        : null,
+      articleDetailQuery.isLoading ? React.createElement(CircularProgress, { size: 20 }) : null,
+      articleDetailQuery.isError
+        ? React.createElement(Alert, { severity: "error" }, "Failed to load article details.")
+        : null,
+      articleDetailQuery.data
+        ? React.createElement(
+            Box,
+            null,
+            React.createElement(Typography, { variant: "h6" }, articleDetailQuery.data.title || "Untitled article"),
+            React.createElement(
+              Typography,
+              { variant: "body2", color: "text.secondary", gutterBottom: true },
+              articleDetailQuery.data.author || articleDetailQuery.data.feed_title || ""
+            ),
+            React.createElement(Divider, { sx: { mb: 2 } }),
+            React.createElement(
+              Typography,
+              { variant: "body2" },
+              articleDetailQuery.data.content_text || "No content available."
+            )
+          )
+        : null
+    )
+  );
+}
+
+const rootRoute = createRootRoute({
+  component: () => React.createElement(WorkspacePage),
+});
+
+const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  validateSearch: (search) => ({
+    scope_type: typeof search.scope_type === "string" ? search.scope_type : "system",
+    scope_id: typeof search.scope_id === "string" ? search.scope_id : "",
+    state: typeof search.state === "string" ? search.state : "all",
+    sort: typeof search.sort === "string" ? search.sort : "newest",
+    q: typeof search.q === "string" ? search.q : "",
+    article_id: typeof search.article_id === "string" ? search.article_id : "",
+  }),
+});
+
+const routeTree = rootRoute.addChildren([Route]);
+const router = createRouter({ routeTree });
+
+createRoot(appElement).render(
+  React.createElement(
+    React.StrictMode,
+    null,
+    React.createElement(
+      ThemeProvider,
+      { theme },
+      React.createElement(CssBaseline, null),
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        React.createElement(RouterProvider, { router })
+      )
+    )
+  )
+);

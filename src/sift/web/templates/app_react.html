@@ -12,28 +12,9 @@
 >
   <header class="react-workspace__header panel">
     <h1>React Workspace Preview</h1>
-    <p class="muted">Foundational shell for the React + MUI /app cutover.</p>
+    <p class="muted">TanStack Router + Query + MUI foundations for the /app cutover.</p>
   </header>
-
-  <div class="react-workspace__grid">
-    <section class="react-pane panel" aria-label="Navigation">
-      <h2>Navigation</h2>
-      <div id="react-nav-state" class="react-state">Loading navigation…</div>
-      <ul id="react-nav-list" class="react-list" hidden></ul>
-    </section>
-
-    <section class="react-pane panel" aria-label="Article list">
-      <h2>Articles</h2>
-      <div id="react-list-state" class="react-state">Loading articles…</div>
-      <ul id="react-article-list" class="react-list" hidden></ul>
-    </section>
-
-    <section class="react-pane panel" aria-label="Reader panel">
-      <h2>Reader</h2>
-      <div id="react-reader-state" class="react-state">Select an article to load reader content.</div>
-      <article id="react-reader" class="react-reader" hidden></article>
-    </section>
-  </div>
+  <div id="react-workspace-app" class="react-workspace__app"></div>
 </section>
-<script src="/static/js/app_react.js" defer></script>
+<script type="module" src="/static/js/app_react.js"></script>
 {% endblock %}
