@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -6,17 +7,16 @@ from fastapi.staticfiles import StaticFiles
 
 from sift.api.router import api_router
 from sift.config import get_settings
+from sift.core.runtime import get_plugin_manager
 from sift.db.session import init_models
-from sift.plugins.manager import PluginManager
 from sift.web.routes import router as web_router
 
 settings = get_settings()
-plugin_manager = PluginManager()
-plugin_manager.load_from_paths(settings.plugin_paths)
+plugin_manager = get_plugin_manager()
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.auto_create_tables:
         await init_models()
     yield

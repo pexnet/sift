@@ -11,7 +11,7 @@ engine: AsyncEngine = create_async_engine(settings.database_url, echo=False, poo
 SessionLocal = async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
     async with SessionLocal() as session:
         yield session
 

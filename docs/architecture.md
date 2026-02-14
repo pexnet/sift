@@ -19,6 +19,15 @@ This keeps deployment simple while preserving clean seams for future service ext
 4. `db`: PostgreSQL (SQLite default for local bootstrap)
 5. `redis`: queue broker
 
+## Database Lifecycle
+
+- Migrations are managed with Alembic.
+- Initial migration: `alembic/versions/20260214_0001_initial_schema.py`.
+- Default runtime setting is now migration-first (`SIFT_AUTO_CREATE_TABLES=false`).
+- Local bootstrap flow:
+  1. `python -m alembic upgrade head`
+  2. start app/service processes
+
 ## Package Layout
 
 - `src/sift/api`: API routers and request/response boundaries
@@ -48,16 +57,26 @@ Design goals:
 ## Data Model (Initial)
 
 - `feeds`: source catalog
+  - includes fetch metadata (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_error`)
 - `subscriptions`: user to feed mapping
-- `raw_entries`: immutable source payloads
-- `articles`: normalized canonical content
+- `raw_entries`: immutable source payloads (unique feed/source key for ingest dedupe)
+- `articles`: normalized canonical content (unique feed/source key for ingest dedupe)
 - `article_states`: per-user read/star/archive state
+
+## Implemented Service Slices
+
+1. Ingestion service:
+   - endpoint: `POST /api/v1/feeds/{feed_id}/ingest`
+   - flow: fetch -> parse -> dedupe -> persist raw/article -> plugin hook
+2. Keyword filter preview:
+   - endpoint: `POST /api/v1/articles/filter-preview`
+   - include/exclude keyword matching over article title+content
 
 ## Planned Next Moves
 
-1. Add Alembic migrations.
-2. Implement feed fetch + parser pipeline.
-3. Add deduplication service (`canonical_article_id`, fuzzy hash).
-4. Add rule engine and keyword filtering.
-5. Add first plugin (translation or summary).
+1. Build scheduler-driven recurring ingestion.
+2. Add auth and ownership constraints.
+3. Persist filter/rule definitions per user.
+4. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
+5. Add first production plugin (translation or summary) with plugin run history.
 

@@ -17,9 +17,11 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
    - `copy .env.example .env`
 3. Create virtual environment and sync dependencies:
    - `uv sync --dev`
-4. Run API and web app:
+4. Run migrations:
+   - `uv run alembic upgrade head`
+5. Run API and web app:
    - `uv run uvicorn sift.main:app --reload`
-5. Open:
+6. Open:
    - `http://127.0.0.1:8000`
 
 ## Dev Commands
@@ -28,6 +30,7 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 - Format: `uv run ruff format .`
 - Tests: `uv run pytest`
 - Type check: `uv run mypy src`
+- New migration: `uv run alembic revision --autogenerate -m "your message"`
 
 ## Docker (App + Worker + Scheduler + Postgres + Redis)
 
@@ -37,6 +40,13 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 
 Plugins should implement the `ArticlePlugin` protocol in `src/sift/plugins/base.py`.
 Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
+
+## API Notes (Current)
+
+- List feeds: `GET /api/v1/feeds`
+- Create feed: `POST /api/v1/feeds`
+- Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`
+- Keyword filter preview: `POST /api/v1/articles/filter-preview`
 
 ## Long-Term Project Memory
 

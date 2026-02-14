@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import UUID, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
@@ -8,7 +8,7 @@ from sift.db.base import Base
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TimestampMixin:
@@ -25,6 +25,10 @@ class Feed(TimestampMixin, Base):
     site_url: Mapped[str | None] = mapped_column(String(1000))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     fetch_interval_minutes: Mapped[int] = mapped_column(Integer, default=15)
+    etag: Mapped[str | None] = mapped_column(String(512))
+    last_modified: Mapped[str | None] = mapped_column(String(512))
+    last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_fetch_error: Mapped[str | None] = mapped_column(String(1000))
 
 
 class Subscription(TimestampMixin, Base):
@@ -38,9 +42,11 @@ class Subscription(TimestampMixin, Base):
 
 class RawEntry(TimestampMixin, Base):
     __tablename__ = "raw_entries"
+    __table_args__ = (UniqueConstraint("feed_id", "source_id", name="uq_raw_entry_feed_source"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     feed_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("feeds.id", ondelete="CASCADE"), index=True)
+    source_id: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
     source_guid: Mapped[str | None] = mapped_column(String(1024), index=True)
     source_url: Mapped[str | None] = mapped_column(String(2000), index=True)
     payload: Mapped[str] = mapped_column(Text, nullable=False)
@@ -48,9 +54,11 @@ class RawEntry(TimestampMixin, Base):
 
 class Article(TimestampMixin, Base):
     __tablename__ = "articles"
+    __table_args__ = (UniqueConstraint("feed_id", "source_id", name="uq_article_feed_source"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     feed_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("feeds.id", ondelete="SET NULL"), nullable=True, index=True)
+    source_id: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
     canonical_url: Mapped[str | None] = mapped_column(String(2000), index=True)
     title: Mapped[str] = mapped_column(String(1000), nullable=False)
     content_text: Mapped[str] = mapped_column(Text, default="")
