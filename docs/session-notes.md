@@ -81,19 +81,34 @@
   - Added folders API (`GET/POST/PATCH/DELETE /api/v1/folders`)
   - Added feed folder assignment endpoint (`PATCH /api/v1/feeds/{feed_id}/folder`)
   - Added folder service tests (`tests/test_folder_service.py`)
+- Implemented development seed bootstrap:
+  - Added config-driven dev seeding options in `src/sift/config.py`
+  - Added startup seed flow in `src/sift/main.py`
+  - Added seed service (`src/sift/services/dev_seed_service.py`) to:
+    - create default local dev user
+    - import OPML feed folders/feeds
+    - map Inoreader `Monitoring feeds` entries to keyword streams
+  - Added default seed OPML file: `dev-data/inoreader-default.opml`
+  - Added seed parsing and idempotency tests (`tests/test_dev_seed_service.py`)
+  - Enabled dev seed defaults in Docker and devcontainer app setup
+- Hardened dev seed data privacy:
+  - Switched default local seed path to `dev-data/local-seed.opml` (gitignored)
+  - Added committed sanitized sample `dev-data/public-sample.opml`
+  - Added `dev-data/README.md` with local/public seed-file guidance
+  - Added gitignore entries for personal OPML filenames
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (folder tests added)
+  - `python -m pytest` passed (dev seed tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB (through latest migration)
   - `docker compose -f .devcontainer/docker-compose.yml config` passed
 
 ## Current Priority Plan
 
-1. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Explore vector database integration as plugin capability for semantic matching/classification.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Explore vector database integration as plugin capability for semantic matching/classification.
+4. Add scheduler observability metrics (queue depth, success/failure, ingest latency) after core features.
 
 ## Deferred Items
 

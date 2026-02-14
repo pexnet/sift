@@ -31,6 +31,12 @@ For day-to-day development, use the Dev Container stack in `.devcontainer/`:
 6. `redis`: Redis 8
 7. `traefik`: local edge router to simplify service access (`http://sift.localhost`)
 
+## Development Seed Bootstrap
+
+- Optional development-only bootstrap runs at API startup when `SIFT_DEV_SEED_ENABLED=true`.
+- Bootstraps a local default account and imports OPML-based sample data.
+- Inoreader `Monitoring feeds` OPML folder is mapped to keyword streams instead of RSS subscriptions.
+
 ## Database Lifecycle
 
 - Migrations are managed with Alembic.
@@ -131,10 +137,10 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Add scheduler and ingest observability (metrics + structured logs).
-2. Add stream ranking/prioritization and rule evaluation metrics.
-3. Add classifier run persistence and model/version tracking for traceability.
-4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+1. Add stream ranking/prioritization and rule evaluation metrics.
+2. Add classifier run persistence and model/version tracking for traceability.
+3. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+4. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 

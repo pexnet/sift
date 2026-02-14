@@ -53,6 +53,23 @@ Primary URLs:
 - App direct: `http://localhost:8000`
 - Traefik dashboard: `http://localhost:8081`
 
+Default development seed behavior (enabled in Docker/devcontainer app service):
+
+- Creates default local user:
+  - email: `dev@sift.local`
+  - password: `devpassword123!`
+- Loads seed OPML from `dev-data/local-seed.opml` (gitignored local file).
+- Falls back to committed sanitized sample `dev-data/public-sample.opml` if local file is missing.
+- Imports normal OPML entries as feeds (+ folders).
+- Imports Inoreader `Monitoring feeds` entries as keyword streams.
+- Seeding is idempotent (safe to run on each app start).
+
+To use your personal OPML locally:
+
+1. Copy your OPML to `dev-data/local-seed.opml`.
+2. Start the stack.
+3. Your personal file stays out of git.
+
 ## Local VS Code Overrides (Not in Git)
 
 Use personal local files for machine-specific VS Code setup:
@@ -144,6 +161,31 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Folders are user-scoped and support ordering via `sort_order`.
 - Feeds can be assigned or unassigned from folders through `PATCH /api/v1/feeds/{feed_id}/folder`.
 - Deleting a folder unassigns its feeds.
+
+## Dev Seed Settings
+
+- `SIFT_DEV_SEED_ENABLED`
+- `SIFT_DEV_SEED_DEFAULT_USER_EMAIL`
+- `SIFT_DEV_SEED_DEFAULT_USER_PASSWORD`
+- `SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME`
+- `SIFT_DEV_SEED_OPML_PATH`
+- `SIFT_DEV_SEED_MONITORING_FOLDER_NAME`
+
+## Run Locally Now
+
+Recommended:
+
+1. `docker compose up --build`
+2. Open `http://localhost:8000/login`
+3. Login with:
+   - email: `dev@sift.local`
+   - password: `devpassword123!`
+
+Dev Container:
+
+1. Reopen in container.
+2. Wait for services to start (`app`, `worker`, `scheduler`, `db`, `redis`, `traefik`).
+3. Open `http://sift.localhost/login` and login with the same dev user.
 
 ## Background Processing
 

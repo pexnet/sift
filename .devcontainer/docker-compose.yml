@@ -18,6 +18,11 @@ services:
       SIFT_SCHEDULER_BATCH_SIZE: "200"
       SIFT_AUTH_COOKIE_SECURE: "false"
       SIFT_AUTO_CREATE_TABLES: "false"
+      SIFT_DEV_SEED_ENABLED: "true"
+      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.local
+      SIFT_DEV_SEED_DEFAULT_USER_PASSWORD: devpassword123!
+      SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME: Dev User
+      SIFT_DEV_SEED_OPML_PATH: /workspaces/sift/dev-data/local-seed.opml
     depends_on:
       db:
         condition: service_healthy
@@ -42,6 +47,11 @@ services:
       SIFT_SCHEDULER_BATCH_SIZE: "200"
       SIFT_AUTH_COOKIE_SECURE: "false"
       SIFT_AUTO_CREATE_TABLES: "false"
+      SIFT_DEV_SEED_ENABLED: "true"
+      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.local
+      SIFT_DEV_SEED_DEFAULT_USER_PASSWORD: devpassword123!
+      SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME: Dev User
+      SIFT_DEV_SEED_OPML_PATH: /app/dev-data/local-seed.opml
     labels:
       traefik.enable: "true"
       traefik.http.routers.sift.rule: Host(`sift.localhost`)

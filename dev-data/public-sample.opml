@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Sift Public Seed Sample</title>
+  </head>
+  <body>
+    <outline text="Security" title="Security">
+      <outline
+        text="Unit42"
+        title="Unit42"
+        type="rss"
+        xmlUrl="https://feeds.feedburner.com/Unit42"
+        htmlUrl="https://unit42.paloaltonetworks.com/"
+      />
+      <outline
+        text="SANS ISC"
+        title="SANS ISC"
+        type="rss"
+        xmlUrl="https://isc.sans.edu/rssfeed.xml"
+        htmlUrl="https://isc.sans.edu/"
+      />
+    </outline>
+    <outline text="Monitoring feeds" title="Monitoring feeds">
+      <outline
+        text="network detection and response"
+        title="network detection and response"
+        type="rss"
+        xmlUrl="keyword-monitoring-public-001"
+        htmlUrl="https://www.inoreader.com/feed/keyword-monitoring-public-001"
+      />
+      <outline
+        text="microsoft AND corelight"
+        title="microsoft AND corelight"
+        type="rss"
+        xmlUrl="keyword-monitoring-public-002"
+        htmlUrl="https://www.inoreader.com/feed/keyword-monitoring-public-002"
+      />
+    </outline>
+  </body>
+</opml>

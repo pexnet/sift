@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     auth_session_ttl_days: int = 30
     auth_cookie_secure: bool = False
     auto_create_tables: bool = False
+    dev_seed_enabled: bool = False
+    dev_seed_default_user_email: str = "dev@sift.local"
+    dev_seed_default_user_password: str = "devpassword123!"
+    dev_seed_default_user_display_name: str = "Dev User"
+    dev_seed_opml_path: str | None = None
+    dev_seed_monitoring_folder_name: str = "Monitoring feeds"
     plugin_paths: list[str] = Field(
         default_factory=lambda: [
             "sift.plugins.builtin.noop:NoopPlugin",

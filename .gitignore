@@ -210,6 +210,8 @@ __marimo__/
 *.sqlite3
 *.db
 .DS_Store
+dev-data/inoreader-default.opml
+dev-data/local-seed.opml
 
 # Local VS Code developer overrides (personal machine only)
 .vscode/extensions.local.json

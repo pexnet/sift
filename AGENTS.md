@@ -104,13 +104,19 @@ This file stores persistent project context for future Codex sessions.
 - Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
 - Feed folders are implemented (per-user folders + feed-to-folder assignment endpoint).
+- Development seed bootstrap is implemented:
+  - creates default local user when enabled
+  - imports OPML feed folders/feeds
+  - maps Inoreader monitoring feeds to keyword streams
+  - personal OPML should live in `dev-data/local-seed.opml` (gitignored)
+  - keep only sanitized seed sample committed (`dev-data/public-sample.opml`)
 
 ## Next Delivery Sequence
 
-1. Add scheduler and ingestion observability (metrics, latency, failures).
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
 
 ## Feature Notes
