@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
@@ -80,4 +81,23 @@ class UserOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class OpmlImportEntryResult(BaseModel):
+    url: str
+    title: str
+    status: Literal["created", "skipped_existing", "skipped_conflict", "invalid", "duplicate_in_file"]
+    reason: str | None = None
+
+
+class OpmlImportResult(BaseModel):
+    total_entries: int = 0
+    unique_urls: int = 0
+    created_count: int = 0
+    skipped_existing_count: int = 0
+    skipped_conflict_count: int = 0
+    invalid_count: int = 0
+    duplicate_in_file_count: int = 0
+    results: list[OpmlImportEntryResult] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
 

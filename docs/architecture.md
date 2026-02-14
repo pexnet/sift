@@ -70,26 +70,33 @@ Design goals:
 
 ## Implemented Service Slices
 
-1. Ingestion service:
+1. OPML import:
+   - endpoint: `POST /api/v1/imports/opml`
+   - flow: parse OPML -> normalize URLs -> per-user dedupe -> import report
+2. Ingestion service:
    - endpoint: `POST /api/v1/feeds/{feed_id}/ingest`
    - flow: fetch -> parse -> dedupe -> persist raw/article -> plugin hook
-2. Keyword filter preview:
+3. Keyword filter preview:
    - endpoint: `POST /api/v1/articles/filter-preview`
    - include/exclude keyword matching over article title+content
-3. Scheduler-driven background ingestion:
+4. Scheduler-driven background ingestion:
    - scheduler polls active feeds and enqueues due jobs
    - worker executes ingest jobs via RQ
    - queue dedupe by stable job id (`ingest:<feed_id>`)
-4. Authentication and account foundation:
+5. Authentication and account foundation:
    - local account registration/login/logout/me endpoints
    - provider-ready identity schema to support Google/Azure/Apple later
    - feed/article endpoints now require authenticated user context
 
 ## Planned Next Moves
 
-1. Add first OIDC provider integration (Google) on top of `auth_identities`.
-2. Persist filter/rule definitions per user.
+1. Implement persisted rule engine per user and apply rules during ingest.
+2. Implement keyword streams as virtual monitoring feeds backed by saved expressions.
 3. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
-4. Add first production plugin (translation or summary) with plugin run history.
+4. Add classifier plugin framework for advanced stream classification (LLM/ML/rule classifiers).
 5. Add scheduler and ingest observability (metrics + structured logs).
+
+## Deferred
+
+1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
 

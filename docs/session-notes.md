@@ -32,19 +32,28 @@
   - Added auth service tests
 - Current limitation:
   - `feeds.url` remains globally unique; cross-account shared-feed model is not yet implemented.
+- Implemented OPML import:
+  - Added OPML parser/import service in `src/sift/services/opml_service.py`
+  - Added authenticated upload endpoint: `POST /api/v1/imports/opml`
+  - Added detailed import report (created/skipped/invalid/duplicate)
+  - Added OPML parser/import tests
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (auth tests added)
+  - `python -m pytest` passed (OPML tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
 
 ## Current Priority Plan
 
-1. Add external OIDC provider integration (Google first) using `auth_identities`.
-2. Persist filter/rule definitions (`include/exclude`, source, language) and apply them at ingest time.
+1. Persist filter/rule definitions (`include/exclude`, source, language) and apply them at ingest time.
+2. Implement keyword streams as saved monitoring feeds (search expressions per user).
 3. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
-4. Add first real plugin (translation or LLM summary) with persisted plugin run logs.
+4. Add classifier plugin foundation for advanced stream classification (LLM/ML/rule plugins).
 5. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
+
+## Deferred Items
+
+1. External OIDC provider integration (Google first, then Azure/Apple) using `auth_identities`.
 
 ## Working Notes
 

@@ -41,6 +41,7 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
 - `POST /api/v1/articles/filter-preview`
+- `POST /api/v1/imports/opml`
 
 ## Queue/Scheduler Status
 
@@ -63,6 +64,7 @@ This file stores persistent project context for future Codex sessions.
   - Argon2 password hashing
   - cookie sessions backed by `user_sessions`
   - schema ready for external providers (Google/Azure/Apple/OIDC)
+  - OIDC provider implementation is intentionally deferred; keep schema/provider abstractions ready.
 - Feed and article APIs now require authenticated sessions.
 - Feed ownership is tracked via `feeds.owner_id`.
 - Current limitation: feed URL is globally unique until shared-feed/subscription model is revisited.
@@ -74,7 +76,26 @@ This file stores persistent project context for future Codex sessions.
   - run plugin ingest hook
 - Initial dedupe exists at feed+source-id level.
 - Keyword include/exclude preview exists via API.
+- OPML import endpoint exists with per-user dedupe/import report (`POST /api/v1/imports/opml`).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
+
+## Next Delivery Sequence
+
+1. Implement persisted rule engine (user rules applied during ingest).
+2. Implement keyword streams as virtual monitoring feeds (saved search expressions).
+3. Extend streams with classifier plugins (LLM/ML/rule classifiers with confidence + reasoning).
+4. Add cross-feed canonical dedup improvements and scoring.
+5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
+
+## Feature Notes
+
+- Keyword streams:
+  - many streams per user should be supported
+  - stream definitions should be saved and queryable like feeds
+  - stream membership should eventually support both deterministic rules and classifier outputs
+- Classifier plugin direction:
+  - implement as plugin hooks, not hard-coded core logic
+  - support provider/model versioning, score/confidence, and failure isolation
 
 ## Planning Workflow For Future Sessions
 

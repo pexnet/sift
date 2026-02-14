@@ -53,6 +53,7 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Create feed: `POST /api/v1/feeds`
 - Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`
 - Keyword filter preview: `POST /api/v1/articles/filter-preview`
+- Import OPML: `POST /api/v1/imports/opml` (multipart file upload)
 
 ## Authentication and Identity Providers
 
