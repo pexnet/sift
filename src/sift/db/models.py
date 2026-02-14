@@ -16,11 +16,23 @@ class TimestampMixin:
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
 
+class FeedFolder(TimestampMixin, Base):
+    __tablename__ = "feed_folders"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_feed_folders_user_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000))
+    sort_order: Mapped[int] = mapped_column(Integer, default=100, index=True)
+
+
 class Feed(TimestampMixin, Base):
     __tablename__ = "feeds"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    folder_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("feed_folders.id", ondelete="SET NULL"), index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str] = mapped_column(String(1000), nullable=False, unique=True, index=True)
     site_url: Mapped[str | None] = mapped_column(String(1000))

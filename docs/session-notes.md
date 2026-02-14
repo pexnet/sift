@@ -75,20 +75,25 @@
   - Integrated canonical duplicate lookup into ingestion flow with confidence scoring
   - Added `canonical_duplicate_count` in ingest result payload
   - Added dedup unit tests in `tests/test_ingestion_service.py`
+- Implemented feed folders:
+  - Added folder schema + migration `20260214_0007_feed_folders` (`feed_folders` + `feeds.folder_id`)
+  - Added folder service (`src/sift/services/folder_service.py`) with user-scoped CRUD
+  - Added folders API (`GET/POST/PATCH/DELETE /api/v1/folders`)
+  - Added feed folder assignment endpoint (`PATCH /api/v1/feeds/{feed_id}/folder`)
+  - Added folder service tests (`tests/test_folder_service.py`)
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (dedup tests added; 30 total)
+  - `python -m pytest` passed (folder tests added)
   - `python -m mypy src` passed
-  - `python -m alembic upgrade head` passed against a temporary SQLite DB (through `20260214_0006`)
+  - `python -m alembic upgrade head` passed against a temporary SQLite DB (through latest migration)
   - `docker compose -f .devcontainer/docker-compose.yml config` passed
 
 ## Current Priority Plan
 
-1. Add feed folders (per-user folders and feed organization).
-2. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
-3. Add stream-level ranking and prioritization controls.
-4. Add classifier run persistence and model/version tracking.
-5. Explore vector database integration as plugin capability for semantic matching/classification.
+1. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Explore vector database integration as plugin capability for semantic matching/classification.
 
 ## Deferred Items
 

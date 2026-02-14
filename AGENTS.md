@@ -56,6 +56,11 @@ This file stores persistent project context for future Codex sessions.
 - `GET /api/v1/feeds`
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
+- `PATCH /api/v1/feeds/{feed_id}/folder`
+- `GET /api/v1/folders`
+- `POST /api/v1/folders`
+- `PATCH /api/v1/folders/{folder_id}`
+- `DELETE /api/v1/folders/{folder_id}`
 - `POST /api/v1/articles/filter-preview`
 - `POST /api/v1/imports/opml`
 
@@ -98,16 +103,15 @@ This file stores persistent project context for future Codex sessions.
 - Stream classifier foundation is implemented (rules/classifier/hybrid modes + plugin confidence threshold).
 - Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
-- Feed folders are not implemented yet (planned as per-user organization feature).
+- Feed folders are implemented (per-user folders + feed-to-folder assignment endpoint).
 
 ## Next Delivery Sequence
 
-1. Add feed folders (per-user folder objects and feed-to-folder mapping).
-2. Add scheduler and ingestion observability (metrics, latency, failures).
-3. Add stream-level ranking and prioritization controls.
-4. Add classifier run persistence and model/version tracking.
-5. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-6. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
+1. Add scheduler and ingestion observability (metrics, latency, failures).
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
 
 ## Feature Notes
 

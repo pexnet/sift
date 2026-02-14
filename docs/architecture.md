@@ -84,9 +84,6 @@ Design goals:
 
 ## Planned Model Extensions
 
-- feed folders (not implemented yet):
-  - `feed_folders`: per-user folder objects
-  - `feed_folder_items` or `feeds.folder_id`: feed organization mapping
 - vector storage (optional, plugin-driven):
   - keep embeddings/index references outside core ingest contract
   - expose through plugin interfaces for semantic matching/classification
@@ -127,14 +124,17 @@ Design goals:
    - normalize article URLs (tracking-parameter stripping + stable query ordering)
    - compute content fingerprint hash over normalized title/content text
    - assign `duplicate_of_id` and confidence when canonical duplicate candidates are found
+10. Feed folders:
+   - per-user folder table (`feed_folders`) with stable ordering metadata
+   - feed-to-folder mapping through nullable `feeds.folder_id`
+   - authenticated folder CRUD API and feed folder assignment endpoint
 
 ## Planned Next Moves
 
-1. Add feed folders (per-user folder objects and feed mappings).
-2. Add scheduler and ingest observability (metrics + structured logs).
-3. Add stream ranking/prioritization and rule evaluation metrics.
-4. Add classifier run persistence and model/version tracking for traceability.
-5. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+1. Add scheduler and ingest observability (metrics + structured logs).
+2. Add stream ranking/prioritization and rule evaluation metrics.
+3. Add classifier run persistence and model/version tracking for traceability.
+4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
 
 ## Deferred
 

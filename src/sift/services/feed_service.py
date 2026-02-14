@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Feed
+from sift.db.models import Feed, FeedFolder
 from sift.domain.schemas import FeedCreate
 
 
@@ -46,10 +46,38 @@ class FeedService:
         result = await session.execute(query)
         return result.scalars().all()
 
+    async def assign_folder(
+        self,
+        session: AsyncSession,
+        *,
+        feed: Feed,
+        user_id: UUID,
+        folder_id: UUID | None,
+    ) -> Feed:
+        if folder_id is None:
+            feed.folder_id = None
+            await session.commit()
+            await session.refresh(feed)
+            return feed
+
+        folder_query = select(FeedFolder.id).where(FeedFolder.id == folder_id, FeedFolder.user_id == user_id)
+        folder_result = await session.execute(folder_query)
+        if folder_result.scalar_one_or_none() is None:
+            raise FeedFolderNotFoundError(f"Folder {folder_id} not found")
+
+        feed.folder_id = folder_id
+        await session.commit()
+        await session.refresh(feed)
+        return feed
+
 
 feed_service = FeedService()
 
 
 class FeedAlreadyExistsError(Exception):
+    pass
+
+
+class FeedFolderNotFoundError(Exception):
     pass
 

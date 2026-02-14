@@ -14,6 +14,7 @@ class FeedCreate(BaseModel):
 class FeedOut(BaseModel):
     id: UUID
     owner_id: UUID | None
+    folder_id: UUID | None
     title: str
     url: str
     site_url: str | None
@@ -39,6 +40,34 @@ class FeedIngestResult(BaseModel):
     stream_match_count: int = 0
     plugin_processed_count: int = 0
     errors: list[str] = Field(default_factory=list)
+
+
+class FeedFolderCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    sort_order: int = Field(default=100, ge=0, le=10000)
+
+
+class FeedFolderUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    sort_order: int | None = Field(default=None, ge=0, le=10000)
+
+
+class FeedFolderOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    name: str
+    description: str | None
+    sort_order: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class FeedFolderAssignmentUpdate(BaseModel):
+    folder_id: UUID | None
 
 
 class ArticleOut(BaseModel):

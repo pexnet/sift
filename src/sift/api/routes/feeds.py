@@ -7,8 +7,8 @@ from sift.api.deps.auth import get_current_user
 from sift.core.runtime import get_plugin_manager
 from sift.db.models import User
 from sift.db.session import get_db_session
-from sift.domain.schemas import FeedCreate, FeedIngestResult, FeedOut
-from sift.services.feed_service import FeedAlreadyExistsError, feed_service
+from sift.domain.schemas import FeedCreate, FeedFolderAssignmentUpdate, FeedIngestResult, FeedOut
+from sift.services.feed_service import FeedAlreadyExistsError, FeedFolderNotFoundError, feed_service
 from sift.services.ingestion_service import FeedNotFoundError, ingestion_service
 
 router = APIRouter()
@@ -50,4 +50,28 @@ async def ingest_feed(
         return await ingestion_service.ingest_feed(session=session, feed_id=feed.id, plugin_manager=get_plugin_manager())
     except FeedNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.patch("/{feed_id}/folder", response_model=FeedOut)
+async def assign_feed_folder(
+    feed_id: UUID,
+    payload: FeedFolderAssignmentUpdate,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> FeedOut:
+    feed = await feed_service.get_feed(session=session, feed_id=feed_id, user_id=current_user.id)
+    if feed is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Feed {feed_id} not found")
+
+    try:
+        updated = await feed_service.assign_folder(
+            session=session,
+            feed=feed,
+            user_id=current_user.id,
+            folder_id=payload.folder_id,
+        )
+    except FeedFolderNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    return FeedOut.model_validate(updated)
 

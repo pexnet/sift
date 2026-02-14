@@ -107,6 +107,11 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - List feeds: `GET /api/v1/feeds`
 - Create feed: `POST /api/v1/feeds`
 - Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`
+- Assign/unassign feed folder: `PATCH /api/v1/feeds/{feed_id}/folder`
+- List folders: `GET /api/v1/folders`
+- Create folder: `POST /api/v1/folders`
+- Update folder: `PATCH /api/v1/folders/{folder_id}`
+- Delete folder: `DELETE /api/v1/folders/{folder_id}`
 - Keyword filter preview: `POST /api/v1/articles/filter-preview`
 - Import OPML: `POST /api/v1/imports/opml` (multipart file upload)
 
@@ -133,6 +138,12 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
   - content fingerprint (hash of normalized title/content)
 - Cross-feed duplicates are linked via `articles.duplicate_of_id` with `dedup_confidence`.
 - Ingest response includes `canonical_duplicate_count`.
+
+## Feed Folders Foundation
+
+- Folders are user-scoped and support ordering via `sort_order`.
+- Feeds can be assigned or unassigned from folders through `PATCH /api/v1/feeds/{feed_id}/folder`.
+- Deleting a folder unassigns its feeds.
 
 ## Background Processing
 
