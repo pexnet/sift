@@ -14,8 +14,8 @@ This keeps deployment simple while preserving clean seams for future service ext
 ## Runtime Components
 
 1. `app`: FastAPI API + server-rendered UI (Jinja2 + HTMX)
-2. `worker`: RQ worker for async and plugin tasks
-3. `scheduler`: periodic feed polling and maintenance jobs
+2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`)
+3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`)
 4. `db`: PostgreSQL (SQLite default for local bootstrap)
 5. `redis`: queue broker
 
@@ -71,12 +71,16 @@ Design goals:
 2. Keyword filter preview:
    - endpoint: `POST /api/v1/articles/filter-preview`
    - include/exclude keyword matching over article title+content
+3. Scheduler-driven background ingestion:
+   - scheduler polls active feeds and enqueues due jobs
+   - worker executes ingest jobs via RQ
+   - queue dedupe by stable job id (`ingest:<feed_id>`)
 
 ## Planned Next Moves
 
-1. Build scheduler-driven recurring ingestion.
-2. Add auth and ownership constraints.
-3. Persist filter/rule definitions per user.
-4. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
-5. Add first production plugin (translation or summary) with plugin run history.
+1. Add auth and ownership constraints.
+2. Persist filter/rule definitions per user.
+3. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
+4. Add first production plugin (translation or summary) with plugin run history.
+5. Add scheduler and ingest observability (metrics + structured logs).
 

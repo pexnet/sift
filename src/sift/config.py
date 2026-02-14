@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     port: int = 8000
     database_url: str = "sqlite+aiosqlite:///./sift.db"
     redis_url: str = "redis://localhost:6379/0"
+    ingest_queue_name: str = "ingest"
+    scheduler_poll_interval_seconds: int = 30
+    scheduler_batch_size: int = 200
     auto_create_tables: bool = False
     plugin_paths: list[str] = Field(default_factory=lambda: ["sift.plugins.builtin.noop:NoopPlugin"])
 

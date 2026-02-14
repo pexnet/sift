@@ -20,6 +20,11 @@ class FeedService:
         await session.refresh(feed)
         return feed
 
+    async def list_active_feeds(self, session: AsyncSession, limit: int = 500) -> Sequence[Feed]:
+        query = select(Feed).where(Feed.is_active.is_(True)).order_by(Feed.updated_at.desc()).limit(limit)
+        result = await session.execute(query)
+        return result.scalars().all()
+
 
 feed_service = FeedService()
 

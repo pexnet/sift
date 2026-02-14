@@ -38,6 +38,20 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/feeds/{feed_id}/ingest`
 - `POST /api/v1/articles/filter-preview`
 
+## Queue/Scheduler Status
+
+- Implemented:
+  - Redis/RQ queue wiring (`src/sift/tasks/queueing.py`)
+  - Ingest job wrapper (`src/sift/tasks/jobs.py`)
+  - Scheduler loop that enqueues due feeds by `fetch_interval_minutes`
+  - Worker process consuming ingest queue
+- Config controls:
+  - `SIFT_INGEST_QUEUE_NAME`
+  - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
+  - `SIFT_SCHEDULER_BATCH_SIZE`
+- Dedupe guard:
+  - Scheduler uses stable job IDs (`ingest:<feed_id>`) and avoids duplicate active jobs.
+
 ## Current Implementation Status
 
 - Feed ingestion pipeline exists:
@@ -48,7 +62,7 @@ This file stores persistent project context for future Codex sessions.
   - run plugin ingest hook
 - Initial dedupe exists at feed+source-id level.
 - Keyword include/exclude preview exists via API.
-- Scheduler/worker are still stubs and need orchestration logic.
+- Scheduler and worker orchestration are now implemented for recurring ingestion.
 
 ## Planning Workflow For Future Sessions
 

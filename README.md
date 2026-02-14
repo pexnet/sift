@@ -31,6 +31,8 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 - Tests: `uv run pytest`
 - Type check: `uv run mypy src`
 - New migration: `uv run alembic revision --autogenerate -m "your message"`
+- Run worker: `uv run python -m sift.tasks.worker`
+- Run scheduler: `uv run python -m sift.tasks.scheduler`
 
 ## Docker (App + Worker + Scheduler + Postgres + Redis)
 
@@ -47,6 +49,15 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Create feed: `POST /api/v1/feeds`
 - Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`
 - Keyword filter preview: `POST /api/v1/articles/filter-preview`
+
+## Background Processing
+
+- Scheduler polls active feeds and enqueues due ingest jobs in Redis/RQ.
+- Worker consumes queue jobs and runs feed ingestion.
+- Queue and scheduler behavior are configurable through:
+  - `SIFT_INGEST_QUEUE_NAME`
+  - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
+  - `SIFT_SCHEDULER_BATCH_SIZE`
 
 ## Long-Term Project Memory
 

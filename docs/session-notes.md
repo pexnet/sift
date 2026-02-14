@@ -15,19 +15,25 @@
 - Added keyword filter service and API endpoint: `POST /api/v1/articles/filter-preview`.
 - Set `SIFT_AUTO_CREATE_TABLES=false` by default to favor migration-driven schema changes.
 - Added tests for ingestion helpers and keyword filtering.
+- Implemented recurring ingestion scheduling:
+  - RQ queue helpers in `src/sift/tasks/queueing.py`
+  - Feed ingest job wrapper in `src/sift/tasks/jobs.py`
+  - Scheduler due-feed enqueue loop in `src/sift/tasks/scheduler.py`
+  - Worker startup for ingest queue in `src/sift/tasks/worker.py`
+- Added scheduler due-feed tests (`tests/test_scheduler.py`).
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (7 tests)
+  - `python -m pytest` passed (11 tests)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
 
 ## Current Priority Plan
 
-1. Add scheduler job orchestration for periodic feed ingestion per `fetch_interval_minutes`.
-2. Add user/auth foundation and enforce feed/subscription ownership.
-3. Add rule persistence (`include/exclude`, source, language) and apply rules at ingest time.
-4. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
-5. Add first real plugin (translation or LLM summary) with persisted plugin run logs.
+1. Add user/auth foundation and enforce feed/subscription ownership.
+2. Persist filter/rule definitions (`include/exclude`, source, language) and apply them at ingest time.
+3. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
+4. Add first real plugin (translation or LLM summary) with persisted plugin run logs.
+5. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
 
 ## Working Notes
 
