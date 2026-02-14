@@ -107,6 +107,7 @@
     - `PATCH /web/actions/article/{article_id}/state`
     - `POST /web/actions/article/bulk-state`
   - Added essential keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
+  - Marked as transitional and scheduled for removal in the React big-bang cutover.
 - Added article + navigation API surface for UI data flow:
   - `GET /api/v1/articles`
   - `GET /api/v1/articles/{article_id}`
@@ -126,8 +127,8 @@
 
 ## Current Priority Plan
 
-1. Build React + MUI reader workspace v1 with responsive layouts, saved-view refinements, and accessibility hardening.
-2. Implement a modern responsive React + MUI reader workspace for `/app` using TanStack Query + Router.
+1. Execute big-bang frontend rewrite: ship complete React + MUI `/app` workspace cutover with TanStack Router + Query, parity for existing reader workflows, and polished responsive/loading/error/empty/accessibility states.
+2. Remove legacy HTMX/Jinja workspace implementation after cutover (`/web/partials/*`, `/web/actions/*`, workspace templates/static behavior).
 3. Define and implement dashboard card UI v2 in React + MUI.
 4. Add stream-level ranking and prioritization controls.
 5. Add classifier run persistence and model/version tracking.

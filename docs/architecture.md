@@ -21,6 +21,8 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 ## Web UI Architecture (React + MUI Workspace)
 
+Frontend direction is a big-bang rewrite: replace the current HTMX/Jinja `/app` workspace with a complete React + MUI implementation in one cutover release.
+
 Reader UX target is a modern, responsive React workspace built with MUI components:
 
 1. Left navigation pane:
@@ -158,9 +160,17 @@ Design goals:
    - feed-to-folder mapping through nullable `feeds.folder_id`
    - authenticated folder CRUD API and feed folder assignment endpoint
 
+## Frontend Cutover Plan (Big-Bang Rewrite)
+
+1. Build a complete React + MUI `/app` workspace with feature parity for navigation tree, article list, reader pane, keyboard shortcuts, and user preferences.
+2. Use TanStack Router for URL-driven state and TanStack Query for API caching/mutations/invalidation.
+3. Gate release on parity + UX quality: responsive behavior, loading/error/empty states, and accessibility checks.
+4. Remove HTMX/Jinja `/app` implementation after cutover, including partial/action routes, templates, and legacy workspace JS/CSS behavior that is no longer needed.
+5. Keep backend API routes (`/api/v1/navigation`, `/api/v1/articles`, article state endpoints) as the stable UI data contract.
+
 ## Planned Next Moves
 
-1. Implement the React + MUI reader workspace with responsive behavior and production-ready loading/error/empty states.
+1. Execute full React + MUI `/app` cutover (big-bang rewrite) and retire the HTMX/Jinja workspace implementation.
 2. Add stream ranking/prioritization and rule evaluation metrics.
 3. Add classifier run persistence and model/version tracking for traceability.
 4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
