@@ -14,6 +14,7 @@ from sift.domain.schemas import FeedIngestResult
 from sift.plugins.base import ArticleContext
 from sift.plugins.manager import PluginManager
 from sift.services.rule_service import rule_service
+from sift.services.stream_service import stream_service
 
 
 class FeedNotFoundError(Exception):
@@ -134,7 +135,14 @@ class IngestionService:
         parsed = feedparser.parse(response.content)
         entries = parsed.entries if hasattr(parsed, "entries") else []
         result.fetched_count = len(entries)
-        active_rules = await rule_service.list_active_compiled_rules(session=session, user_id=feed.owner_id) if feed.owner_id else []
+        active_rules = (
+            await rule_service.list_active_compiled_rules(session=session, user_id=feed.owner_id) if feed.owner_id else []
+        )
+        active_streams = (
+            await stream_service.list_active_compiled_streams(session=session, user_id=feed.owner_id)
+            if feed.owner_id
+            else []
+        )
 
         source_ids = [_make_source_id(entry) for entry in entries]
         if source_ids:
@@ -192,6 +200,19 @@ class IngestionService:
                 published_at=published_at,
             )
             session.add(article)
+            await session.flush()
+
+            matching_stream_ids = stream_service.collect_matching_stream_ids(
+                active_streams,
+                title=article.title,
+                content_text=article.content_text,
+                source_url=article.canonical_url,
+                language=article.language,
+            )
+            if matching_stream_ids:
+                session.add_all(stream_service.make_match_rows(matching_stream_ids, article.id))
+                result.stream_match_count += len(matching_stream_ids)
+
             result.inserted_count += 1
 
         feed.last_fetch_error = None

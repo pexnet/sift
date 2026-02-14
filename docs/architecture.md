@@ -91,14 +91,18 @@ Design goals:
    - endpoints: `GET/POST/PATCH/DELETE /api/v1/rules`
    - per-user rules with priority and criteria (include/exclude keywords, source, language)
    - rules applied during ingestion before article persistence
+7. Keyword streams:
+   - endpoints: `GET/POST/PATCH/DELETE /api/v1/streams`, `GET /api/v1/streams/{stream_id}/articles`
+   - per-user saved stream expressions (include/exclude keywords, source, language)
+   - stream memberships recorded for matching ingested articles
 
 ## Planned Next Moves
 
-1. Implement keyword streams as virtual monitoring feeds backed by saved expressions.
-2. Add classifier plugin framework for advanced stream classification (LLM/ML/rule classifiers).
-3. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
-4. Add scheduler and ingest observability (metrics + structured logs).
-5. Add stream ranking/prioritization and rule evaluation metrics.
+1. Add classifier plugin framework for advanced stream classification (LLM/ML/rule classifiers).
+2. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
+3. Add scheduler and ingest observability (metrics + structured logs).
+4. Add stream ranking/prioritization and rule evaluation metrics.
+5. Add classifier run persistence and model/version tracking for traceability.
 
 ## Deferred
 

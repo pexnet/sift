@@ -44,19 +44,26 @@
   - Integrated rule evaluation into `ingestion_service` (drops matched items before article insert)
   - Added `filtered_count` to ingestion result payload
   - Added rule service tests
+- Implemented keyword streams as monitoring feeds:
+  - Added `keyword_streams` and `keyword_stream_matches` models + migration `20260214_0004_keyword_streams`
+  - Added streams API (`GET/POST/PATCH/DELETE /api/v1/streams`, `GET /api/v1/streams/{stream_id}/articles`)
+  - Added stream service (`src/sift/services/stream_service.py`) with criteria matching
+  - Integrated stream matching into `ingestion_service` for newly ingested articles
+  - Added `stream_match_count` to ingestion result payload
+  - Added stream service tests
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (rule tests added)
+  - `python -m pytest` passed (stream tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
 
 ## Current Priority Plan
 
-1. Implement keyword streams as saved monitoring feeds (search expressions per user).
-2. Add classifier plugin foundation for advanced stream classification (LLM/ML/rule plugins).
-3. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
-4. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
-5. Add stream-level ranking and prioritization controls.
+1. Add classifier plugin foundation for advanced stream classification (LLM/ML/rule plugins).
+2. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
+3. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
+4. Add stream-level ranking and prioritization controls.
+5. Add classifier run persistence and model/version tracking.
 
 ## Deferred Items
 

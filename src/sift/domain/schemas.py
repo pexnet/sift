@@ -35,6 +35,7 @@ class FeedIngestResult(BaseModel):
     inserted_count: int = 0
     duplicate_count: int = 0
     filtered_count: int = 0
+    stream_match_count: int = 0
     plugin_processed_count: int = 0
     errors: list[str] = Field(default_factory=list)
 
@@ -138,4 +139,46 @@ class IngestRuleOut(BaseModel):
     action: Literal["drop"]
     created_at: datetime
     updated_at: datetime
+
+
+class KeywordStreamCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+    priority: int = Field(default=100, ge=0, le=10000)
+    include_keywords: list[str] = Field(default_factory=list)
+    exclude_keywords: list[str] = Field(default_factory=list)
+    source_contains: str | None = Field(default=None, max_length=1000)
+    language_equals: str | None = Field(default=None, max_length=32)
+
+
+class KeywordStreamUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool | None = None
+    priority: int | None = Field(default=None, ge=0, le=10000)
+    include_keywords: list[str] | None = None
+    exclude_keywords: list[str] | None = None
+    source_contains: str | None = Field(default=None, max_length=1000)
+    language_equals: str | None = Field(default=None, max_length=32)
+
+
+class KeywordStreamOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    name: str
+    description: str | None
+    is_active: bool
+    priority: int
+    include_keywords: list[str]
+    exclude_keywords: list[str]
+    source_contains: str | None
+    language_equals: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class StreamArticleOut(BaseModel):
+    matched_at: datetime
+    article: ArticleOut
 

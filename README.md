@@ -53,6 +53,11 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Create rule: `POST /api/v1/rules`
 - Update rule: `PATCH /api/v1/rules/{rule_id}`
 - Delete rule: `DELETE /api/v1/rules/{rule_id}`
+- List streams: `GET /api/v1/streams`
+- Create stream: `POST /api/v1/streams`
+- Update stream: `PATCH /api/v1/streams/{stream_id}`
+- Delete stream: `DELETE /api/v1/streams/{stream_id}`
+- Stream articles: `GET /api/v1/streams/{stream_id}/articles`
 - List feeds: `GET /api/v1/feeds`
 - Create feed: `POST /api/v1/feeds`
 - Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`

@@ -146,3 +146,29 @@ class IngestRule(TimestampMixin, Base):
     source_contains: Mapped[str | None] = mapped_column(String(1000))
     language_equals: Mapped[str | None] = mapped_column(String(32), index=True)
     action: Mapped[str] = mapped_column(String(32), default="drop", index=True)
+
+
+class KeywordStream(TimestampMixin, Base):
+    __tablename__ = "keyword_streams"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_keyword_streams_user_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
+    include_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    exclude_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    source_contains: Mapped[str | None] = mapped_column(String(1000))
+    language_equals: Mapped[str | None] = mapped_column(String(32), index=True)
+
+
+class KeywordStreamMatch(Base):
+    __tablename__ = "keyword_stream_matches"
+    __table_args__ = (UniqueConstraint("stream_id", "article_id", name="uq_keyword_stream_matches_stream_article"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stream_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("keyword_streams.id", ondelete="CASCADE"), index=True)
+    article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
+    matched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
