@@ -14,6 +14,7 @@ This file stores persistent project context for future Codex sessions.
 - Database-backed ingestion pipeline with SQLAlchemy.
 - Plugin-ready core for enrichment/transformation/integration use cases.
 - UI with React + MUI as the primary frontend stack.
+- Frontend migration strategy is now a full cutover: complete React + MUI rewrite and retire the HTMX/Jinja workspace.
 - Tooling standards: uv + Ruff + Pytest + Mypy.
 - Ruff width: 120 chars.
 - Alembic is the source of truth for schema changes.
@@ -115,6 +116,7 @@ This file stores persistent project context for future Codex sessions.
   - Light/dark theme toggle with local persistence
   - Compact/comfortable density toggle (compact default)
   - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
+  - This workspace is transitional and scheduled for removal during the React big-bang rewrite.
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -124,7 +126,10 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Build the React + MUI reader workspace v1 with responsive layouts and polished loading/error/empty states.
+1. Execute full frontend rewrite and cutover to React + MUI for `/app` (big-bang release):
+   - build complete 3-pane workspace parity + improved loading/error/empty states
+   - use TanStack Router + TanStack Query as required foundations
+   - remove HTMX/Jinja workspace routes, templates, and static behavior for `/app`
 2. Write and implement dashboard card UI v2 spec in React + MUI.
 3. Add stream-level ranking and prioritization controls.
 4. Add classifier run persistence and model/version tracking.
@@ -164,4 +169,3 @@ This file stores persistent project context for future Codex sessions.
 - Stable constraints/instructions: `AGENTS.md`.
 - Design/architecture decisions and tradeoffs: `docs/architecture.md`.
 - Iteration log (what changed, why, what is next): `docs/session-notes.md`.
-
