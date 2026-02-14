@@ -49,6 +49,10 @@ Configured plugin paths are loaded from `SIFT_PLUGIN_PATHS` in `.env`.
 - Login: `POST /api/v1/auth/login`
 - Logout: `POST /api/v1/auth/logout`
 - Current user: `GET /api/v1/auth/me`
+- List rules: `GET /api/v1/rules`
+- Create rule: `POST /api/v1/rules`
+- Update rule: `PATCH /api/v1/rules/{rule_id}`
+- Delete rule: `DELETE /api/v1/rules/{rule_id}`
 - List feeds: `GET /api/v1/feeds`
 - Create feed: `POST /api/v1/feeds`
 - Ingest one feed now: `POST /api/v1/feeds/{feed_id}/ingest`

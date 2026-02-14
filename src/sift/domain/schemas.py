@@ -34,6 +34,7 @@ class FeedIngestResult(BaseModel):
     fetched_count: int = 0
     inserted_count: int = 0
     duplicate_count: int = 0
+    filtered_count: int = 0
     plugin_processed_count: int = 0
     errors: list[str] = Field(default_factory=list)
 
@@ -100,4 +101,41 @@ class OpmlImportResult(BaseModel):
     duplicate_in_file_count: int = 0
     results: list[OpmlImportEntryResult] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
+
+
+class IngestRuleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    is_active: bool = True
+    priority: int = Field(default=100, ge=0, le=10000)
+    include_keywords: list[str] = Field(default_factory=list)
+    exclude_keywords: list[str] = Field(default_factory=list)
+    source_contains: str | None = Field(default=None, max_length=1000)
+    language_equals: str | None = Field(default=None, max_length=32)
+    action: Literal["drop"] = "drop"
+
+
+class IngestRuleUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    is_active: bool | None = None
+    priority: int | None = Field(default=None, ge=0, le=10000)
+    include_keywords: list[str] | None = None
+    exclude_keywords: list[str] | None = None
+    source_contains: str | None = Field(default=None, max_length=1000)
+    language_equals: str | None = Field(default=None, max_length=32)
+    action: Literal["drop"] | None = None
+
+
+class IngestRuleOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    name: str
+    is_active: bool
+    priority: int
+    include_keywords: list[str]
+    exclude_keywords: list[str]
+    source_contains: str | None
+    language_equals: str | None
+    action: Literal["drop"]
+    created_at: datetime
+    updated_at: datetime
 

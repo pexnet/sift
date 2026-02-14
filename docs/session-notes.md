@@ -37,19 +37,26 @@
   - Added authenticated upload endpoint: `POST /api/v1/imports/opml`
   - Added detailed import report (created/skipped/invalid/duplicate)
   - Added OPML parser/import tests
+- Implemented persisted ingest-time rule engine:
+  - Added `ingest_rules` model + migration `20260214_0003_ingest_rules`
+  - Added authenticated rules API (`GET/POST/PATCH/DELETE /api/v1/rules`)
+  - Added rule service (`src/sift/services/rule_service.py`) with priority + criteria matching
+  - Integrated rule evaluation into `ingestion_service` (drops matched items before article insert)
+  - Added `filtered_count` to ingestion result payload
+  - Added rule service tests
 - Verified quality gates:
   - `python -m ruff check .` passed
-  - `python -m pytest` passed (OPML tests added)
+  - `python -m pytest` passed (rule tests added)
   - `python -m mypy src` passed
   - `python -m alembic upgrade head` passed against a temporary SQLite DB
 
 ## Current Priority Plan
 
-1. Persist filter/rule definitions (`include/exclude`, source, language) and apply them at ingest time.
-2. Implement keyword streams as saved monitoring feeds (search expressions per user).
+1. Implement keyword streams as saved monitoring feeds (search expressions per user).
+2. Add classifier plugin foundation for advanced stream classification (LLM/ML/rule plugins).
 3. Add canonical dedup layer across feeds (URL normalization + hash/fuzzy scoring).
-4. Add classifier plugin foundation for advanced stream classification (LLM/ML/rule plugins).
-5. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
+4. Add scheduler observability metrics (queue depth, success/failure, ingest latency).
+5. Add stream-level ranking and prioritization controls.
 
 ## Deferred Items
 

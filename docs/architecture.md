@@ -87,14 +87,18 @@ Design goals:
    - local account registration/login/logout/me endpoints
    - provider-ready identity schema to support Google/Azure/Apple later
    - feed/article endpoints now require authenticated user context
+6. Persisted ingest rules:
+   - endpoints: `GET/POST/PATCH/DELETE /api/v1/rules`
+   - per-user rules with priority and criteria (include/exclude keywords, source, language)
+   - rules applied during ingestion before article persistence
 
 ## Planned Next Moves
 
-1. Implement persisted rule engine per user and apply rules during ingest.
-2. Implement keyword streams as virtual monitoring feeds backed by saved expressions.
+1. Implement keyword streams as virtual monitoring feeds backed by saved expressions.
+2. Add classifier plugin framework for advanced stream classification (LLM/ML/rule classifiers).
 3. Add cross-feed canonical deduplication (`canonical_article_id` + fuzzy hash).
-4. Add classifier plugin framework for advanced stream classification (LLM/ML/rule classifiers).
-5. Add scheduler and ingest observability (metrics + structured logs).
+4. Add scheduler and ingest observability (metrics + structured logs).
+5. Add stream ranking/prioritization and rule evaluation metrics.
 
 ## Deferred
 

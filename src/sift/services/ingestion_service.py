@@ -13,6 +13,7 @@ from sift.db.models import Article, Feed, RawEntry
 from sift.domain.schemas import FeedIngestResult
 from sift.plugins.base import ArticleContext
 from sift.plugins.manager import PluginManager
+from sift.services.rule_service import rule_service
 
 
 class FeedNotFoundError(Exception):
@@ -79,12 +80,13 @@ def _parse_published_at(entry: feedparser.FeedParserDict) -> datetime | None:
     return parsed.astimezone(UTC)
 
 
-def _normalize_article(entry: feedparser.FeedParserDict) -> tuple[str, str | None, str, datetime | None]:
+def _normalize_article(entry: feedparser.FeedParserDict) -> tuple[str, str | None, str, str | None, datetime | None]:
     title = _safe_text(entry.get("title")) or "(untitled)"
     canonical_url = _safe_text(entry.get("link")) or None
     content_text = _extract_text(entry)
+    language = _safe_text(entry.get("language")) or None
     published_at = _parse_published_at(entry)
-    return title, canonical_url, content_text, published_at
+    return title, canonical_url, content_text, language, published_at
 
 
 class IngestionService:
@@ -132,6 +134,7 @@ class IngestionService:
         parsed = feedparser.parse(response.content)
         entries = parsed.entries if hasattr(parsed, "entries") else []
         result.fetched_count = len(entries)
+        active_rules = await rule_service.list_active_compiled_rules(session=session, user_id=feed.owner_id) if feed.owner_id else []
 
         source_ids = [_make_source_id(entry) for entry in entries]
         if source_ids:
@@ -159,7 +162,17 @@ class IngestionService:
             )
             session.add(raw_entry)
 
-            title, canonical_url, content_text, published_at = _normalize_article(entry)
+            title, canonical_url, content_text, language, published_at = _normalize_article(entry)
+            if rule_service.should_drop_article(
+                active_rules,
+                title=title,
+                content_text=content_text,
+                source_url=canonical_url,
+                language=language,
+            ):
+                result.filtered_count += 1
+                continue
+
             article_context = ArticleContext(
                 article_id=source_id,
                 title=title,
@@ -175,6 +188,7 @@ class IngestionService:
                 canonical_url=canonical_url,
                 title=article_context.title or title,
                 content_text=article_context.content_text or content_text,
+                language=language,
                 published_at=published_at,
             )
             session.add(article)

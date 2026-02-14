@@ -37,6 +37,10 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
+- `GET /api/v1/rules`
+- `POST /api/v1/rules`
+- `PATCH /api/v1/rules/{rule_id}`
+- `DELETE /api/v1/rules/{rule_id}`
 - `GET /api/v1/feeds`
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
@@ -77,14 +81,15 @@ This file stores persistent project context for future Codex sessions.
 - Initial dedupe exists at feed+source-id level.
 - Keyword include/exclude preview exists via API.
 - OPML import endpoint exists with per-user dedupe/import report (`POST /api/v1/imports/opml`).
+- Persisted ingest rules are implemented and enforced during ingestion.
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
 
 ## Next Delivery Sequence
 
-1. Implement persisted rule engine (user rules applied during ingest).
-2. Implement keyword streams as virtual monitoring feeds (saved search expressions).
-3. Extend streams with classifier plugins (LLM/ML/rule classifiers with confidence + reasoning).
-4. Add cross-feed canonical dedup improvements and scoring.
+1. Implement keyword streams as virtual monitoring feeds (saved search expressions).
+2. Extend streams with classifier plugins (LLM/ML/rule classifiers with confidence + reasoning).
+3. Add cross-feed canonical dedup improvements and scoring.
+4. Add scheduler and ingestion observability (metrics, latency, failures).
 5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule features stabilize.
 
 ## Feature Notes

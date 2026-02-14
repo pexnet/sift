@@ -130,3 +130,19 @@ class ApiToken(TimestampMixin, Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class IngestRule(TimestampMixin, Base):
+    __tablename__ = "ingest_rules"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_ingest_rules_user_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
+    include_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    exclude_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    source_contains: Mapped[str | None] = mapped_column(String(1000))
+    language_equals: Mapped[str | None] = mapped_column(String(32), index=True)
+    action: Mapped[str] = mapped_column(String(32), default="drop", index=True)
