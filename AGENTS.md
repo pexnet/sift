@@ -129,13 +129,13 @@ This file stores persistent project context for future Codex sessions.
 1. Execute full frontend rewrite and cutover to React + MUI for `/app` (big-bang release):
    - build complete 3-pane workspace parity + improved loading/error/empty states
    - use TanStack Router + TanStack Query as required foundations
-   - remove HTMX/Jinja workspace routes, templates, and static behavior for `/app`
-2. Write and implement dashboard card UI v2 spec in React + MUI.
-3. Add stream-level ranking and prioritization controls.
-4. Add classifier run persistence and model/version tracking.
-5. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-6. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-7. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+2. Remove HTMX/Jinja workspace routes, templates, and static behavior for `/app` after React cutover parity is complete.
+3. Write and implement dashboard card UI v2 spec in React + MUI.
+4. Add stream-level ranking and prioritization controls.
+5. Add classifier run persistence and model/version tracking.
+6. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+7. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+8. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
 
 ## Feature Notes
 

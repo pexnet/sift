@@ -127,6 +127,8 @@
 
 ## Current Priority Plan
 
+> Source of truth: This roadmap order is canonical and must be mirrored in `AGENTS.md` and `docs/architecture.md` at the end of each session.
+
 1. Execute big-bang frontend rewrite: ship complete React + MUI `/app` workspace cutover with TanStack Router + Query, parity for existing reader workflows, and polished responsive/loading/error/empty/accessibility states.
 2. Remove legacy HTMX/Jinja workspace implementation after cutover (`/web/partials/*`, `/web/actions/*`, workspace templates/static behavior).
 3. Define and implement dashboard card UI v2 in React + MUI.
