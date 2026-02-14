@@ -595,6 +595,16 @@ a {
   background: var(--surface);
 }
 
+
+.react-density-comfortable .MuiListItemButton-root {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.react-density-comfortable .MuiListItemText-primary {
+  line-height: 1.45;
+}
+
 @media (max-width: 1180px) {
   .react-workspace__grid {
     grid-template-columns: 1fr;

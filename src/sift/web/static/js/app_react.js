@@ -1,4 +1,4 @@
-import React from "https://esm.sh/react@18.3.1";
+import React, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18.3.1";
 import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
 import {
   QueryClient,
@@ -22,18 +22,24 @@ import {
   CircularProgress,
   CssBaseline,
   Divider,
+  FormControl,
+  InputLabel,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
   MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   ThemeProvider,
   Typography,
   createTheme,
 } from "https://esm.sh/@mui/material@5.16.14?deps=react@18.3.1,react-dom@18.3.1";
+
+const THEME_KEY = "sift-theme";
+const DENSITY_KEY = "sift-density";
 
 const rootElement = document.getElementById("react-workspace-root");
 const appElement = document.getElementById("react-workspace-app");
@@ -50,16 +56,22 @@ const apiConfig = {
 };
 
 const queryClient = new QueryClient();
-const theme = createTheme({
-  palette: { mode: document.documentElement.dataset.theme === "dark" ? "dark" : "light" },
-});
 
-async function fetchJson(url, options) {
-  const response = await fetch(url, { credentials: "same-origin", ...options });
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-  return response.json();
+function getStoredTheme() {
+  return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+}
+
+function getStoredDensity() {
+  return localStorage.getItem(DENSITY_KEY) === "comfortable" ? "comfortable" : "compact";
+}
+
+function fetchJson(url, options) {
+  return fetch(url, { credentials: "same-origin", ...options }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+    return response.json();
+  });
 }
 
 function flattenNavigation(navigation) {
@@ -70,10 +82,11 @@ function flattenNavigation(navigation) {
   ];
 }
 
-function WorkspacePage() {
+function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
   const queryClientRef = useQueryClient();
   const navigate = useNavigate({ from: "/" });
   const search = Route.useSearch();
+  const searchInputRef = useRef(null);
 
   const navigationQuery = useQuery({
     queryKey: ["navigation"],
@@ -100,7 +113,8 @@ function WorkspacePage() {
     },
   });
 
-  const selectedArticleId = search.article_id || articlesQuery.data?.items?.[0]?.id || "";
+  const articleItems = articlesQuery.data?.items || [];
+  const selectedArticleId = search.article_id || articleItems[0]?.id || "";
 
   const articleDetailQuery = useQuery({
     queryKey: ["article", selectedArticleId],
@@ -109,13 +123,12 @@ function WorkspacePage() {
   });
 
   const updateArticleMutation = useMutation({
-    mutationFn: async ({ articleId, payload }) => {
-      return fetchJson(apiConfig.articleStateEndpointTemplate.replace("{article_id}", articleId), {
+    mutationFn: ({ articleId, payload }) =>
+      fetchJson(apiConfig.articleStateEndpointTemplate.replace("{article_id}", articleId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
-    },
+      }),
     onSuccess: async () => {
       await Promise.all([
         queryClientRef.invalidateQueries({ queryKey: ["articles"] }),
@@ -125,20 +138,112 @@ function WorkspacePage() {
   });
 
   const navItems = navigationQuery.data ? flattenNavigation(navigationQuery.data) : [];
-
-  const selectedArticle = articlesQuery.data?.items?.find((article) => article.id === selectedArticleId);
+  const selectedArticle = articleItems.find((article) => article.id === selectedArticleId);
 
   const setSearch = (patch) => {
     navigate({ to: "/", search: { ...search, ...patch } });
   };
 
+  const moveSelection = (delta) => {
+    if (articleItems.length === 0) {
+      return;
+    }
+    const currentIndex = Math.max(
+      0,
+      articleItems.findIndex((article) => article.id === selectedArticleId)
+    );
+    const nextIndex = Math.max(0, Math.min(articleItems.length - 1, currentIndex + delta));
+    setSearch({ article_id: articleItems[nextIndex].id });
+  };
+
+  const toggleSelectedArticleState = (field) => {
+    if (!selectedArticle) {
+      return;
+    }
+    const currentValue = Boolean(selectedArticle[field]);
+    updateArticleMutation.mutate({
+      articleId: selectedArticle.id,
+      payload: { [field]: !currentValue },
+    });
+  };
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const isEditable =
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isEditable || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (event.key === "j") {
+        event.preventDefault();
+        moveSelection(1);
+      } else if (event.key === "k") {
+        event.preventDefault();
+        moveSelection(-1);
+      } else if (event.key === "o") {
+        event.preventDefault();
+        if (!search.article_id && articleItems.length > 0) {
+          setSearch({ article_id: articleItems[0].id });
+        }
+      } else if (event.key === "m") {
+        event.preventDefault();
+        toggleSelectedArticleState("is_read");
+      } else if (event.key === "s") {
+        event.preventDefault();
+        toggleSelectedArticleState("is_starred");
+      } else if (event.key === "/") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [articleItems, search.article_id, selectedArticle, updateArticleMutation]);
+
   return React.createElement(
     Stack,
-    { className: "react-workspace__grid", spacing: 2 },
+    { className: `react-workspace__grid react-density-${density}`, spacing: 2 },
     React.createElement(
       Paper,
       { className: "react-pane", component: "section", elevation: 0 },
-      React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Navigation"),
+      React.createElement(
+        Stack,
+        { direction: "row", justifyContent: "space-between", alignItems: "center", sx: { mb: 1 } },
+        React.createElement(Typography, { variant: "h6" }, "Navigation"),
+        React.createElement(
+          Stack,
+          { direction: "row", spacing: 1 },
+          React.createElement(
+            Button,
+            {
+              size: "small",
+              variant: "outlined",
+              onClick: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+            },
+            themeMode === "dark" ? "Light" : "Dark"
+          ),
+          React.createElement(
+            FormControl,
+            { size: "small", sx: { minWidth: 130 } },
+            React.createElement(InputLabel, { id: "density-select-label" }, "Density"),
+            React.createElement(
+              Select,
+              {
+                labelId: "density-select-label",
+                value: density,
+                label: "Density",
+                onChange: (event) => setDensity(event.target.value),
+              },
+              React.createElement(MenuItem, { value: "compact" }, "Compact"),
+              React.createElement(MenuItem, { value: "comfortable" }, "Comfortable")
+            )
+          )
+        )
+      ),
       navigationQuery.isLoading ? React.createElement(CircularProgress, { size: 20 }) : null,
       navigationQuery.isError ? React.createElement(Alert, { severity: "error" }, "Failed to load navigation.") : null,
       !navigationQuery.isLoading && !navigationQuery.isError && navItems.length === 0
@@ -146,7 +251,7 @@ function WorkspacePage() {
         : null,
       React.createElement(
         List,
-        { dense: true },
+        { dense: density === "compact" },
         navItems.map((item) =>
           React.createElement(
             ListItem,
@@ -172,10 +277,11 @@ function WorkspacePage() {
       React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Articles"),
       React.createElement(
         Stack,
-        { direction: "row", spacing: 1, sx: { mb: 1, flexWrap: "wrap" } },
+        { direction: { xs: "column", sm: "row" }, spacing: 1, sx: { mb: 1, flexWrap: "wrap" } },
         React.createElement(TextField, {
           size: "small",
           label: "Search",
+          inputRef: searchInputRef,
           value: search.q,
           onChange: (event) => setSearch({ q: event.target.value, article_id: "" }),
         }),
@@ -199,13 +305,13 @@ function WorkspacePage() {
       ),
       articlesQuery.isLoading ? React.createElement(CircularProgress, { size: 20 }) : null,
       articlesQuery.isError ? React.createElement(Alert, { severity: "error" }, "Failed to load articles.") : null,
-      !articlesQuery.isLoading && !articlesQuery.isError && (articlesQuery.data?.items || []).length === 0
+      !articlesQuery.isLoading && !articlesQuery.isError && articleItems.length === 0
         ? React.createElement(Typography, { variant: "body2", color: "text.secondary" }, "No articles found.")
         : null,
       React.createElement(
         List,
-        { dense: true },
-        (articlesQuery.data?.items || []).map((article) =>
+        { dense: density === "compact" },
+        articleItems.map((article) =>
           React.createElement(
             ListItem,
             { disablePadding: true, key: article.id },
@@ -231,17 +337,13 @@ function WorkspacePage() {
       selectedArticle
         ? React.createElement(
             Stack,
-            { direction: "row", spacing: 1, sx: { mb: 2 } },
+            { direction: "row", spacing: 1, sx: { mb: 2, flexWrap: "wrap" } },
             React.createElement(
               Button,
               {
                 size: "small",
                 variant: "outlined",
-                onClick: () =>
-                  updateArticleMutation.mutate({
-                    articleId: selectedArticle.id,
-                    payload: { is_read: !(selectedArticle.is_read || false) },
-                  }),
+                onClick: () => toggleSelectedArticleState("is_read"),
                 disabled: updateArticleMutation.isPending,
               },
               selectedArticle.is_read ? "Mark unread" : "Mark read"
@@ -251,11 +353,7 @@ function WorkspacePage() {
               {
                 size: "small",
                 variant: "outlined",
-                onClick: () =>
-                  updateArticleMutation.mutate({
-                    articleId: selectedArticle.id,
-                    payload: { is_starred: !(selectedArticle.is_starred || false) },
-                  }),
+                onClick: () => toggleSelectedArticleState("is_starred"),
                 disabled: updateArticleMutation.isPending,
               },
               selectedArticle.is_starred ? "Unsave" : "Save"
@@ -300,7 +398,7 @@ function WorkspacePage() {
 }
 
 const rootRoute = createRootRoute({
-  component: () => React.createElement(WorkspacePage),
+  component: () => React.createElement(WorkspaceApp),
 });
 
 const Route = createRoute({
@@ -316,6 +414,38 @@ const Route = createRoute({
   }),
 });
 
+function WorkspaceApp() {
+  const [themeMode, setThemeMode] = useState(getStoredTheme);
+  const [density, setDensity] = useState(getStoredDensity);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", themeMode);
+    localStorage.setItem(THEME_KEY, themeMode);
+  }, [themeMode]);
+
+  useEffect(() => {
+    localStorage.setItem(DENSITY_KEY, density);
+  }, [density]);
+
+  const theme = useMemo(() => createTheme({ palette: { mode: themeMode } }), [themeMode]);
+
+  return React.createElement(
+    ThemeProvider,
+    { theme },
+    React.createElement(CssBaseline, null),
+    React.createElement(
+      WorkspacePage,
+      {
+        themeMode,
+        setThemeMode,
+        density,
+        setDensity,
+      },
+      null
+    )
+  );
+}
+
 const routeTree = rootRoute.addChildren([Route]);
 const router = createRouter({ routeTree });
 
@@ -324,14 +454,9 @@ createRoot(appElement).render(
     React.StrictMode,
     null,
     React.createElement(
-      ThemeProvider,
-      { theme },
-      React.createElement(CssBaseline, null),
-      React.createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        React.createElement(RouterProvider, { router })
-      )
+      QueryClientProvider,
+      { client: queryClient },
+      React.createElement(RouterProvider, { router })
     )
   )
 );

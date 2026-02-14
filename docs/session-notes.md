@@ -130,6 +130,11 @@
   - Wired TanStack Router search params for scope/article selection URL-state behavior.
   - Wired TanStack Query for navigation list, article list, and article detail loading/error/empty states.
   - Kept `/app-react` server-rendered shell + auth guard behavior unchanged while improving client-side fidelity.
+- Hardened React `/app` parity for reader-first interactions:
+  - Added persisted theme toggle (light/dark) directly in the React workspace and synced `data-theme` + `localStorage`.
+  - Added persisted density selector (compact/comfortable) in React with list-density styling updates.
+  - Added keyboard shortcut parity in React workspace for `j/k`, `o`, `m`, `s`, and `/` behavior.
+  - Polished responsive controls layout in the articles toolbar for narrow viewports.
 - Executed React workspace route cutover for `/app`:
   - Switched authenticated `/app` to render the React + MUI workspace shell (`app_react.html`) instead of the HTMX/Jinja template.
   - Converted `/app-react` into a temporary redirect to `/app` to preserve legacy links during migration.
