@@ -144,3 +144,6 @@
 - Preferred day-to-day dev flow is now Dev Container + `.devcontainer/docker-compose.yml`.
 - During transition, avoid mixing `create_all` with migrations in shared environments.
 - Keep this file concise: what changed, what was verified, and the next 3-5 concrete steps.
+- Documented minimal frontend plugin surface in architecture docs:
+  - Added extension points: `nav_badge_provider`, `article_row_action`, `reader_panel_tab`, `dashboard_card`, `command_palette_action`
+  - Defined shared registration contract (id/title/mount/capabilities), endpoint dependencies, auth constraints, and per-extension failure isolation behavior
