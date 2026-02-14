@@ -13,15 +13,15 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 ## Runtime Components
 
-1. `app`: FastAPI API + server-rendered UI (Jinja2 + HTMX)
+1. `app`: FastAPI API + React + MUI frontend delivery
 2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`)
 3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`)
 4. `db`: PostgreSQL (SQLite default for local bootstrap)
 5. `redis`: queue broker
 
-## Web UI Architecture (3-Pane HTMX Workspace)
+## Web UI Architecture (React + MUI Workspace)
 
-Reader UX is implemented as server-rendered HTML with HTMX partial swaps:
+Reader UX target is a modern, responsive React workspace built with MUI components:
 
 1. Left navigation pane:
    - system scopes (All, Fresh, Saved, Archived, Recently read)
@@ -29,27 +29,18 @@ Reader UX is implemented as server-rendered HTML with HTMX partial swaps:
    - monitoring streams with unread counts
 2. Center list pane:
    - scoped article listing with search/state/sort controls
-   - compact row density default with optional comfortable density
+   - responsive density and layout behavior across breakpoints
    - row-level read/save actions
 3. Right reader pane:
    - article detail view and open-original action
 
-Routing model:
+Routing and data model:
 
-1. `GET /app` renders the workspace shell.
-2. HTMX partial endpoints update independent panes:
-   - `GET /web/partials/nav-tree`
-   - `GET /web/partials/article-list`
-   - `GET /web/partials/article-reader/{article_id}`
-3. HTMX action endpoints apply article state transitions:
-   - `PATCH /web/actions/article/{article_id}/state`
-   - `POST /web/actions/article/bulk-state`
-
-State model:
-
-1. URL query parameters carry scope/filter selection (`scope_type`, `scope_id`, `state`, `sort`, `q`, pagination).
-2. UI-only preferences (theme, list density) are persisted in local storage.
-3. Keyboard shortcuts are implemented with minimal vanilla JS (`j/k`, `o`, `m`, `s`, `/`).
+1. Route state is URL-driven (`scope_type`, `scope_id`, `state`, `sort`, `q`, pagination).
+2. TanStack Router defines typed route/search-param boundaries for `/app`.
+3. TanStack Query manages API server-state caching, mutations, and invalidation.
+4. UI-only preferences (theme, list density) are persisted in local storage.
+5. Keyboard shortcuts remain a first-class UX feature (`j/k`, `o`, `m`, `s`, `/`).
 
 ## Developer Topology (Dev Container Standard)
 
@@ -169,10 +160,7 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Define React workspace rewrite requirements and boundaries:
-   - Require TanStack Query for API server-state caching/invalidation and article-state mutations.
-   - Require TanStack Router for type-safe URL search params representing scope/filter/sort/search state.
-   - Keep TanStack Virtual optional until measured list rendering performance requires virtualization.
+1. Implement the React + MUI reader workspace with responsive behavior and production-ready loading/error/empty states.
 2. Add stream ranking/prioritization and rule evaluation metrics.
 3. Add classifier run persistence and model/version tracking for traceability.
 4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
