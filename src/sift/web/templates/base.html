@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title or "Sift" }}</title>
+    <script>
+      (() => {
+        const theme = localStorage.getItem("sift-theme") === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
     <link rel="stylesheet" href="/static/css/app.css" />
   </head>
   <body class="{% block body_class %}{% endblock %}">
@@ -27,5 +33,6 @@
       {% endif %}
       {% block content %}{% endblock %}
     </main>
+    <script src="/static/js/theme.js" defer></script>
   </body>
 </html>
