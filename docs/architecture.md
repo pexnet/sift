@@ -365,11 +365,13 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Execute full React + MUI `/app` cutover (big-bang rewrite) and retire the HTMX/Jinja workspace implementation.
-2. Add stream ranking/prioritization and rule evaluation metrics.
-3. Add classifier run persistence and model/version tracking for traceability.
-4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+1. Execute full React + MUI `/app` cutover (big-bang rewrite).
+2. Remove the legacy HTMX/Jinja workspace implementation after cutover parity is complete.
+3. Define and implement dashboard card UI v2 in React + MUI.
+4. Add stream ranking/prioritization and rule evaluation metrics.
+5. Add classifier run persistence and model/version tracking for traceability.
+6. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+7. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 
