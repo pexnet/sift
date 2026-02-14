@@ -3,7 +3,9 @@ import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
 import {
   QueryClient,
   QueryClientProvider,
+  useMutation,
   useQuery,
+  useQueryClient,
 } from "https://esm.sh/@tanstack/react-query@5.66.4";
 import {
   RouterProvider,
@@ -15,6 +17,8 @@ import {
 import {
   Alert,
   Box,
+  Button,
+  Chip,
   CircularProgress,
   CssBaseline,
   Divider,
@@ -22,8 +26,10 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  MenuItem,
   Paper,
   Stack,
+  TextField,
   ThemeProvider,
   Typography,
   createTheme,
@@ -40,6 +46,7 @@ const apiConfig = {
   navigationEndpoint: rootElement.dataset.navigationEndpoint || "/api/v1/navigation",
   articlesEndpoint: rootElement.dataset.articlesEndpoint || "/api/v1/articles",
   articleEndpointTemplate: rootElement.dataset.articleEndpointTemplate || "/api/v1/articles/{article_id}",
+  articleStateEndpointTemplate: rootElement.dataset.articleStateEndpointTemplate || "/api/v1/articles/{article_id}/state",
 };
 
 const queryClient = new QueryClient();
@@ -47,8 +54,8 @@ const theme = createTheme({
   palette: { mode: document.documentElement.dataset.theme === "dark" ? "dark" : "light" },
 });
 
-async function fetchJson(url) {
-  const response = await fetch(url, { credentials: "same-origin" });
+async function fetchJson(url, options) {
+  const response = await fetch(url, { credentials: "same-origin", ...options });
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }
@@ -64,6 +71,7 @@ function flattenNavigation(navigation) {
 }
 
 function WorkspacePage() {
+  const queryClientRef = useQueryClient();
   const navigate = useNavigate({ from: "/" });
   const search = Route.useSearch();
 
@@ -100,7 +108,29 @@ function WorkspacePage() {
     enabled: Boolean(selectedArticleId),
   });
 
+  const updateArticleMutation = useMutation({
+    mutationFn: async ({ articleId, payload }) => {
+      return fetchJson(apiConfig.articleStateEndpointTemplate.replace("{article_id}", articleId), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClientRef.invalidateQueries({ queryKey: ["articles"] }),
+        queryClientRef.invalidateQueries({ queryKey: ["article", selectedArticleId] }),
+      ]);
+    },
+  });
+
   const navItems = navigationQuery.data ? flattenNavigation(navigationQuery.data) : [];
+
+  const selectedArticle = articlesQuery.data?.items?.find((article) => article.id === selectedArticleId);
+
+  const setSearch = (patch) => {
+    navigate({ to: "/", search: { ...search, ...patch } });
+  };
 
   return React.createElement(
     Stack,
@@ -109,12 +139,8 @@ function WorkspacePage() {
       Paper,
       { className: "react-pane", component: "section", elevation: 0 },
       React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Navigation"),
-      navigationQuery.isLoading
-        ? React.createElement(CircularProgress, { size: 20 })
-        : null,
-      navigationQuery.isError
-        ? React.createElement(Alert, { severity: "error" }, "Failed to load navigation.")
-        : null,
+      navigationQuery.isLoading ? React.createElement(CircularProgress, { size: 20 }) : null,
+      navigationQuery.isError ? React.createElement(Alert, { severity: "error" }, "Failed to load navigation.") : null,
       !navigationQuery.isLoading && !navigationQuery.isError && navItems.length === 0
         ? React.createElement(Typography, { variant: "body2", color: "text.secondary" }, "No navigation items.")
         : null,
@@ -129,16 +155,7 @@ function WorkspacePage() {
               ListItemButton,
               {
                 selected: search.scope_type === item.scope_type && search.scope_id === (item.id || ""),
-                onClick: () =>
-                  navigate({
-                    to: "/",
-                    search: {
-                      ...search,
-                      scope_type: item.scope_type,
-                      scope_id: item.id || "",
-                      article_id: "",
-                    },
-                  }),
+                onClick: () => setSearch({ scope_type: item.scope_type, scope_id: item.id || "", article_id: "" }),
               },
               React.createElement(ListItemText, {
                 primary: item.title || item.name || item.key || "Untitled",
@@ -153,6 +170,33 @@ function WorkspacePage() {
       Paper,
       { className: "react-pane", component: "section", elevation: 0 },
       React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Articles"),
+      React.createElement(
+        Stack,
+        { direction: "row", spacing: 1, sx: { mb: 1, flexWrap: "wrap" } },
+        React.createElement(TextField, {
+          size: "small",
+          label: "Search",
+          value: search.q,
+          onChange: (event) => setSearch({ q: event.target.value, article_id: "" }),
+        }),
+        React.createElement(
+          TextField,
+          {
+            size: "small",
+            select: true,
+            label: "State",
+            value: search.state,
+            onChange: (event) => setSearch({ state: event.target.value, article_id: "" }),
+            sx: { minWidth: 140 },
+          },
+          React.createElement(MenuItem, { value: "all" }, "All"),
+          React.createElement(MenuItem, { value: "unread" }, "Unread"),
+          React.createElement(MenuItem, { value: "saved" }, "Saved"),
+          React.createElement(MenuItem, { value: "archived" }, "Archived"),
+          React.createElement(MenuItem, { value: "fresh" }, "Fresh"),
+          React.createElement(MenuItem, { value: "recent" }, "Recent")
+        )
+      ),
       articlesQuery.isLoading ? React.createElement(CircularProgress, { size: 20 }) : null,
       articlesQuery.isError ? React.createElement(Alert, { severity: "error" }, "Failed to load articles.") : null,
       !articlesQuery.isLoading && !articlesQuery.isError && (articlesQuery.data?.items || []).length === 0
@@ -169,11 +213,7 @@ function WorkspacePage() {
               ListItemButton,
               {
                 selected: selectedArticleId === article.id,
-                onClick: () =>
-                  navigate({
-                    to: "/",
-                    search: { ...search, article_id: article.id },
-                  }),
+                onClick: () => setSearch({ article_id: article.id }),
               },
               React.createElement(ListItemText, {
                 primary: article.title || "Untitled article",
@@ -188,6 +228,44 @@ function WorkspacePage() {
       Paper,
       { className: "react-pane", component: "section", elevation: 0 },
       React.createElement(Typography, { variant: "h6", gutterBottom: true }, "Reader"),
+      selectedArticle
+        ? React.createElement(
+            Stack,
+            { direction: "row", spacing: 1, sx: { mb: 2 } },
+            React.createElement(
+              Button,
+              {
+                size: "small",
+                variant: "outlined",
+                onClick: () =>
+                  updateArticleMutation.mutate({
+                    articleId: selectedArticle.id,
+                    payload: { is_read: !(selectedArticle.is_read || false) },
+                  }),
+                disabled: updateArticleMutation.isPending,
+              },
+              selectedArticle.is_read ? "Mark unread" : "Mark read"
+            ),
+            React.createElement(
+              Button,
+              {
+                size: "small",
+                variant: "outlined",
+                onClick: () =>
+                  updateArticleMutation.mutate({
+                    articleId: selectedArticle.id,
+                    payload: { is_starred: !(selectedArticle.is_starred || false) },
+                  }),
+                disabled: updateArticleMutation.isPending,
+              },
+              selectedArticle.is_starred ? "Unsave" : "Save"
+            ),
+            selectedArticle.is_archived ? React.createElement(Chip, { size: "small", label: "Archived" }) : null
+          )
+        : null,
+      updateArticleMutation.isError
+        ? React.createElement(Alert, { severity: "error", sx: { mb: 1 } }, "Failed to update article state.")
+        : null,
       !selectedArticleId
         ? React.createElement(
             Typography,

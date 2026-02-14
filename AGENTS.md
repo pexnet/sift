@@ -126,10 +126,10 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Execute full frontend rewrite and cutover to React + MUI for `/app` (big-bang release):
-   - build complete 3-pane workspace parity + improved loading/error/empty states
-   - use TanStack Router + TanStack Query as required foundations
-2. Remove HTMX/Jinja workspace routes, templates, and static behavior for `/app` after React cutover parity is complete.
+1. Complete React + MUI `/app` parity hardening after cutover:
+   - finish keyboard shortcut + density/theme preference parity
+   - polish responsive/loading/error/empty/accessibility states
+2. Remove HTMX/Jinja workspace routes, templates, and static behavior for `/app` after React parity sign-off.
 3. Write and implement dashboard card UI v2 spec in React + MUI.
 4. Add stream-level ranking and prioritization controls.
 5. Add classifier run persistence and model/version tracking.
