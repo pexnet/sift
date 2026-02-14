@@ -127,10 +127,13 @@
 ## Current Priority Plan
 
 1. Complete reader UI polish (saved-view refinements, explicit loading/error/empty states, accessibility hardening).
-2. Define and implement dashboard card UI v2 (deferred from reader-first scope).
-3. Add stream-level ranking and prioritization controls.
-4. Add classifier run persistence and model/version tracking.
-5. Explore vector database integration as plugin capability for semantic matching/classification.
+2. Define React rewrite requirements for the reader workspace:
+   - Require TanStack Query for server-state fetching/caching/mutation flows.
+   - Require TanStack Router for URL-driven scope/filter/search state in the `/app` workspace.
+   - Keep TanStack Virtual optional and only add it if article-list rendering performance requires virtualization.
+3. Define and implement dashboard card UI v2 (deferred from reader-first scope).
+4. Add stream-level ranking and prioritization controls.
+5. Add classifier run persistence and model/version tracking.
 
 ## Deferred Items
 
@@ -143,4 +146,3 @@
 - Preferred day-to-day dev flow is now Dev Container + `.devcontainer/docker-compose.yml`.
 - During transition, avoid mixing `create_all` with migrations in shared environments.
 - Keep this file concise: what changed, what was verified, and the next 3-5 concrete steps.
-

@@ -169,10 +169,14 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Add stream ranking/prioritization and rule evaluation metrics.
-2. Add classifier run persistence and model/version tracking for traceability.
-3. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-4. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+1. Define React workspace rewrite requirements and boundaries:
+   - Require TanStack Query for API server-state caching/invalidation and article-state mutations.
+   - Require TanStack Router for type-safe URL search params representing scope/filter/sort/search state.
+   - Keep TanStack Virtual optional until measured list rendering performance requires virtualization.
+2. Add stream ranking/prioritization and rule evaluation metrics.
+3. Add classifier run persistence and model/version tracking for traceability.
+4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 
