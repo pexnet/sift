@@ -12,6 +12,12 @@ Sift is a self-hosted RSS aggregation portal designed for a solid Python backend
 
 ## Quick Start
 
+If you are using Codex or another clean automation environment, run:
+
+- `./scripts/setup-codex-env.sh`
+
+Manual setup:
+
 1. Install `uv`: <https://docs.astral.sh/uv/getting-started/installation/>
 2. Create env file:
    - `copy .env.example .env`
