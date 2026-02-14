@@ -1,0 +1,69 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sift-portal"
+version = "0.1.0"
+description = "Self-hosted RSS aggregation portal with plugin-capable processing."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Sift Contributors" }]
+dependencies = [
+  "aiosqlite>=0.20.0",
+  "asyncpg>=0.30.0",
+  "fastapi>=0.116.0",
+  "feedparser>=6.0.11",
+  "jinja2>=3.1.5",
+  "pydantic-settings>=2.10.1",
+  "redis>=6.1.0",
+  "rq>=2.6.0",
+  "sqlalchemy>=2.0.41",
+  "uvicorn[standard]>=0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28.1",
+  "mypy>=1.17.0",
+  "pytest>=8.4.1",
+  "pytest-asyncio>=1.1.0",
+  "ruff>=0.12.10",
+]
+
+[project.scripts]
+sift-api = "sift.main:run_dev"
+sift-worker = "sift.tasks.worker:main"
+sift-scheduler = "sift.tasks.scheduler:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sift"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.13"
+mypy_path = "src"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true

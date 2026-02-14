@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <header class="panel-header">
+    <h1>Sift</h1>
+    <p>Self-hosted RSS portal foundation</p>
+  </header>
+
+  <section class="feed-list">
+    <h2>Feeds</h2>
+    {% if feeds %}
+      <ul>
+      {% for feed in feeds %}
+        <li>
+          <a href="{{ feed.url }}" target="_blank" rel="noreferrer">{{ feed.title }}</a>
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No feeds added yet. Use the API to create one.</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}
+
