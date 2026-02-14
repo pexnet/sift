@@ -126,16 +126,12 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Complete React + MUI `/app` parity hardening after cutover:
-   - finish keyboard shortcut + density/theme preference parity
-   - polish responsive/loading/error/empty/accessibility states
-2. Remove HTMX/Jinja workspace routes, templates, and static behavior for `/app` after React parity sign-off.
-3. Write and implement dashboard card UI v2 spec in React + MUI.
-4. Add stream-level ranking and prioritization controls.
-5. Add classifier run persistence and model/version tracking.
-6. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-7. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-8. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+1. Write and implement dashboard card UI v2 spec in React + MUI.
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+6. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
 
 ## Feature Notes
 
