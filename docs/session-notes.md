@@ -140,6 +140,11 @@
   - Converted `/app-react` into a temporary redirect to `/app` to preserve legacy links during migration.
   - Expanded React workspace interactions with API-driven article state actions (mark read/unread + save/unsave) and in-pane search/state controls.
   - Added state endpoint config wiring in template data attributes and adjusted web route auth/redirect tests for the cutover behavior.
+- Removed legacy HTMX/Jinja `/app` workspace implementation after React cutover sign-off:
+  - Deleted transitional HTMX workspace routes (`/web/partials/*`, `/web/actions/*`) from `src/sift/web/routes.py`.
+  - Removed obsolete HTMX/Jinja workspace templates (`app.html` and `templates/partials/*`).
+  - Removed legacy workspace script `src/sift/web/static/js/app.js` and dropped global HTMX script include from `base.html`.
+  - Simplified web workspace route tests to validate `/app` auth guard + `/app-react` compatibility redirect only.
 - Verified quality gates:
   - `python -m ruff check .` passed
   - `python -m pytest` passed (43 tests)
@@ -153,11 +158,11 @@
 
 > Source of truth: This roadmap order is canonical and must be mirrored in `AGENTS.md` and `docs/architecture.md` at the end of each session.
 
-1. Complete React `/app` parity hardening (keyboard shortcuts, density/theme preference parity, and responsive UX polish).
-2. Remove legacy HTMX/Jinja workspace implementation after parity sign-off (`/web/partials/*`, `/web/actions/*`, workspace templates/static behavior).
-3. Define and implement dashboard card UI v2 in React + MUI.
-4. Add stream-level ranking and prioritization controls.
-5. Add classifier run persistence and model/version tracking.
+1. Define and implement dashboard card UI v2 in React + MUI.
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Deferred Items
 

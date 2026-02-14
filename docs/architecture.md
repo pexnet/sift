@@ -15,15 +15,7 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 **Current**
 
-1. `app`: FastAPI API plus transitional HTMX/Jinja `/app` workspace delivery.
-2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`).
-3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`).
-4. `db`: PostgreSQL (SQLite default for local bootstrap).
-5. `redis`: queue broker.
-
-**Target**
-
-1. `app`: FastAPI API plus React + MUI `/app` workspace delivery after big-bang cutover.
+1. `app`: FastAPI API plus React + MUI `/app` workspace delivery.
 2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`).
 3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`).
 4. `db`: PostgreSQL (SQLite default for local bootstrap).
@@ -33,15 +25,10 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 **Current**
 
-- `/app` is an authenticated, reader-first transitional workspace implemented with HTMX + Jinja templates.
+- `/app` is an authenticated, reader-first React + MUI workspace.
 - It delivers a 3-pane shell (navigation tree, article list, reader pane), theme/density preferences, and core keyboard shortcuts.
-- Transitional HTMX web routes power this workspace (`/web/partials/*`, `/web/actions/*`) and are scheduled for removal after cutover.
-- React cutover currently includes an authenticated `/app-react` preview route that exercises API-backed nav/list/reader loading states as the first migration slice.
-
-**Target**
-
-- Ship a complete React + MUI `/app` workspace in a big-bang cutover release and retire the HTMX/Jinja implementation.
-- Keep the same core reader UX model with improved responsive behavior and polished loading/error/empty/accessibility states.
+- Legacy HTMX/Jinja workspace routes/templates have been retired from the `/app` path.
+- `/app-react` is retained as a temporary redirect to `/app` for compatibility with older links.
 
 Reader UX target is a modern, responsive React workspace built with MUI components:
 
@@ -347,7 +334,7 @@ Design goals:
 
 1. `/app` now serves the React + MUI workspace shell and is the active cutover surface.
 2. The React workspace currently supports API-backed navigation, article listing/reader loading, URL-state via TanStack Router, and state mutations for read/saved toggles.
-3. Legacy HTMX/Jinja workspace routes/templates still exist in-tree and remain scheduled for follow-up removal once parity hardening is complete.
+3. Dashboard card UI v2 is not yet implemented and remains the next frontend delivery slice after React `/app` cutover cleanup.
 4. `/app-react` now performs a temporary redirect to `/app` to preserve migration-era entry points.
 
 **Target**
@@ -355,8 +342,7 @@ Design goals:
 1. Execute a big-bang cutover to a complete React + MUI `/app` workspace with parity for navigation tree, article list, reader pane, keyboard shortcuts, and user preferences.
 2. Use TanStack Router for URL-driven state and TanStack Query for API caching/mutations/invalidation.
 3. Gate release on parity + UX quality: responsive behavior, loading/error/empty/accessibility states.
-4. Remove legacy HTMX/Jinja workspace implementation after cutover (`/web/partials/*`, `/web/actions/*`, templates, and workspace static behavior).
-5. Keep backend API routes (`/api/v1/navigation`, `/api/v1/articles`, article state endpoints) as the stable UI data contract.
+4. Keep backend API routes (`/api/v1/navigation`, `/api/v1/articles`, article state endpoints) as the stable UI data contract.
 
 ### Cutover Parity Matrix
 
@@ -368,13 +354,11 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Complete React `/app` parity hardening (keyboard shortcuts, density/theme preference parity, and responsive UX polish).
-2. Remove the legacy HTMX/Jinja workspace implementation after parity sign-off.
-3. Define and implement dashboard card UI v2 in React + MUI.
-4. Add stream ranking/prioritization and rule evaluation metrics.
-5. Add classifier run persistence and model/version tracking for traceability.
-6. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-7. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+1. Define and implement dashboard card UI v2 in React + MUI.
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 
