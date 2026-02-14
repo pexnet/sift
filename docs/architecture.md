@@ -194,6 +194,14 @@ Design goals:
 4. Remove legacy HTMX/Jinja workspace implementation after cutover (`/web/partials/*`, `/web/actions/*`, templates, and workspace static behavior).
 5. Keep backend API routes (`/api/v1/navigation`, `/api/v1/articles`, article state endpoints) as the stable UI data contract.
 
+### Cutover Parity Matrix
+
+| Category | Scope for React + MUI cutover |
+| --- | --- |
+| Must-match behaviors | Keyboard shortcuts (`j/k`, `o`, `m`, `s`, `/`), scope/navigation flows powered by `/api/v1/navigation`, article list/reader behavior from `/api/v1/articles`, and article state mutations via `PATCH /api/v1/articles/{article_id}/state` and `POST /api/v1/articles/state/bulk`; keep density/theme persistence behavior parity. |
+| Allowed improvements | Layout refinements, improved loading skeletons, and clearer error handling UX are encouraged as long as they preserve the fixed API contracts above. |
+| Deferred / non-goals | Dashboard card UI v2 and advanced stream ranking/prioritization controls are explicitly out of scope for this cutover slice. |
+
 ## Planned Next Moves
 
 1. Execute full React + MUI `/app` cutover (big-bang rewrite) and retire the HTMX/Jinja workspace implementation.
