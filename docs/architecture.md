@@ -36,6 +36,7 @@ This keeps deployment simple while preserving clean seams for future service ext
 - `/app` is an authenticated, reader-first transitional workspace implemented with HTMX + Jinja templates.
 - It delivers a 3-pane shell (navigation tree, article list, reader pane), theme/density preferences, and core keyboard shortcuts.
 - Transitional HTMX web routes power this workspace (`/web/partials/*`, `/web/actions/*`) and are scheduled for removal after cutover.
+- React cutover currently includes an authenticated `/app-react` preview route that exercises API-backed nav/list/reader loading states as the first migration slice.
 
 **Target**
 

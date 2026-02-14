@@ -64,6 +64,10 @@ def test_workspace_routes_auth_guard_and_partials(monkeypatch) -> None:
             assert unauth_home.status_code == 303
             assert unauth_home.headers["location"] == "/login"
 
+            unauth_react_home = client.get("/app-react", follow_redirects=False)
+            assert unauth_react_home.status_code == 303
+            assert unauth_react_home.headers["location"] == "/login"
+
             unauth_partial = client.get("/web/partials/nav-tree")
             assert unauth_partial.status_code == 401
 
@@ -73,6 +77,11 @@ def test_workspace_routes_auth_guard_and_partials(monkeypatch) -> None:
             assert authed_home.status_code == 200
             assert "Newsfeed" in authed_home.text
             assert "Workspace Article" in authed_home.text
+
+            authed_react_home = client.get("/app-react")
+            assert authed_react_home.status_code == 200
+            assert "React Workspace Preview" in authed_react_home.text
+            assert "react-workspace-root" in authed_react_home.text
 
             authed_partial = client.get("/web/partials/nav-tree")
             assert authed_partial.status_code == 200

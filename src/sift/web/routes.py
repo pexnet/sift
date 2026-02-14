@@ -191,6 +191,18 @@ async def app_workspace(request: Request, session: AsyncSession = Depends(get_db
     return templates.TemplateResponse(request=request, name="app.html", context=context)
 
 
+@router.get("/app-react")
+async def app_workspace_react(request: Request, session: AsyncSession = Depends(get_db_session)) -> Response:
+    current_user = await _get_optional_user(request=request, session=session)
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="app_react.html",
+        context={"title": "Sift", "current_user": current_user},
+    )
+
+
 @router.get("/web/partials/nav-tree")
 async def nav_tree_partial(request: Request, session: AsyncSession = Depends(get_db_session)) -> Response:
     current_user = await _get_optional_user(request=request, session=session)
@@ -473,4 +485,3 @@ async def account_page(
         name="account.html",
         context={"title": "Account", "current_user": current_user},
     )
-

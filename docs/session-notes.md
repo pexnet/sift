@@ -118,6 +118,12 @@
   - `tests/test_article_service.py`
   - `tests/test_navigation_service.py`
   - `tests/test_article_state_api.py`
+- Started React cutover vertical slice for `/app`:
+  - Added authenticated preview route `GET /app-react` to host React migration shell.
+  - Added `app_react.html` workspace scaffold with explicit loading/error/empty placeholders for nav/list/reader panes.
+  - Added `app_react.js` client bootstrap to consume existing APIs (`/api/v1/navigation`, `/api/v1/articles`, `/api/v1/articles/{article_id}`) and hydrate preview interactions.
+  - Added initial responsive styles for preview shell in `app.css`.
+  - Extended web workspace route tests to cover `/app-react` auth guard + render smoke checks.
 - Verified quality gates:
   - `python -m ruff check .` passed
   - `python -m pytest` passed (43 tests)
