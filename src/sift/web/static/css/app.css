@@ -563,3 +563,72 @@ a {
     padding: var(--space-5);
   }
 }
+
+.react-workspace {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.react-workspace__header {
+  padding: var(--space-5);
+}
+
+.react-workspace__header h1 {
+  margin: 0 0 var(--space-2);
+}
+
+.react-workspace__grid {
+  display: grid;
+  grid-template-columns: 280px minmax(280px, 1fr) minmax(360px, 1.1fr);
+  gap: var(--space-4);
+}
+
+.react-pane {
+  min-height: 420px;
+  padding: var(--space-4);
+}
+
+.react-pane h2 {
+  margin-top: 0;
+}
+
+.react-state {
+  color: var(--muted);
+}
+
+.react-list {
+  margin: var(--space-3) 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.react-article-button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.react-article-button:hover {
+  border-color: var(--accent);
+}
+
+.react-reader h3 {
+  margin-top: 0;
+}
+
+@media (max-width: 1180px) {
+  .react-workspace__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .react-pane {
+    min-height: auto;
+  }
+}
