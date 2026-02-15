@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     dev_seed_default_user_display_name: str = "Dev User"
     dev_seed_opml_path: str | None = None
     dev_seed_monitoring_folder_name: str = "Monitoring feeds"
+    cors_allow_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"])
+    cors_allow_credentials: bool = True
+    cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
+    cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
     plugin_paths: list[str] = Field(
         default_factory=lambda: [
             "sift.plugins.builtin.noop:NoopPlugin",

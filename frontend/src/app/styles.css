@@ -1,0 +1,154 @@
+:root {
+  --font-ui: "Segoe UI", "Helvetica Neue", sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+}
+
+:root,
+[data-theme="light"] {
+  --bg: #f1f5fb;
+  --surface: #ffffff;
+  --surface-soft: #f7f9fd;
+  --text: #0f1d2f;
+  --muted: #637083;
+  --border: #d8e0ee;
+  --accent: #1f5fbf;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1219;
+  --surface: #171c26;
+  --surface-soft: #1d2431;
+  --text: #edf3ff;
+  --muted: #9fb0cb;
+  --border: #2d3647;
+  --accent: #6ca5ff;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-ui);
+  color: var(--text);
+  background: radial-gradient(circle at 0 0, rgba(72, 133, 220, 0.15), transparent 35%), var(--bg);
+}
+
+.layout {
+  width: min(1200px, 94vw);
+  margin: 1rem auto 2rem;
+}
+
+.workspace-layout {
+  width: min(1440px, 96vw);
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.brand {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon-btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+}
+
+.auth-panel {
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.react-auth-shell {
+  padding-top: var(--space-4);
+}
+
+.react-workspace {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.react-workspace__grid {
+  display: grid;
+  grid-template-columns: 280px minmax(280px, 1fr) minmax(360px, 1.1fr);
+  gap: var(--space-4);
+}
+
+.react-pane {
+  min-height: 420px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.react-density-comfortable .MuiListItemButton-root {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.react-density-comfortable .MuiListItemText-primary {
+  line-height: 1.45;
+}
+
+@media (max-width: 1180px) {
+  .react-workspace__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .react-pane {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .layout {
+    width: 100%;
+    margin: 0;
+    padding: var(--space-3);
+  }
+
+  .topnav {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .panel {
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+  }
+}

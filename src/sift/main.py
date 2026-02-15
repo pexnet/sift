@@ -3,14 +3,13 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from sift.api.router import api_router
 from sift.config import get_settings
 from sift.core.runtime import get_plugin_manager
 from sift.db.session import SessionLocal, init_models
 from sift.services.dev_seed_service import dev_seed_service
-from sift.web.routes import router as web_router
 
 settings = get_settings()
 plugin_manager = get_plugin_manager()
@@ -27,9 +26,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="src/sift/web/static"), name="static")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_allow_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods,
+    allow_headers=settings.cors_allow_headers,
+)
 app.include_router(api_router)
-app.include_router(web_router)
 
 
 def run_dev() -> None:

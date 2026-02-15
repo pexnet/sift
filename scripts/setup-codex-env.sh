@@ -27,6 +27,21 @@ echo "[info] Running validation checks"
 uv run ruff check .
 uv run pytest
 
+if ! command -v pnpm >/dev/null 2>&1; then
+  if command -v npm >/dev/null 2>&1; then
+    echo "[info] Installing pnpm globally"
+    npm install -g pnpm
+  else
+    echo "[warn] npm is not available; skipping frontend setup"
+  fi
+fi
+
+if command -v pnpm >/dev/null 2>&1; then
+  echo "[info] Setting up frontend workspace"
+  pnpm --dir frontend install
+  pnpm --dir frontend run gen:openapi
+fi
+
 cat <<'MSG'
 
 [done] Codex environment is ready.
@@ -35,4 +50,5 @@ Useful commands:
   uv run uvicorn sift.main:app --reload
   uv run python -m sift.tasks.worker
   uv run python -m sift.tasks.scheduler
+  pnpm --dir frontend run dev
 MSG

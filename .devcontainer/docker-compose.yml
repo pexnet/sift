@@ -63,6 +63,22 @@ services:
       redis:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: /bin/sh -c "cd /workspaces/sift/frontend && if [ ! -d node_modules ]; then pnpm install; fi && pnpm run dev --host 0.0.0.0 --port 5173"
+    working_dir: /workspaces/sift
+    volumes:
+      - ..:/workspaces/sift
+    environment:
+      VITE_DEV_API_PROXY_TARGET: http://app:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      app:
+        condition: service_started
+
   worker:
     build:
       context: ..
