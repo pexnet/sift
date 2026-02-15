@@ -4,6 +4,7 @@ import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Collapse,
@@ -29,11 +30,14 @@ import { useMemo, useState } from "react";
 
 import type { NavigationHierarchy } from "../../../entities/navigation/model";
 import type { FeedFolder } from "../../../shared/types/contracts";
+import { getFeedAvatarHue, getFeedInitial } from "../lib/feedIcons";
+import { loadExpandedFolderIds, saveExpandedFolderIds } from "../lib/navState";
 
 type NavigationPaneProps = {
   density: "compact" | "comfortable";
   hierarchy: NavigationHierarchy | null;
   folders: FeedFolder[];
+  feedIconByFeedId: Record<string, string | null>;
   selectedScopeType: string;
   selectedScopeKey: string;
   isLoading: boolean;
@@ -55,11 +59,35 @@ type NavigationPaneProps = {
 
 type FeedMenuState = { anchor: HTMLElement; feedId: string } | null;
 type FolderActionMenuState = { anchor: HTMLElement; folderId: string; folderName: string } | null;
+type InitialFolderState = {
+  hasPreference: boolean;
+  map: Record<string, boolean>;
+};
+
+function getInitialFolderState(): InitialFolderState {
+  const stored = loadExpandedFolderIds();
+  if (!stored) {
+    return { hasPreference: false, map: {} };
+  }
+  return {
+    hasPreference: true,
+    map: Object.fromEntries(Array.from(stored).map((folderId) => [folderId, true])),
+  };
+}
+
+function getExpandedFolderIds(expandedFolders: Record<string, boolean>): Set<string> {
+  return new Set(
+    Object.entries(expandedFolders)
+      .filter(([, isExpanded]) => isExpanded)
+      .map(([folderId]) => folderId)
+  );
+}
 
 export function NavigationPane({
   density,
   hierarchy,
   folders,
+  feedIconByFeedId,
   selectedScopeType,
   selectedScopeKey,
   isLoading,
@@ -78,7 +106,9 @@ export function NavigationPane({
   themeMode,
   onDensityChange,
 }: NavigationPaneProps) {
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [initialFolderState] = useState(getInitialFolderState);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(initialFolderState.map);
+  const [hasExpansionPreference, setHasExpansionPreference] = useState(initialFolderState.hasPreference);
   const [createOpen, setCreateOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -87,15 +117,48 @@ export function NavigationPane({
   const [activeFolderName, setActiveFolderName] = useState("");
   const [feedMenu, setFeedMenu] = useState<FeedMenuState>(null);
   const [folderMenu, setFolderMenu] = useState<FolderActionMenuState>(null);
+  const [failedFeedIcons, setFailedFeedIcons] = useState<Record<string, true>>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
   const folderOptions = useMemo(
     () => [{ id: null, name: "Unfiled" }, ...folders.map((folder) => ({ id: folder.id, name: folder.name }))],
     [folders]
   );
+  const folderKeys = useMemo(
+    () => (hierarchy ? hierarchy.folders.map((folder) => folder.scope_id || "unfiled") : []),
+    [hierarchy]
+  );
+  const defaultFolderOpen = !hasExpansionPreference;
+
+  const isFolderOpen = (folderKey: string): boolean => {
+    const current = expandedFolders[folderKey];
+    if (current !== undefined) {
+      return current;
+    }
+    return defaultFolderOpen;
+  };
 
   const toggleFolder = (folderKey: string) => {
-    setExpandedFolders((previous) => ({ ...previous, [folderKey]: !previous[folderKey] }));
+    setHasExpansionPreference(true);
+    setExpandedFolders((previous) => {
+      const current = previous[folderKey] ?? defaultFolderOpen;
+      const next = { ...previous, [folderKey]: !current };
+      saveExpandedFolderIds(getExpandedFolderIds(next));
+      return next;
+    });
+  };
+
+  const expandAllFolders = () => {
+    const next = Object.fromEntries(folderKeys.map((folderKey) => [folderKey, true]));
+    setHasExpansionPreference(true);
+    setExpandedFolders(next);
+    saveExpandedFolderIds(new Set(folderKeys));
+  };
+
+  const collapseAllFolders = () => {
+    setHasExpansionPreference(true);
+    setExpandedFolders({});
+    saveExpandedFolderIds(new Set());
   };
 
   const closeDialogs = () => {
@@ -189,31 +252,49 @@ export function NavigationPane({
 
           <Box>
             <Typography className="workspace-nav__section-title">Folders</Typography>
+            <Stack direction="row" spacing={0.5} sx={{ px: 0.5, pb: 0.5 }}>
+              <Button size="small" variant="text" onClick={expandAllFolders}>
+                Expand all
+              </Button>
+              <Button size="small" variant="text" onClick={collapseAllFolders}>
+                Collapse all
+              </Button>
+            </Stack>
             <List dense={density === "compact"} disablePadding>
               {hierarchy.folders.map((folder) => {
                 const folderKey = folder.scope_id || "unfiled";
-                const open = expandedFolders[folderKey] ?? true;
+                const open = isFolderOpen(folderKey);
                 const selectable = !folder.is_unfiled && folder.scope_id.length > 0;
 
                 return (
                   <Box key={folderKey}>
                     <Stack direction="row" alignItems="center">
+                      <IconButton
+                        size="small"
+                        aria-label={`${open ? "Collapse" : "Expand"} folder ${folder.name}`}
+                        className="workspace-nav__folder-toggle"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleFolder(folderKey);
+                        }}
+                      >
+                        {open ? (
+                          <ExpandMoreRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
+                        ) : (
+                          <ChevronRightRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
+                        )}
+                      </IconButton>
                       <ListItemButton
                         selected={selectable && selectedScopeType === "folder" && selectedScopeKey === folder.scope_id}
                         onClick={() => {
                           if (selectable) {
                             onSelectFolder(folder.scope_id);
                           }
-                          toggleFolder(folderKey);
                         }}
                         className="workspace-nav__row workspace-nav__row--folder"
                       >
                         <Box className="workspace-nav__folder-label">
-                          {open ? (
-                            <ExpandMoreRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
-                          ) : (
-                            <ChevronRightRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
-                          )}
                           <ListItemText primary={folder.name} />
                         </Box>
                         <Typography variant="caption" color="text.secondary">
@@ -236,25 +317,17 @@ export function NavigationPane({
                     <Collapse in={open} timeout="auto" unmountOnExit>
                       <List dense={density === "compact"} disablePadding className="workspace-nav__children">
                         {folder.feeds.map((feed) => (
-                          <Stack key={feed.id} direction="row" alignItems="center">
-                            <ListItemButton
-                              selected={selectedScopeType === "feed" && selectedScopeKey === feed.scope_id}
-                              onClick={() => onSelectFeed(String(feed.scope_id))}
-                              className="workspace-nav__row workspace-nav__row--feed"
-                            >
-                              <ListItemText primary={feed.title} />
-                              <Typography variant="caption" color="text.secondary">
-                                {feed.unread_count}
-                              </Typography>
-                            </ListItemButton>
-                            <IconButton
-                              size="small"
-                              aria-label={`Feed actions for ${feed.title}`}
-                              onClick={(event) => setFeedMenu({ anchor: event.currentTarget, feedId: feed.id })}
-                            >
-                              <MoreHorizRoundedIcon fontSize="small" />
-                            </IconButton>
-                          </Stack>
+                          <FeedRow
+                            key={feed.id}
+                            feed={feed}
+                            feedIconByFeedId={feedIconByFeedId}
+                            failedFeedIcons={failedFeedIcons}
+                            selectedScopeKey={selectedScopeKey}
+                            selectedScopeType={selectedScopeType}
+                            setFailedFeedIcons={setFailedFeedIcons}
+                            onSelectFeed={onSelectFeed}
+                            onOpenFeedMenu={(event) => setFeedMenu({ anchor: event.currentTarget, feedId: feed.id })}
+                          />
                         ))}
                       </List>
                     </Collapse>
@@ -399,5 +472,72 @@ export function NavigationPane({
         </DialogActions>
       </Dialog>
     </Paper>
+  );
+}
+
+type FeedRowProps = {
+  feed: NavigationHierarchy["folders"][number]["feeds"][number];
+  feedIconByFeedId: Record<string, string | null>;
+  failedFeedIcons: Record<string, true>;
+  selectedScopeType: string;
+  selectedScopeKey: string;
+  onSelectFeed: (feedId: string) => void;
+  onOpenFeedMenu: (event: React.MouseEvent<HTMLElement>) => void;
+  setFailedFeedIcons: React.Dispatch<React.SetStateAction<Record<string, true>>>;
+};
+
+function FeedRow({
+  feed,
+  feedIconByFeedId,
+  failedFeedIcons,
+  selectedScopeType,
+  selectedScopeKey,
+  onSelectFeed,
+  onOpenFeedMenu,
+  setFailedFeedIcons,
+}: FeedRowProps) {
+  const feedIconSrc = failedFeedIcons[feed.id] ? null : (feedIconByFeedId[feed.id] ?? null);
+  const feedAvatarHue = getFeedAvatarHue(feed.title);
+
+  return (
+    <Stack direction="row" alignItems="center">
+      <ListItemButton
+        selected={selectedScopeType === "feed" && selectedScopeKey === feed.scope_id}
+        onClick={() => onSelectFeed(String(feed.scope_id))}
+        className="workspace-nav__row workspace-nav__row--feed"
+      >
+        <Box className="workspace-nav__feed-label">
+          <Avatar
+            className="workspace-nav__feed-avatar"
+            alt={feed.title}
+            imgProps={{
+              loading: "lazy",
+              referrerPolicy: "no-referrer",
+              onError: () => {
+                setFailedFeedIcons((previous) => ({ ...previous, [feed.id]: true }));
+              },
+            }}
+            sx={{
+              bgcolor: `hsl(${feedAvatarHue} 45% 90%)`,
+              color: `hsl(${feedAvatarHue} 45% 28%)`,
+            }}
+            {...(feedIconSrc ? { src: feedIconSrc } : {})}
+          >
+            {getFeedInitial(feed.title)}
+          </Avatar>
+          <ListItemText primary={feed.title} />
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          {feed.unread_count}
+        </Typography>
+      </ListItemButton>
+      <IconButton
+        size="small"
+        aria-label={`Feed actions for ${feed.title}`}
+        onClick={onOpenFeedMenu}
+      >
+        <MoreHorizRoundedIcon fontSize="small" />
+      </IconButton>
+    </Stack>
   );
 }

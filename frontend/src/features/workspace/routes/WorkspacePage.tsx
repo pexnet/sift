@@ -18,11 +18,13 @@ import {
   useAssignFeedFolderMutation,
   useCreateFolderMutation,
   useDeleteFolderMutation,
+  useFeedsQuery,
   useFoldersQuery,
   useNavigationQuery,
   usePatchArticleStateMutation,
   useUpdateFolderMutation,
 } from "../api/workspaceHooks";
+import { getFeedIconUrl } from "../lib/feedIcons";
 import { useWorkspaceShortcuts } from "../hooks/useWorkspaceShortcuts";
 import { toCreateFolderRequest, toFeedFolderAssignmentRequest, toUpdateFolderRequest } from "../lib/folderForms";
 import { toReaderHtml } from "../lib/readerContent";
@@ -51,10 +53,18 @@ export function WorkspacePage({
 
   const navigationQuery = useNavigationQuery();
   const foldersQuery = useFoldersQuery();
+  const feedsQuery = useFeedsQuery();
   const hierarchy = useMemo(
     () => (navigationQuery.data ? toNavigationHierarchy(navigationQuery.data) : null),
     [navigationQuery.data]
   );
+  const feedIconByFeedId = useMemo<Record<string, string | null>>(() => {
+    const mapping: Record<string, string | null> = {};
+    for (const feed of feedsQuery.data ?? []) {
+      mapping[feed.id] = getFeedIconUrl(feed);
+    }
+    return mapping;
+  }, [feedsQuery.data]);
 
   const articlesQuery = useArticlesQuery(search);
   const articles = articlesQuery.data?.items ?? [];
@@ -136,6 +146,7 @@ export function WorkspacePage({
       density={density}
       hierarchy={hierarchy}
       folders={foldersQuery.data ?? []}
+      feedIconByFeedId={feedIconByFeedId}
       selectedScopeType={search.scope_type}
       selectedScopeKey={selectedScopeKey}
       isLoading={navigationQuery.isLoading}

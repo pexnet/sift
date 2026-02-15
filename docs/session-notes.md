@@ -99,3 +99,24 @@
 - Added tests for sanitizer and reader behavior:
   - `frontend/src/features/workspace/lib/readerContent.test.ts`
   - expanded `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Workspace Nav/Visual Polish v2
+
+- Implemented reliable folder interaction split in navigation:
+  - row click now selects folder scope only
+  - chevron click toggles expansion only (single-click behavior)
+- Added folder controls:
+  - `Expand all`
+  - `Collapse all`
+  - folder expansion state persisted in localStorage (`NAV_FOLDERS_EXPANDED_KEY`)
+- Added feed icons in folder/feed tree:
+  - favicon URL derived from feed `site_url` or `url`
+  - graceful fallback to deterministic initial avatar if favicon load fails
+- Applied softer visual tuning in workspace styles:
+  - lower-contrast borders/backgrounds
+  - calmer selected/hover states
+  - improved nav/feed row softness and spacing
+- Added/updated tests:
+  - `frontend/src/features/workspace/lib/feedIcons.test.ts`
+  - `frontend/src/features/workspace/lib/navState.test.ts`
+  - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
