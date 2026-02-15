@@ -145,6 +145,10 @@
   - Removed obsolete HTMX/Jinja workspace templates (`app.html` and `templates/partials/*`).
   - Removed legacy workspace script `src/sift/web/static/js/app.js` and dropped global HTMX script include from `base.html`.
   - Simplified web workspace route tests to validate `/app` auth guard + `/app-react` compatibility redirect only.
+- Implemented dashboard card UI v2 in the React `/app` workspace:
+  - Added a top dashboard summary row rendered with MUI Cards.
+  - Added cards for current scope, unread, saved, fresh coverage, and active sources.
+  - Wired card metrics to existing `/api/v1/navigation` and `/api/v1/articles` query data (no new API contracts).
 - Verified quality gates:
   - `python -m ruff check .` passed
   - `python -m pytest` passed (43 tests)
@@ -158,11 +162,10 @@
 
 > Source of truth: This roadmap order is canonical and must be mirrored in `AGENTS.md` and `docs/architecture.md` at the end of each session.
 
-1. Define and implement dashboard card UI v2 in React + MUI.
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Deferred Items
 

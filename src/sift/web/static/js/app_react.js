@@ -18,12 +18,16 @@ import {
   Alert,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   CssBaseline,
   Divider,
   FormControl,
+  Grid,
   InputLabel,
+  LinearProgress,
   List,
   ListItem,
   ListItemButton,
@@ -80,6 +84,72 @@ function flattenNavigation(navigation) {
     ...(navigation.folders || []).map((item) => ({ ...item, scope_type: "folder" })),
     ...(navigation.streams || []).map((item) => ({ ...item, scope_type: "stream" })),
   ];
+}
+
+function buildDashboardCards({ navigation, articles, scopeLabel }) {
+  const systemNodes = navigation?.system || [];
+  const allNode = systemNodes.find((item) => item.key === "all");
+  const savedNode = systemNodes.find((item) => item.key === "saved");
+  const freshNode = systemNodes.find((item) => item.key === "fresh");
+  const totalArticles = articles.length;
+  const unreadInList = articles.filter((item) => !item.is_read).length;
+  const savedInList = articles.filter((item) => item.is_starred).length;
+  const activeSources = new Set(articles.map((item) => item.feed_title || item.feed_id).filter(Boolean)).size;
+  const freshRatio = totalArticles === 0 ? 0 : Math.round((unreadInList / totalArticles) * 100);
+
+  return [
+    {
+      id: "scope",
+      title: "Current scope",
+      value: scopeLabel,
+      hint: `${totalArticles} loaded in this view`,
+      size: "md",
+    },
+    {
+      id: "unread",
+      title: "Unread",
+      value: String(unreadInList),
+      hint: `${allNode?.unread_count || 0} total unread across account`,
+      size: "sm",
+    },
+    {
+      id: "saved",
+      title: "Saved",
+      value: String(savedInList),
+      hint: `${savedNode?.unread_count || 0} saved entries in navigation`,
+      size: "sm",
+    },
+    {
+      id: "fresh",
+      title: "Fresh coverage",
+      value: `${freshRatio}%`,
+      hint: `${freshNode?.unread_count || 0} fresh entries in navigation`,
+      progress: freshRatio,
+      size: "lg",
+    },
+    {
+      id: "sources",
+      title: "Active sources",
+      value: String(activeSources),
+      hint: "Distinct feeds represented in loaded articles",
+      size: "md",
+    },
+  ];
+}
+
+function DashboardCard({ card }) {
+  return React.createElement(
+    Card,
+    { variant: "outlined", sx: { height: "100%", borderRadius: 3 } },
+    React.createElement(
+      CardContent,
+      null,
+      React.createElement(Typography, { variant: "overline", color: "text.secondary" }, card.title),
+      React.createElement(Typography, { variant: "h5", sx: { mb: 0.5 } }, card.value),
+      card.progress !== undefined ? React.createElement(LinearProgress, { value: card.progress, variant: "determinate", sx: { mb: 1 } }) : null,
+      React.createElement(Typography, { variant: "body2", color: "text.secondary" }, card.hint)
+    )
+  );
 }
 
 function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
@@ -139,6 +209,15 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
 
   const navItems = navigationQuery.data ? flattenNavigation(navigationQuery.data) : [];
   const selectedArticle = articleItems.find((article) => article.id === selectedArticleId);
+  const selectedNavLabel =
+    navItems.find((item) => search.scope_type === item.scope_type && search.scope_id === (item.id || ""))?.title ||
+    navItems.find((item) => search.scope_type === item.scope_type && search.scope_id === (item.id || ""))?.name ||
+    "All articles";
+  const dashboardCards = buildDashboardCards({
+    navigation: navigationQuery.data,
+    articles: articleItems,
+    scopeLabel: selectedNavLabel,
+  });
 
   const setSearch = (patch) => {
     navigate({ to: "/", search: { ...search, ...patch } });
@@ -206,7 +285,32 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
 
   return React.createElement(
     Stack,
-    { className: `react-workspace__grid react-density-${density}`, spacing: 2 },
+    { spacing: 2 },
+    React.createElement(
+      Box,
+      { component: "section" },
+      React.createElement(Typography, { variant: "h6", sx: { mb: 1 } }, "Dashboard"),
+      React.createElement(
+        Grid,
+        { container: true, spacing: 1.5, sx: { mb: 0.5 } },
+        dashboardCards.map((card) =>
+          React.createElement(
+            Grid,
+            {
+              key: card.id,
+              item: true,
+              xs: 12,
+              sm: card.size === "sm" ? 6 : 12,
+              md: card.size === "lg" ? 6 : 3,
+            },
+            React.createElement(DashboardCard, { card })
+          )
+        )
+      )
+    ),
+    React.createElement(
+      Stack,
+      { className: `react-workspace__grid react-density-${density}`, spacing: 2 },
     React.createElement(
       Paper,
       { className: "react-pane", component: "section", elevation: 0 },
@@ -393,6 +497,7 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
             )
           )
         : null
+    )
     )
   );
 }
