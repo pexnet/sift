@@ -184,3 +184,51 @@
   5. Wrap-up and merge readiness:
      - rerun `lint`, `typecheck`, `test`, `build`
      - open PR from `feat/folder-nav-polish` when approved
+
+### UI Sprint Planning: Settings Hub + Theme Presets (Next)
+
+- Goal: complete a sleek, modern UI pass by centralizing preferences and shipping multiple prebuilt visual themes.
+- Product direction for next sprint:
+  1. Introduce a multi-preset theme system (not only light/dark) with curated presets.
+  2. Build out `/account` as a full settings hub and move UI preferences there.
+  3. Remove duplicated display controls from workspace chrome after settings migration.
+  4. Define consistent design tokens to keep visual polish coherent across rail/nav/list/reader surfaces.
+
+#### Planned Vertical Slice
+
+1. Theme model and persistence
+   - Extend frontend UI state with `themePreset` and setter.
+   - Add storage key for preset persistence and backward-compatible default behavior.
+   - Update theme factory to accept both `themeMode` and `themePreset`.
+2. Settings hub structure
+   - Expand account/settings route into sectioned settings UI:
+     - Appearance (theme mode + preset)
+     - Reading/Layout (density and related display controls)
+     - Account (existing identity summary)
+3. Workspace cleanup
+   - Keep topbar settings entry point.
+   - Remove duplicated inline appearance controls once settings equivalents are live.
+4. Token-driven polish
+   - Implement semantic color/surface token contract for presets.
+   - Retune shell surfaces to consume theme tokens consistently.
+
+#### Candidate Presets (Initial)
+
+- Sift Classic (current green-forward baseline)
+- Ocean Slate (cool blue/cyan accent)
+- Graphite Violet (dark-forward premium)
+- Warm Sand (light neutral with warm accent)
+
+#### Verification Plan (Next Sprint)
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test`
+- `pnpm --dir frontend run build`
+
+#### Next Priorities (UI)
+
+1. Ship settings hub foundation and migrate all current UI display settings into it.
+2. Ship first four curated theme presets with persistence and safe defaults.
+3. Perform visual consistency pass across workspace panes using shared design tokens.
+4. Validate responsiveness and keyboard/accessibility for settings controls.

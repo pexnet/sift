@@ -375,3 +375,41 @@ Design goals:
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
+
+## Planned Frontend Settings and Theme Architecture (Next UI Sprint)
+
+### Intent
+
+The frontend will move from scattered display controls to a centralized settings hub, while expanding from a single accent + light/dark toggle to a curated multi-preset theme system.
+
+### Planned UI Preferences Model
+
+- Continue using browser-local persistence for UI-only preferences.
+- Extend preference shape to include:
+  - `themeMode` (`light`/`dark`)
+  - `themePreset` (curated preset id)
+  - `density` (`compact`/`comfortable`)
+- Keep safe fallback defaults so unknown/legacy stored values never break rendering.
+
+### Planned Theme System
+
+- Evolve theme factory to use `(themeMode, themePreset)` inputs.
+- Implement semantic token contract per preset (surfaces, text emphasis, accent, borders, focus).
+- Map each preset onto the same semantic slots to keep component styling consistent.
+
+### Planned Settings Surface
+
+- Use the existing authenticated settings route (`/account`) as the consolidated settings hub.
+- Organize controls into sections:
+  - Appearance
+  - Reading/Layout
+  - Account
+- Workspace topbar remains a navigation entry point to settings instead of hosting duplicate controls.
+
+### Rollout Strategy
+
+1. Add preference model + persistence updates.
+2. Add curated presets and theme factory expansion.
+3. Implement sectioned settings UI and migrate current controls.
+4. Remove duplicate display controls from workspace shell.
+5. Run frontend verification (`lint`, `typecheck`, `test`, `build`).
