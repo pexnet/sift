@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { NAV_FOLDERS_EXPANDED_KEY, NAV_MONITORING_EXPANDED_KEY } from "../../../shared/lib/storage";
+import { NAV_FOLDERS_EXPANDED_KEY, NAV_MONITORING_EXPANDED_KEY, NAV_VISUAL_PRESET_KEY } from "../../../shared/lib/storage";
 import {
   loadExpandedFolderIds,
+  loadNavVisualPreset,
   loadMonitoringExpanded,
   saveExpandedFolderIds,
+  saveNavVisualPreset,
   saveMonitoringExpanded,
 } from "./navState";
 
@@ -45,5 +47,20 @@ describe("navState", () => {
   it("saves monitoring expansion preference", () => {
     saveMonitoringExpanded(true);
     expect(storage.getItem(NAV_MONITORING_EXPANDED_KEY)).toBe("true");
+  });
+
+  it("loads persisted nav visual preset", () => {
+    storage.setItem(NAV_VISUAL_PRESET_KEY, "tight");
+    expect(loadNavVisualPreset()).toBe("tight");
+  });
+
+  it("returns null for invalid nav visual preset", () => {
+    storage.setItem(NAV_VISUAL_PRESET_KEY, "wide");
+    expect(loadNavVisualPreset()).toBeNull();
+  });
+
+  it("saves nav visual preset", () => {
+    saveNavVisualPreset("airy");
+    expect(storage.getItem(NAV_VISUAL_PRESET_KEY)).toBe("airy");
   });
 });

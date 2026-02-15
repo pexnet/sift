@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { NavigationHierarchy } from "../../../entities/navigation/model";
 import type { FeedFolder } from "../../../shared/types/contracts";
-import { NAV_FOLDERS_EXPANDED_KEY } from "../../../shared/lib/storage";
+import { NAV_FOLDERS_EXPANDED_KEY, NAV_VISUAL_PRESET_KEY } from "../../../shared/lib/storage";
 import { NavigationPane } from "./NavigationPane";
 
 const folders: FeedFolder[] = [];
@@ -196,5 +196,15 @@ describe("NavigationPane", () => {
     const avatar = document.querySelector(".workspace-nav__feed-avatar");
     expect(avatar).toBeTruthy();
     expect(avatar).toHaveStyle({ width: "14px", height: "14px" });
+  });
+
+  it("persists selected nav visual preset", () => {
+    const { container } = renderPane();
+    const navRoot = container.querySelector(".workspace-nav");
+    expect(navRoot?.className).toContain("workspace-nav--preset-balanced");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tight" }));
+    expect(navRoot?.className).toContain("workspace-nav--preset-tight");
+    expect(storage.getItem(NAV_VISUAL_PRESET_KEY)).toBe("tight");
   });
 });

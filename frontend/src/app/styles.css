@@ -165,10 +165,28 @@ body {
 }
 
 .workspace-nav {
+  --nav-row-min-height: 30px;
+  --nav-feed-row-min-height: 28px;
+  --nav-children-indent: 0.82rem;
+  --nav-count-color: color-mix(in srgb, var(--muted) 78%, #ffffff 22%);
   background: color-mix(in srgb, var(--surface) 92%, var(--bg) 8%);
   border-right: 1px solid var(--border);
   padding: 0.6rem 0.45rem 0.8rem;
   overflow: auto;
+}
+
+.workspace-nav--preset-tight {
+  --nav-row-min-height: 28px;
+  --nav-feed-row-min-height: 26px;
+  --nav-children-indent: 0.72rem;
+  --nav-count-color: color-mix(in srgb, var(--muted) 68%, #ffffff 32%);
+}
+
+.workspace-nav--preset-airy {
+  --nav-row-min-height: 33px;
+  --nav-feed-row-min-height: 31px;
+  --nav-children-indent: 0.95rem;
+  --nav-count-color: color-mix(in srgb, var(--muted) 84%, #ffffff 16%);
 }
 
 .workspace-nav-drawer {
@@ -194,6 +212,29 @@ body {
   font-size: 1.78rem;
   font-weight: 650;
   letter-spacing: -0.015em;
+}
+
+.workspace-nav__preset-row {
+  padding: 0 0.2rem;
+}
+
+.workspace-nav__preset-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.workspace-nav__preset-button {
+  min-width: 0;
+  padding-inline: 0.45rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.workspace-nav__preset-button--active {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .workspace-nav__toolbar .MuiButton-text {
@@ -226,7 +267,7 @@ body {
 
 .workspace-nav__row {
   border-radius: 8px;
-  min-height: 30px;
+  min-height: var(--nav-row-min-height);
   margin: 0;
   flex: 1;
   padding-left: 0.5rem;
@@ -260,7 +301,7 @@ body {
 }
 
 .workspace-nav__children {
-  margin: 0.06rem 0.12rem 0.12rem 0.82rem;
+  margin: 0.06rem 0.12rem 0.12rem var(--nav-children-indent);
   padding-left: 0.26rem;
   border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent 36%);
 }
@@ -331,7 +372,7 @@ body {
 }
 
 .workspace-nav__row--feed {
-  min-height: 28px;
+  min-height: var(--nav-feed-row-min-height);
 }
 
 .workspace-nav__count {
@@ -340,7 +381,7 @@ body {
   text-align: right;
   font-size: 0.7rem;
   font-weight: 500;
-  color: color-mix(in srgb, var(--muted) 78%, #ffffff 22%);
+  color: var(--nav-count-color);
 }
 
 .workspace-nav__action-button {
@@ -688,11 +729,11 @@ body {
 }
 
 .react-density-comfortable .workspace-nav__row {
-  min-height: 36px;
+  min-height: calc(var(--nav-row-min-height) + 4px);
 }
 
 .react-density-comfortable .workspace-nav__row--feed {
-  min-height: 34px;
+  min-height: calc(var(--nav-feed-row-min-height) + 4px);
 }
 
 @media (max-width: 980px) {
