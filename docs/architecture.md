@@ -360,6 +360,10 @@ Design goals:
 
 ## Planned Next Moves
 
+0. Frontend workspace polish completion (currently paused):
+   - finalize folder/nav micro-density defaults (`balanced` preset baseline)
+   - align navigation and article-list surface contrast in light theme
+   - consolidate display controls into settings while keeping top-bar quick theme toggle
 1. Stabilize local runtime baseline:
    - fix scheduler job-id delimiter compatibility with current RQ
    - keep dev seed idempotent without noisy duplicate-stream DB errors

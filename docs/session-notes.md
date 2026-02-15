@@ -164,3 +164,23 @@
   - `frontend/src/features/workspace/lib/readActions.test.ts`
   - `frontend/src/entities/article/model.test.ts`
   - updated `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+
+### Frontend Planning Backlog (Paused)
+
+- Session paused by user after theme/navigation polish on branch `feat/folder-nav-polish`.
+- Resume plan for the next UI pass:
+  1. Stabilize visual defaults:
+     - keep `balanced` as default nav preset
+     - keep `tight`/`airy` as optional variants, move the settings for this to a settings menu
+  2. Folder panel final pass:
+     - finalize row height, indent depth, and unread-count contrast values
+     - verify truncation and menu discoverability at narrower widths
+  3. Nav + list visual harmony:
+     - align article list hover/selected/read states with softened pistachio light theme
+     - keep reader pane styling unchanged
+  4. Settings consolidation:
+     - move display controls (nav preset/theme/density) into settings surface
+     - keep quick theme toggle in top bar
+  5. Wrap-up and merge readiness:
+     - rerun `lint`, `typecheck`, `test`, `build`
+     - open PR from `feat/folder-nav-polish` when approved
