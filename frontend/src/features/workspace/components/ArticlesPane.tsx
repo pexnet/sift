@@ -83,12 +83,19 @@ export function ArticlesPane({
             const unread = !article.is_read;
             const saved = article.is_starred;
             const relativePublished = article.published_at ? formatRelativeTime(article.published_at) : "";
+            const rowClassName = [
+              "workspace-row",
+              selected ? "workspace-row--selected" : "",
+              unread ? "" : "workspace-row--read",
+            ]
+              .filter(Boolean)
+              .join(" ");
 
             return (
               <button
                 key={article.id}
                 type="button"
-                className={selected ? "workspace-row workspace-row--selected" : "workspace-row"}
+                className={rowClassName}
                 onClick={() => onArticleSelect(article.id)}
                 aria-label={article.title || "Untitled article"}
               >

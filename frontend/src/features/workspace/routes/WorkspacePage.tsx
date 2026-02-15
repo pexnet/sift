@@ -1,9 +1,13 @@
 import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import SpaceDashboardRoundedIcon from "@mui/icons-material/SpaceDashboardRounded";
-import { Box, Drawer, useMediaQuery } from "@mui/material";
-import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Box, Drawer, IconButton, Tooltip, useMediaQuery } from "@mui/material";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { findArticleById, getSelectedArticleId } from "../../../entities/article/model";
 import { getScopeLabel, toNavigationHierarchy } from "../../../entities/navigation/model";
@@ -27,13 +31,14 @@ import {
 import { getFeedIconUrl } from "../lib/feedIcons";
 import { useWorkspaceShortcuts } from "../hooks/useWorkspaceShortcuts";
 import { toCreateFolderRequest, toFeedFolderAssignmentRequest, toUpdateFolderRequest } from "../lib/folderForms";
+import { getReadToggleDecision } from "../lib/readActions";
 import { toReaderHtml } from "../lib/readerContent";
+import { usePaneResizing } from "../hooks/usePaneResizing";
 
 type WorkspacePageProps = {
   search: WorkspaceSearch;
   density: "compact" | "comfortable";
   themeMode: "light" | "dark";
-  setDensity: (density: "compact" | "comfortable") => void;
   setThemeMode: (mode: "light" | "dark") => void;
   setSearch: (patch: Partial<WorkspaceSearch>) => void;
 };
@@ -42,14 +47,21 @@ export function WorkspacePage({
   search,
   density,
   themeMode,
-  setDensity,
   setThemeMode,
   setSearch,
 }: WorkspacePageProps) {
+  const navigate = useNavigate({ from: "/app" });
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const isTabletOrMobile = useMediaQuery("(max-width: 980px)");
   const isMobile = useMediaQuery("(max-width: 760px)");
+  const {
+    layout,
+    navSplitterProps,
+    listSplitterProps,
+    isNavDragging,
+    isListDragging,
+  } = usePaneResizing({ enabled: !isTabletOrMobile });
 
   const navigationQuery = useNavigationQuery();
   const foldersQuery = useFoldersQuery();
@@ -111,10 +123,21 @@ export function WorkspacePage({
   };
 
   const toggleRead = () => {
-    if (!selectedArticle) {
+    const decision = getReadToggleDecision(selectedArticle);
+    if (!decision) {
       return;
     }
-    patchArticleStateMutation.mutate({ is_read: !selectedArticle.is_read });
+
+    patchArticleStateMutation.mutate(
+      decision.payload,
+      decision.shouldAdvance
+        ? {
+            onSuccess: () => {
+              moveSelection(1);
+            },
+          }
+        : undefined
+    );
   };
 
   const toggleSaved = () => {
@@ -140,6 +163,13 @@ export function WorkspacePage({
   const navOpen = isTabletOrMobile && isNavOpen;
   const showArticlesPane = !isMobile || !selectedArticleId;
   const showReaderPane = !isMobile || Boolean(selectedArticleId);
+  const showListReaderSplitter = !isTabletOrMobile && showArticlesPane && showReaderPane;
+  const desktopShellStyle = !isTabletOrMobile
+    ? ({
+        "--workspace-nav-width": `${layout.navWidth}px`,
+        "--workspace-list-width": `${layout.listWidth}px`,
+      } as CSSProperties)
+    : undefined;
 
   const navigationPane = (
     <NavigationPane
@@ -204,14 +234,11 @@ export function WorkspacePage({
       }}
       isFolderMutationPending={createFolderMutation.isPending || updateFolderMutation.isPending || deleteFolderMutation.isPending}
       isAssignPending={assignFeedFolderMutation.isPending}
-      onToggleTheme={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-      themeMode={themeMode}
-      onDensityChange={setDensity}
     />
   );
 
   return (
-    <Box className={`workspace-shell react-density-${density}`}>
+    <Box className={`workspace-shell react-density-${density}`} style={desktopShellStyle}>
       <WorkspaceRail
         actions={[
           {
@@ -258,10 +285,36 @@ export function WorkspacePage({
           {navigationPane}
         </Drawer>
       ) : (
-        navigationPane
+        <>
+          {navigationPane}
+          <Box
+            {...navSplitterProps}
+            className={isNavDragging ? "workspace-splitter workspace-splitter--active" : "workspace-splitter"}
+          />
+        </>
       )}
 
-      <Box className="workspace-content">
+      <Box className={!isTabletOrMobile ? "workspace-content workspace-content--resizable" : "workspace-content"}>
+        <Box className="workspace-topbar">
+          <Tooltip title={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+            <IconButton
+              size="small"
+              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+            >
+              {themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Settings">
+            <IconButton
+              size="small"
+              aria-label="Open settings"
+              onClick={() => void navigate({ to: "/account" })}
+            >
+              <SettingsRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
         {showArticlesPane ? (
           <ArticlesPane
             density={density}
@@ -275,6 +328,13 @@ export function WorkspacePage({
             onSearchChange={(value) => setSearch({ q: value, article_id: "" })}
             onStateChange={(value) => setSearch({ state: value, article_id: "" })}
             onArticleSelect={(articleId) => setSearch({ article_id: articleId })}
+          />
+        ) : null}
+
+        {showListReaderSplitter ? (
+          <Box
+            {...listSplitterProps}
+            className={isListDragging ? "workspace-splitter workspace-splitter--active" : "workspace-splitter"}
           />
         ) : null}
 

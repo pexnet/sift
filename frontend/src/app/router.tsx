@@ -104,7 +104,7 @@ const accountRoute = createRoute({
 
 function WorkspaceRouteComponent() {
   const navigate = useNavigate({ from: "/app" });
-  const { density, setDensity, themeMode, setThemeMode } = useAppUiState();
+  const { density, themeMode, setThemeMode } = useAppUiState();
   const search = workspaceRoute.useSearch();
 
   const setSearch = (patch: Partial<WorkspaceSearch>) => {
@@ -119,7 +119,6 @@ function WorkspaceRouteComponent() {
       search={search}
       density={density}
       themeMode={themeMode}
-      setDensity={setDensity}
       setThemeMode={setThemeMode}
       setSearch={setSearch}
     />

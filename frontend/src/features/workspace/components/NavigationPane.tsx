@@ -12,16 +12,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   IconButton,
-  InputLabel,
   List,
   ListItemButton,
   ListItemText,
   Menu,
   MenuItem,
   Paper,
-  Select,
   Stack,
   TextField,
   Typography,
@@ -57,9 +54,6 @@ type NavigationPaneProps = {
   onAssignFeedFolder: (feedId: string, folderId: string | null) => Promise<void>;
   isFolderMutationPending: boolean;
   isAssignPending: boolean;
-  onToggleTheme: () => void;
-  themeMode: "light" | "dark";
-  onDensityChange: (value: "compact" | "comfortable") => void;
 };
 
 type FeedMenuState = { anchor: HTMLElement; feedId: string } | null;
@@ -107,9 +101,6 @@ export function NavigationPane({
   onAssignFeedFolder,
   isFolderMutationPending,
   isAssignPending,
-  onToggleTheme,
-  themeMode,
-  onDensityChange,
 }: NavigationPaneProps) {
   const [initialFolderState] = useState(getInitialFolderState);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(initialFolderState.map);
@@ -217,23 +208,6 @@ export function NavigationPane({
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Typography variant="h6">Feeds</Typography>
         <Stack direction="row" spacing={0.5}>
-          <Button size="small" variant="text" onClick={onToggleTheme}>
-            {themeMode === "dark" ? "Light" : "Dark"}
-          </Button>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="density-select">Density</InputLabel>
-            <Select
-              labelId="density-select"
-              label="Density"
-              value={density}
-              onChange={(event) =>
-                onDensityChange(event.target.value === "comfortable" ? "comfortable" : "compact")
-              }
-            >
-              <MenuItem value="compact">Compact</MenuItem>
-              <MenuItem value="comfortable">Comfortable</MenuItem>
-            </Select>
-          </FormControl>
           <Button size="small" variant="outlined" onClick={() => setCreateOpen(true)} startIcon={<AddRoundedIcon />}>
             Folder
           </Button>
@@ -267,14 +241,18 @@ export function NavigationPane({
           <Box>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
-              <IconButton
+              <Button
                 size="small"
-                className="workspace-nav__section-toggle"
+                variant="text"
+                className="workspace-nav__section-action"
                 aria-label={`${monitoringExpanded ? "Collapse" : "Expand"} monitoring feeds`}
+                startIcon={
+                  monitoringExpanded ? <ExpandMoreRoundedIcon fontSize="small" /> : <ChevronRightRoundedIcon fontSize="small" />
+                }
                 onClick={toggleMonitoringSection}
               >
-                {monitoringExpanded ? <ExpandMoreRoundedIcon fontSize="small" /> : <ChevronRightRoundedIcon fontSize="small" />}
-              </IconButton>
+                {monitoringExpanded ? "Collapse" : "Expand"}
+              </Button>
             </Stack>
             <Collapse in={monitoringExpanded} timeout="auto" unmountOnExit>
               <List dense={density === "compact"} disablePadding>

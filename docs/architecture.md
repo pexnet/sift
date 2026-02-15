@@ -40,10 +40,13 @@ Reader UX target is a modern, responsive React workspace built with MUI componen
    - compact feed icons and density-aware row sizing
 2. Center list pane:
    - scoped article listing with search/state/sort controls
+   - desktop resizable split with persisted pane widths
+   - slim top utility bar for workspace-level controls (theme/settings)
    - responsive density and layout behavior across breakpoints
    - row-level read/save actions
 3. Right reader pane:
    - article detail view and open-original action
+   - mark-read auto-advance to next article when transitioning unread -> read
    - sanitized rich HTML rendering pipeline for article body content (DOMPurify-based allowlist)
    - paper-editorial default reading surface in light mode (warm background + serif body typography)
 

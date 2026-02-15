@@ -101,9 +101,6 @@ function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = 
     onAssignFeedFolder: vi.fn(async () => {}),
     isFolderMutationPending: false,
     isAssignPending: false,
-    onToggleTheme: vi.fn(),
-    themeMode: "light",
-    onDensityChange: vi.fn(),
   };
 
   return render(<NavigationPane {...defaults} {...overrides} />);
@@ -167,11 +164,13 @@ describe("NavigationPane", () => {
   it("collapses and expands monitoring section", async () => {
     renderPane();
     expect(screen.getByText("[Global] darktrace")).toBeVisible();
+    expect(screen.getByText("Collapse")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /Collapse monitoring feeds/i }));
     await waitFor(() => {
       expect(screen.queryByText("[Global] darktrace")).toBeNull();
     });
+    expect(screen.getByText("Expand")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /Expand monitoring feeds/i }));
     await waitFor(() => {

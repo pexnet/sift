@@ -112,7 +112,7 @@ export function findArticleById(items: ArticleListItem[], articleId: string): Ar
 }
 
 export function getSelectedArticleId(items: ArticleListItem[], articleId: string): string {
-  if (articleId) {
+  if (articleId && items.some((item) => item.id === articleId)) {
     return articleId;
   }
   return items[0]?.id ?? "";

@@ -140,3 +140,27 @@
   - `frontend/src/features/workspace/lib/navState.test.ts`
   - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
   - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Workspace UX Polish v4
+
+- Added desktop pane resizing across both split boundaries:
+  - navigation ↔ article list
+  - article list ↔ reader
+  - widths persisted in browser-local storage (`PANE_LAYOUT_KEY`)
+- Added keyboard-accessible separators (`role="separator"`) with arrow/home/end controls.
+- Updated monitoring header control from subtle icon-only toggle to visible labeled action (`Collapse` / `Expand`).
+- Added slim workspace top bar with icon controls for:
+  - dark/light mode toggle
+  - settings navigation (`/account`)
+- Removed density control from navigation/feed pane toolbar (to live on settings page later).
+- Updated reader mark-read behavior:
+  - when toggling unread -> read, selection now auto-advances to next article after mutation success
+  - mark-unread does not auto-advance
+- Stability improvement:
+  - selected article id now falls back to first visible row when current id no longer exists in filtered results.
+- Added/updated tests:
+  - `frontend/src/features/workspace/lib/paneLayout.test.ts`
+  - `frontend/src/features/workspace/hooks/usePaneResizing.test.tsx`
+  - `frontend/src/features/workspace/lib/readActions.test.ts`
+  - `frontend/src/entities/article/model.test.ts`
+  - updated `frontend/src/features/workspace/components/NavigationPane.test.tsx`
