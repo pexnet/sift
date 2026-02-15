@@ -217,3 +217,5 @@ pnpm-debug.log*
 # Local VS Code developer overrides (personal machine only)
 .vscode/extensions.local.json
 .vscode/settings.local.json
+
+private/

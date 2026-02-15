@@ -1,6 +1,6 @@
-import { Alert, Box, Button, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
 
-import { AsyncState } from "../../../shared/ui/AsyncState";
+import { formatRelativeTime } from "../lib/time";
 import type { ArticleDetail, ArticleListItem } from "../../../shared/types/contracts";
 
 type ReaderPaneProps = {
@@ -13,6 +13,9 @@ type ReaderPaneProps = {
   hasMutationError: boolean;
   onToggleRead: () => void;
   onToggleSaved: () => void;
+  onOpenOriginal: () => void;
+  onMoveSelection: (delta: number) => void;
+  onBackToList?: () => void;
 };
 
 export function ReaderPane({
@@ -25,53 +28,66 @@ export function ReaderPane({
   hasMutationError,
   onToggleRead,
   onToggleSaved,
+  onOpenOriginal,
+  onMoveSelection,
+  onBackToList,
 }: ReaderPaneProps) {
   return (
-    <Paper className="react-pane" component="section" elevation={0}>
-      <Typography variant="h6" gutterBottom>
-        Reader
-      </Typography>
-
-      {selectedArticle ? (
-        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
-          <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleRead}>
-            {selectedArticle.is_read ? "Mark unread" : "Mark read"}
-          </Button>
-          <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleSaved}>
-            {selectedArticle.is_starred ? "Unsave" : "Save"}
-          </Button>
-          {selectedArticle.is_archived ? <Chip size="small" label="Archived" /> : null}
-        </Stack>
-      ) : null}
-
-      {hasMutationError ? <Alert severity="error">Failed to update article state.</Alert> : null}
-
+    <Paper className="workspace-reader" component="section" elevation={0}>
       {!selectedArticleId ? (
         <Typography variant="body2" color="text.secondary">
-          Select an article to load reader content.
+          Select an article to open the reader.
         </Typography>
-      ) : (
-        <AsyncState
-          isLoading={isLoading}
-          isError={isError}
-          empty={!detail}
-          loadingLabel="Loading article..."
-          errorLabel="Failed to load article details."
-          emptyLabel="No article content available."
-        />
-      )}
+      ) : null}
+
+      {isLoading ? <Typography color="text.secondary">Loading article...</Typography> : null}
+      {isError ? <Alert severity="error">Failed to load article details.</Alert> : null}
+      {hasMutationError ? <Alert severity="error">Failed to update article state.</Alert> : null}
 
       {detail ? (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="h6">{detail.title || "Untitled article"}</Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {detail.feed_title || ""}
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+        <Stack spacing={2}>
+          {onBackToList ? (
+            <Box>
+              <Button size="small" variant="text" onClick={onBackToList}>
+                Back to list
+              </Button>
+            </Box>
+          ) : null}
+
+          <Box>
+            <Typography variant="h4" className="workspace-reader__title">
+              {detail.title || "Untitled article"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" className="workspace-reader__meta">
+              {detail.feed_title || "Unknown source"}
+              {detail.published_at ? ` · ${formatRelativeTime(detail.published_at)}` : ""}
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleRead}>
+              {selectedArticle?.is_read ? "Mark unread" : "Mark read"}
+            </Button>
+            <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleSaved}>
+              {selectedArticle?.is_starred ? "Unsave" : "Save"}
+            </Button>
+            <Button size="small" variant="outlined" onClick={onOpenOriginal} disabled={!detail.canonical_url}>
+              Open original
+            </Button>
+            <Button size="small" variant="text" onClick={() => onMoveSelection(-1)}>
+              Prev
+            </Button>
+            <Button size="small" variant="text" onClick={() => onMoveSelection(1)}>
+              Next
+            </Button>
+          </Stack>
+
+          <Divider />
+
+          <Typography variant="body1" className="workspace-reader__body">
             {detail.content_text || "No content available."}
           </Typography>
-        </Box>
+        </Stack>
       ) : null}
     </Paper>
   );

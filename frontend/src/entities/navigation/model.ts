@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-import type {
-  NavigationFolderNode,
-  NavigationResponse,
-  NavigationStreamNode,
-  NavigationSystemNode,
-} from "../../shared/types/contracts";
+import type { NavigationResponse } from "../../shared/types/contracts";
 
 const navigationSystemSchema = z.object({
   key: z.enum(["all", "fresh", "saved", "archived", "recent"]),
@@ -38,33 +33,148 @@ const navigationTreeSchema = z.object({
   streams: z.array(navigationStreamSchema),
 });
 
-export type NavigationNode =
-  | (NavigationSystemNode & { scope_type: "system"; scope_id: string })
-  | (NavigationFolderNode & { scope_type: "folder"; scope_id: string })
-  | (NavigationStreamNode & { scope_type: "stream"; scope_id: string });
+export type NavigationSystemItem = {
+  key: "all" | "fresh" | "saved" | "archived" | "recent";
+  title: string;
+  unread_count: number;
+  kind: "system";
+  scope_type: "system";
+  scope_id: string;
+};
+
+export type NavigationFeedItem = {
+  kind: "feed";
+  id: string;
+  title: string;
+  unread_count: number;
+  folder_id: string | null;
+  folder_name: string;
+  scope_type: "feed";
+  scope_id: string;
+};
+
+export type NavigationFolderItem = {
+  id: string | null;
+  name: string;
+  unread_count: number;
+  kind: "folder";
+  scope_type: "folder";
+  scope_id: string;
+  is_unfiled: boolean;
+  feeds: NavigationFeedItem[];
+};
+
+export type NavigationStreamItem = {
+  id: string;
+  name: string;
+  unread_count: number;
+  kind: "stream";
+  scope_type: "stream";
+  scope_id: string;
+};
+
+export type NavigationSection =
+  | {
+      id: "systems";
+      title: "System";
+      items: NavigationSystemItem[];
+    }
+  | {
+      id: "folders";
+      title: "Folders";
+      items: NavigationFolderItem[];
+    }
+  | {
+      id: "streams";
+      title: "Streams";
+      items: NavigationStreamItem[];
+    };
+
+export type NavigationHierarchy = {
+  sections: NavigationSection[];
+  systems: NavigationSystemItem[];
+  folders: NavigationFolderItem[];
+  streams: NavigationStreamItem[];
+  feeds: NavigationFeedItem[];
+};
 
 export function parseNavigationResponse(payload: unknown): NavigationResponse {
   return navigationTreeSchema.parse(payload) as NavigationResponse;
 }
 
-export function flattenNavigation(tree: NavigationResponse): NavigationNode[] {
-  const systems: NavigationNode[] = tree.systems.map((systemNode) => ({
+export function toNavigationHierarchy(tree: NavigationResponse): NavigationHierarchy {
+  const systems: NavigationSystemItem[] = tree.systems.map((systemNode) => ({
     ...systemNode,
+    kind: "system",
     scope_type: "system",
     scope_id: systemNode.key,
   }));
 
-  const folders: NavigationNode[] = tree.folders.map((folderNode) => ({
-    ...folderNode,
-    scope_type: "folder",
-    scope_id: folderNode.id ?? "",
-  }));
+  const folders: NavigationFolderItem[] = tree.folders.map((folderNode) => {
+    const isUnfiled = folderNode.id === null;
+    const folderName = isUnfiled ? "Unfiled" : folderNode.name;
+    const feeds: NavigationFeedItem[] = (folderNode.feeds ?? []).map((feedNode) => ({
+      kind: "feed",
+      id: feedNode.id,
+      title: feedNode.title,
+      unread_count: feedNode.unread_count,
+      folder_id: folderNode.id,
+      folder_name: folderName,
+      scope_type: "feed",
+      scope_id: feedNode.id,
+    }));
 
-  const streams: NavigationNode[] = tree.streams.map((streamNode) => ({
+    return {
+      ...folderNode,
+      kind: "folder",
+      name: folderName,
+      scope_type: "folder",
+      scope_id: folderNode.id ?? "",
+      is_unfiled: isUnfiled,
+      feeds,
+    };
+  });
+
+  const streams: NavigationStreamItem[] = tree.streams.map((streamNode) => ({
     ...streamNode,
+    kind: "stream",
     scope_type: "stream",
     scope_id: streamNode.id,
   }));
 
-  return [...systems, ...folders, ...streams];
+  const feeds = folders.flatMap((folderNode) => folderNode.feeds);
+
+  return {
+    sections: [
+      { id: "systems", title: "System", items: systems },
+      { id: "folders", title: "Folders", items: folders },
+      { id: "streams", title: "Streams", items: streams },
+    ],
+    systems,
+    folders,
+    streams,
+    feeds,
+  };
+}
+
+export function getScopeLabel(
+  hierarchy: NavigationHierarchy,
+  scopeType: "system" | "folder" | "feed" | "stream",
+  scopeId: string,
+  state: string
+): string {
+  if (scopeType === "system") {
+    const systemNode = hierarchy.systems.find((item) => item.scope_id === state);
+    return systemNode?.title ?? "All articles";
+  }
+  if (scopeType === "folder") {
+    const folderNode = hierarchy.folders.find((item) => item.scope_id === scopeId);
+    return folderNode?.name ?? "Folder";
+  }
+  if (scopeType === "feed") {
+    const feedNode = hierarchy.feeds.find((item) => item.scope_id === scopeId);
+    return feedNode?.title ?? "Feed";
+  }
+  const streamNode = hierarchy.streams.find((item) => item.scope_id === scopeId);
+  return streamNode?.name ?? "Stream";
 }

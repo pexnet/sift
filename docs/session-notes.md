@@ -46,3 +46,38 @@
 ### Deferred
 
 1. External OIDC provider integration (Google first, then Azure/Apple).
+
+### Workspace UI Slice: Folder + Reader v1
+
+- Refactored `/app` to a light, compact reader-first shell:
+  - fixed app rail
+  - hierarchical navigation pane
+  - compact article list
+  - persistent reader pane
+- Removed dashboard cards from the `/app` workspace route.
+- Added hierarchical navigation view model mapping in `frontend/src/entities/navigation/model.ts`:
+  - system, folder, feed, and stream scope mapping
+  - unified scope label resolution for current URL scope
+- Added folder management and feed assignment flows using existing APIs:
+  - create/rename/delete folder
+  - move feed to folder / unfiled
+  - query invalidation for navigation, folders, feeds, and articles
+- Reworked article list rows for compact dense rendering with unread/saved indicators and metadata.
+- Reworked reader pane with core actions (`read`, `save`, `open original`, `prev`, `next`).
+- Added responsive behavior updates:
+  - desktop: fixed 3-pane layout
+  - tablet/mobile: collapsible navigation drawer from rail action
+  - mobile: progressive list/reader panel flow with back-to-list action
+- Added/updated frontend tests:
+  - navigation hierarchy mapping
+  - folder DTO/validation shaping
+  - compact article row rendering
+  - reader action wiring
+
+### Verification (Workspace Slice)
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test`
+- `pnpm --dir frontend run build`
+- `python -m pytest tests/test_article_state_api.py tests/test_article_service.py`

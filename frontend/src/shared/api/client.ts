@@ -80,6 +80,9 @@ async function request<TResponse>(url: string, options: RequestOptions = {}): Pr
 }
 
 export const apiClient = {
+  request<TResponse>(url: string, options: RequestOptions = {}) {
+    return request<TResponse>(url, options);
+  },
   get<TResponse>(url: string, options: RequestOptions = {}) {
     return request<TResponse>(url, { ...options, method: "GET" });
   },

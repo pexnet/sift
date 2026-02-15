@@ -9,6 +9,11 @@ export type ArticleListResponse = components["schemas"]["ArticleListResponse"];
 export type ArticleListItem = components["schemas"]["ArticleListItemOut"];
 export type ArticleDetail = components["schemas"]["ArticleDetailOut"];
 export type PatchArticleStateRequest = components["schemas"]["ArticleStatePatch"];
+export type Feed = components["schemas"]["FeedOut"];
+export type FeedFolder = components["schemas"]["FeedFolderOut"];
+export type FeedFolderCreateRequest = components["schemas"]["FeedFolderCreate"];
+export type FeedFolderUpdateRequest = components["schemas"]["FeedFolderUpdate"];
+export type FeedFolderAssignmentRequest = components["schemas"]["FeedFolderAssignmentUpdate"];
 
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
 export type ArticleStateFilter = "all" | "unread" | "saved" | "archived" | "fresh" | "recent";
