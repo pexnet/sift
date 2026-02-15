@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import cast
+from uuid import uuid4
 
 from sift.db.models import Feed
-from sift.tasks.scheduler import _is_feed_due
+from sift.tasks.scheduler import _has_active_job, _ingest_job_id, _is_feed_due
 
 
 @dataclass
@@ -50,3 +51,44 @@ def test_is_feed_due_false_when_inactive() -> None:
     now = datetime.now(UTC)
     assert _is_feed_due(_feed(is_active=False, last_fetched_at=None), now) is False
 
+
+def test_ingest_job_id_uses_rq_compatible_delimiter() -> None:
+    job_id = _ingest_job_id(uuid4())
+    assert ":" not in job_id
+
+
+@dataclass
+class JobStub:
+    status: str
+    deleted: bool = False
+
+    def get_status(self, *, refresh: bool) -> str:
+        return self.status
+
+    def delete(self) -> None:
+        self.deleted = True
+
+
+@dataclass
+class QueueStub:
+    jobs: dict[str, JobStub]
+
+    def fetch_job(self, job_id: str) -> JobStub | None:
+        return self.jobs.get(job_id)
+
+
+def test_has_active_job_reads_legacy_job_ids_for_dedupe() -> None:
+    feed_id = uuid4()
+    legacy_job = JobStub(status="queued")
+    queue = QueueStub(jobs={f"ingest:{feed_id}": legacy_job})
+
+    assert _has_active_job(feed_id, queue=queue) is True
+
+
+def test_has_active_job_deletes_stale_legacy_jobs() -> None:
+    feed_id = uuid4()
+    legacy_job = JobStub(status="finished")
+    queue = QueueStub(jobs={f"ingest:{feed_id}": legacy_job})
+
+    assert _has_active_job(feed_id, queue=queue) is False
+    assert legacy_job.deleted is True

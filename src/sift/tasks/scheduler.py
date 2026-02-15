@@ -1,6 +1,7 @@
 import asyncio
 import time
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sift.config import get_settings
@@ -9,6 +10,9 @@ from sift.db.session import SessionLocal
 from sift.services.feed_service import feed_service
 from sift.tasks.jobs import ingest_feed_job
 from sift.tasks.queueing import get_ingest_queue
+
+if TYPE_CHECKING:
+    from rq import Queue
 
 
 def _normalize_last_fetched_at(value: datetime | None) -> datetime | None:
@@ -34,20 +38,26 @@ def _is_feed_due(feed: Feed, now: datetime) -> bool:
 
 
 def _ingest_job_id(feed_id: UUID) -> str:
-    return f"ingest:{feed_id}"
+    return f"ingest-{feed_id}"
 
 
-def _has_active_job(feed_id: UUID) -> bool:
-    queue = get_ingest_queue()
-    existing_job = queue.fetch_job(_ingest_job_id(feed_id))
-    if existing_job is None:
-        return False
+def _candidate_job_ids(feed_id: UUID) -> tuple[str, ...]:
+    # Keep legacy support for older job ids so scheduler dedupe still works during upgrades.
+    return (_ingest_job_id(feed_id), f"ingest:{feed_id}")
 
-    status = existing_job.get_status(refresh=False)
-    if status in {"queued", "started", "scheduled", "deferred"}:
-        return True
 
-    existing_job.delete()
+def _has_active_job(feed_id: UUID, queue: "Queue | None" = None) -> bool:
+    active_queue = queue or get_ingest_queue()
+    for job_id in _candidate_job_ids(feed_id):
+        existing_job = active_queue.fetch_job(job_id)
+        if existing_job is None:
+            continue
+
+        status = existing_job.get_status(refresh=False)
+        if status in {"queued", "started", "scheduled", "deferred"}:
+            return True
+
+        existing_job.delete()
     return False
 
 
@@ -63,7 +73,7 @@ async def enqueue_due_feeds() -> int:
             if not _is_feed_due(feed, now):
                 continue
 
-            if _has_active_job(feed.id):
+            if _has_active_job(feed.id, queue):
                 continue
 
             job_id = _ingest_job_id(feed.id)
