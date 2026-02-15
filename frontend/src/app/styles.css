@@ -1,19 +1,21 @@
 :root {
   --font-ui: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
   --font-reader: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
-  --bg: #f2f5fa;
-  --surface: #ffffff;
-  --surface-soft: #fafbfd;
-  --surface-muted: #f6f8fc;
-  --text: #122135;
-  --muted: #5f6d82;
-  --border: #dce4ef;
-  --accent: #3a78dc;
-  --accent-soft: #e8f0fe;
-  --row-selected: #edf2fb;
-  --focus-ring: 0 0 0 2px rgba(58, 120, 220, 0.28);
+  --bg: #eff5ec;
+  --surface: #f7f9f3;
+  --surface-soft: #f2f6ee;
+  --surface-muted: #ebf1e8;
+  --surface-nav: #e0eadb;
+  --surface-list: #eef4e9;
+  --text: #1f2f27;
+  --muted: #5f7264;
+  --border: #ccd9c9;
+  --accent: #3fbf73;
+  --accent-soft: #dff2e4;
+  --row-selected: #deecde;
+  --focus-ring: 0 0 0 2px rgba(63, 191, 115, 0.28);
   --shadow-soft: 0 10px 30px rgba(20, 34, 59, 0.05);
-  --rail-bg: #2f5f9f;
+  --rail-bg: #3a7859;
   --rail-text: #e8f0ff;
   --reader-paper-bg: #f7f3ea;
   --reader-paper-text: #1a1a16;
@@ -26,15 +28,17 @@
   --surface: #151f2d;
   --surface-soft: #1c2738;
   --surface-muted: #1b2635;
+  --surface-nav: #162231;
+  --surface-list: #151f2d;
   --text: #eaf1ff;
   --muted: #9bb0cf;
   --border: #2c3950;
-  --accent: #67a5ff;
-  --accent-soft: #1c3454;
+  --accent: #63d191;
+  --accent-soft: #1f3b2d;
   --row-selected: #243a5a;
-  --focus-ring: 0 0 0 2px rgba(103, 165, 255, 0.4);
+  --focus-ring: 0 0 0 2px rgba(99, 209, 145, 0.35);
   --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.35);
-  --rail-bg: #123861;
+  --rail-bg: #183f31;
   --rail-text: #dbe8ff;
   --reader-paper-bg: var(--surface);
   --reader-paper-text: var(--text);
@@ -100,7 +104,7 @@ body {
 }
 
 .workspace-rail {
-  background: linear-gradient(180deg, #3e6fad 0%, var(--rail-bg) 100%);
+  background: linear-gradient(180deg, #74ab8c 0%, var(--rail-bg) 100%);
   color: var(--rail-text);
   padding: 0.8rem 0.45rem;
   border-right: 1px solid rgba(255, 255, 255, 0.14);
@@ -167,9 +171,11 @@ body {
 .workspace-nav {
   --nav-row-min-height: 30px;
   --nav-feed-row-min-height: 28px;
+  --nav-row-padding-y: 0.16rem;
+  --nav-feed-row-padding-y: 0.12rem;
   --nav-children-indent: 0.82rem;
   --nav-count-color: color-mix(in srgb, var(--muted) 78%, #ffffff 22%);
-  background: color-mix(in srgb, var(--surface) 92%, var(--bg) 8%);
+  background: var(--surface-nav);
   border-right: 1px solid var(--border);
   padding: 0.6rem 0.45rem 0.8rem;
   overflow: auto;
@@ -178,15 +184,19 @@ body {
 .workspace-nav--preset-tight {
   --nav-row-min-height: 28px;
   --nav-feed-row-min-height: 26px;
+  --nav-row-padding-y: 0.08rem;
+  --nav-feed-row-padding-y: 0.06rem;
   --nav-children-indent: 0.72rem;
-  --nav-count-color: color-mix(in srgb, var(--muted) 68%, #ffffff 32%);
+  --nav-count-color: color-mix(in srgb, var(--muted) 62%, #ffffff 38%);
 }
 
 .workspace-nav--preset-airy {
-  --nav-row-min-height: 33px;
-  --nav-feed-row-min-height: 31px;
-  --nav-children-indent: 0.95rem;
-  --nav-count-color: color-mix(in srgb, var(--muted) 84%, #ffffff 16%);
+  --nav-row-min-height: 35px;
+  --nav-feed-row-min-height: 33px;
+  --nav-row-padding-y: 0.26rem;
+  --nav-feed-row-padding-y: 0.22rem;
+  --nav-children-indent: 1.06rem;
+  --nav-count-color: color-mix(in srgb, var(--muted) 88%, #ffffff 12%);
 }
 
 .workspace-nav-drawer {
@@ -205,7 +215,7 @@ body {
   z-index: 2;
   padding-bottom: 0.6rem;
   margin-bottom: 0.45rem;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, var(--bg) 6%) 72%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-nav) 92%, transparent 8%) 72%, transparent 100%);
 }
 
 .workspace-nav__toolbar .MuiTypography-h6 {
@@ -233,8 +243,10 @@ body {
 }
 
 .workspace-nav__preset-button--active {
-  color: var(--accent);
+  color: var(--accent) !important;
   font-weight: 600;
+  background: color-mix(in srgb, var(--accent-soft) 78%, transparent 22%);
+  border-radius: 7px;
 }
 
 .workspace-nav__toolbar .MuiButton-text {
@@ -265,11 +277,13 @@ body {
   letter-spacing: 0.07em;
 }
 
-.workspace-nav__row {
+.workspace-nav .workspace-nav__row {
   border-radius: 8px;
   min-height: var(--nav-row-min-height);
   margin: 0;
   flex: 1;
+  padding-top: var(--nav-row-padding-y);
+  padding-bottom: var(--nav-row-padding-y);
   padding-left: 0.5rem;
   padding-right: 0.45rem;
 }
@@ -300,7 +314,7 @@ body {
   box-shadow: var(--focus-ring);
 }
 
-.workspace-nav__children {
+.workspace-nav .workspace-nav__children {
   margin: 0.06rem 0.12rem 0.12rem var(--nav-children-indent);
   padding-left: 0.26rem;
   border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent 36%);
@@ -371,8 +385,10 @@ body {
   border: 1px solid var(--border);
 }
 
-.workspace-nav__row--feed {
+.workspace-nav .workspace-nav__row--feed {
   min-height: var(--nav-feed-row-min-height);
+  padding-top: var(--nav-feed-row-padding-y);
+  padding-bottom: var(--nav-feed-row-padding-y);
 }
 
 .workspace-nav__count {
@@ -382,6 +398,22 @@ body {
   font-size: 0.7rem;
   font-weight: 500;
   color: var(--nav-count-color);
+}
+
+.workspace-nav--preset-tight .workspace-nav__row .MuiListItemText-primary {
+  font-size: 0.86rem;
+}
+
+.workspace-nav--preset-tight .workspace-nav__row--feed .MuiListItemText-primary {
+  font-size: 0.81rem;
+}
+
+.workspace-nav--preset-airy .workspace-nav__row .MuiListItemText-primary {
+  font-size: 0.93rem;
+}
+
+.workspace-nav--preset-airy .workspace-nav__row--feed .MuiListItemText-primary {
+  font-size: 0.88rem;
 }
 
 .workspace-nav__action-button {
@@ -482,7 +514,7 @@ body {
 }
 
 .workspace-list {
-  background: var(--surface);
+  background: var(--surface-list);
   border-right: 1px solid var(--border);
   padding: 0.9rem 0.9rem 1.1rem;
   overflow: auto;

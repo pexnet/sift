@@ -6,6 +6,9 @@ export function createAppTheme(mode: ThemeMode) {
   return createTheme({
     palette: {
       mode,
+      primary: {
+        main: mode === "light" ? "#3fbf73" : "#63d191",
+      },
     },
     shape: {
       borderRadius: 10,
