@@ -209,7 +209,7 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
 
   const navItems = navigationQuery.data ? flattenNavigation(navigationQuery.data) : [];
   const selectedArticle = articleItems.find((article) => article.id === selectedArticleId);
-  const selectedScopeKey = search.scope_id || (search.scope_type === "system" ? "all" : "");
+  const selectedScopeKey = search.scope_type === "system" ? search.state || "all" : search.scope_id;
   const selectedNavLabel =
     navItems.find((item) => search.scope_type === item.scope_type && selectedScopeKey === (item.id || item.key || ""))?.title ||
     navItems.find((item) => search.scope_type === item.scope_type && selectedScopeKey === (item.id || item.key || ""))?.name ||
@@ -367,12 +367,22 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
                 selected:
                   search.scope_type === item.scope_type &&
                   selectedScopeKey === (item.id || item.key || ""),
-                onClick: () =>
+                onClick: () => {
+                  if (item.scope_type === "system") {
+                    setSearch({
+                      scope_type: "system",
+                      scope_id: "",
+                      state: item.key || "all",
+                      article_id: "",
+                    });
+                    return;
+                  }
                   setSearch({
                     scope_type: item.scope_type,
-                    scope_id: item.id || item.key || "",
+                    scope_id: item.id || "",
                     article_id: "",
-                  }),
+                  });
+                },
               },
               React.createElement(ListItemText, {
                 primary: item.title || item.name || item.key || "Untitled",
