@@ -209,9 +209,10 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
 
   const navItems = navigationQuery.data ? flattenNavigation(navigationQuery.data) : [];
   const selectedArticle = articleItems.find((article) => article.id === selectedArticleId);
+  const selectedScopeKey = search.scope_id || (search.scope_type === "system" ? "all" : "");
   const selectedNavLabel =
-    navItems.find((item) => search.scope_type === item.scope_type && search.scope_id === (item.id || ""))?.title ||
-    navItems.find((item) => search.scope_type === item.scope_type && search.scope_id === (item.id || ""))?.name ||
+    navItems.find((item) => search.scope_type === item.scope_type && selectedScopeKey === (item.id || item.key || ""))?.title ||
+    navItems.find((item) => search.scope_type === item.scope_type && selectedScopeKey === (item.id || item.key || ""))?.name ||
     "All articles";
   const dashboardCards = buildDashboardCards({
     navigation: navigationQuery.data,
@@ -363,8 +364,15 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
             React.createElement(
               ListItemButton,
               {
-                selected: search.scope_type === item.scope_type && search.scope_id === (item.id || ""),
-                onClick: () => setSearch({ scope_type: item.scope_type, scope_id: item.id || "", article_id: "" }),
+                selected:
+                  search.scope_type === item.scope_type &&
+                  selectedScopeKey === (item.id || item.key || ""),
+                onClick: () =>
+                  setSearch({
+                    scope_type: item.scope_type,
+                    scope_id: item.id || item.key || "",
+                    article_id: "",
+                  }),
               },
               React.createElement(ListItemText, {
                 primary: item.title || item.name || item.key || "Untitled",
@@ -479,7 +487,7 @@ function WorkspacePage({ themeMode, setThemeMode, density, setDensity }) {
       articleDetailQuery.isError
         ? React.createElement(Alert, { severity: "error" }, "Failed to load article details.")
         : null,
-      articleDetailQuery.data
+      selectedArticleId && articleDetailQuery.data
         ? React.createElement(
             Box,
             null,

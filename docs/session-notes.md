@@ -1,5 +1,16 @@
 # Session Notes
 
+## 2026-02-15
+
+- Completed a front-end consistency pass for the React + MUI `/app` workspace.
+- Fixed system navigation scope selection bugs in `app_react.js`:
+  - system nodes now use stable keys (`all`, `saved`, `fresh`) for active-state matching and click navigation
+  - dashboard scope labels now resolve correctly for system scopes
+  - reader detail content is now gated on `selectedArticleId` to avoid stale render edge-cases while list selection changes
+- Removed obsolete legacy frontend template `src/sift/web/templates/index.html` as part of continued Jinja/HTMX workspace retirement.
+- Verification:
+  - `python -m pytest tests/test_web_workspace_routes.py`
+
 ## 2026-02-14
 
 - Created initial project scaffold with FastAPI + Jinja2 + HTMX.
