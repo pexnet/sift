@@ -23,8 +23,9 @@ describe("toNavigationHierarchy", () => {
       streams: [{ id: "0f50472d-91d5-4f9a-8820-9f72a55f7f53", name: "darktrace", unread_count: 48 }],
     });
 
-    expect(hierarchy.sections.map((section) => section.id)).toEqual(["systems", "folders", "streams"]);
+    expect(hierarchy.sections.map((section) => section.id)).toEqual(["systems", "monitoring", "folders"]);
     expect(hierarchy.systems[0]?.scope_id).toBe("all");
+    expect(hierarchy.sections[1]?.title).toBe("Monitoring feeds");
     expect(hierarchy.folders[0]?.scope_type).toBe("folder");
     expect(hierarchy.folders[1]?.name).toBe("Unfiled");
     expect(hierarchy.folders[1]?.is_unfiled).toBe(true);

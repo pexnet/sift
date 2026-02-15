@@ -35,8 +35,9 @@ Reader UX target is a modern, responsive React workspace built with MUI componen
 
 1. Left navigation pane:
    - system scopes (All, Fresh, Saved, Archived, Recently read)
+   - monitoring feeds section (stream scopes) above regular folders
    - user folders with feed children and unread counts
-   - monitoring streams with unread counts
+   - compact feed icons and density-aware row sizing
 2. Center list pane:
    - scoped article listing with search/state/sort controls
    - responsive density and layout behavior across breakpoints
@@ -44,6 +45,7 @@ Reader UX target is a modern, responsive React workspace built with MUI componen
 3. Right reader pane:
    - article detail view and open-original action
    - sanitized rich HTML rendering pipeline for article body content (DOMPurify-based allowlist)
+   - paper-editorial default reading surface in light mode (warm background + serif body typography)
 
 Routing and data model:
 

@@ -65,7 +65,16 @@ const hierarchy: NavigationHierarchy = {
       ],
     },
   ],
-  streams: [],
+  streams: [
+    {
+      id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+      name: "[Global] darktrace",
+      unread_count: 9,
+      kind: "stream",
+      scope_type: "stream",
+      scope_id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+    },
+  ],
   feeds: [],
 };
 
@@ -144,6 +153,32 @@ describe("NavigationPane", () => {
     });
   });
 
+  it("renders monitoring section above folders and selects stream scope", () => {
+    const onSelectStream = vi.fn();
+    renderPane({ onSelectStream });
+
+    const sectionTitles = screen.getAllByText(/Monitoring feeds|Folders/i).map((node) => node.textContent);
+    expect(sectionTitles).toEqual(["Monitoring feeds", "Folders"]);
+
+    fireEvent.click(screen.getByRole("button", { name: /\[Global\] darktrace/i }));
+    expect(onSelectStream).toHaveBeenCalledWith("a951f7ec-1cf6-4e6a-bcb7-26642ab53412");
+  });
+
+  it("collapses and expands monitoring section", async () => {
+    renderPane();
+    expect(screen.getByText("[Global] darktrace")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: /Collapse monitoring feeds/i }));
+    await waitFor(() => {
+      expect(screen.queryByText("[Global] darktrace")).toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Expand monitoring feeds/i }));
+    await waitFor(() => {
+      expect(screen.getByText("[Global] darktrace")).toBeVisible();
+    });
+  });
+
   it("falls back to avatar initials when feed icon fails", async () => {
     storage.removeItem(NAV_FOLDERS_EXPANDED_KEY);
     renderPane();
@@ -155,5 +190,12 @@ describe("NavigationPane", () => {
       expect(screen.queryByAltText("Alpha Feed")).toBeNull();
     });
     expect(screen.getByText("A")).toBeVisible();
+  });
+
+  it("uses compact feed icon sizing by default", () => {
+    renderPane();
+    const avatar = document.querySelector(".workspace-nav__feed-avatar");
+    expect(avatar).toBeTruthy();
+    expect(avatar).toHaveStyle({ width: "14px", height: "14px" });
   });
 });

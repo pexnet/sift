@@ -31,7 +31,12 @@ import { useMemo, useState } from "react";
 import type { NavigationHierarchy } from "../../../entities/navigation/model";
 import type { FeedFolder } from "../../../shared/types/contracts";
 import { getFeedAvatarHue, getFeedInitial } from "../lib/feedIcons";
-import { loadExpandedFolderIds, saveExpandedFolderIds } from "../lib/navState";
+import {
+  loadExpandedFolderIds,
+  loadMonitoringExpanded,
+  saveExpandedFolderIds,
+  saveMonitoringExpanded,
+} from "../lib/navState";
 
 type NavigationPaneProps = {
   density: "compact" | "comfortable";
@@ -118,6 +123,7 @@ export function NavigationPane({
   const [feedMenu, setFeedMenu] = useState<FeedMenuState>(null);
   const [folderMenu, setFolderMenu] = useState<FolderActionMenuState>(null);
   const [failedFeedIcons, setFailedFeedIcons] = useState<Record<string, true>>({});
+  const [monitoringExpanded, setMonitoringExpanded] = useState(() => loadMonitoringExpanded() ?? true);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const folderOptions = useMemo(
@@ -159,6 +165,14 @@ export function NavigationPane({
     setHasExpansionPreference(true);
     setExpandedFolders({});
     saveExpandedFolderIds(new Set());
+  };
+
+  const toggleMonitoringSection = () => {
+    setMonitoringExpanded((previous) => {
+      const next = !previous;
+      saveMonitoringExpanded(next);
+      return next;
+    });
   };
 
   const closeDialogs = () => {
@@ -242,12 +256,43 @@ export function NavigationPane({
                   className="workspace-nav__row"
                 >
                   <ListItemText primary={item.title} />
-                  <Typography variant="caption" color="primary">
+                  <Typography variant="caption" color="primary" className="workspace-nav__count">
                     {item.unread_count}
                   </Typography>
                 </ListItemButton>
               ))}
             </List>
+          </Box>
+
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
+              <IconButton
+                size="small"
+                className="workspace-nav__section-toggle"
+                aria-label={`${monitoringExpanded ? "Collapse" : "Expand"} monitoring feeds`}
+                onClick={toggleMonitoringSection}
+              >
+                {monitoringExpanded ? <ExpandMoreRoundedIcon fontSize="small" /> : <ChevronRightRoundedIcon fontSize="small" />}
+              </IconButton>
+            </Stack>
+            <Collapse in={monitoringExpanded} timeout="auto" unmountOnExit>
+              <List dense={density === "compact"} disablePadding>
+                {hierarchy.streams.map((stream) => (
+                  <ListItemButton
+                    key={stream.scope_id}
+                    selected={selectedScopeType === "stream" && selectedScopeKey === stream.scope_id}
+                    onClick={() => onSelectStream(stream.scope_id)}
+                    className="workspace-nav__row"
+                  >
+                    <ListItemText primary={stream.name} />
+                    <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
+                      {stream.unread_count}
+                    </Typography>
+                  </ListItemButton>
+                ))}
+              </List>
+            </Collapse>
           </Box>
 
           <Box>
@@ -297,13 +342,14 @@ export function NavigationPane({
                         <Box className="workspace-nav__folder-label">
                           <ListItemText primary={folder.name} />
                         </Box>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
                           {folder.unread_count}
                         </Typography>
                       </ListItemButton>
                       {!folder.is_unfiled ? (
                         <IconButton
                           size="small"
+                          className="workspace-nav__action-button"
                           aria-label={`Folder actions for ${folder.name}`}
                           onClick={(event) =>
                             setFolderMenu({ anchor: event.currentTarget, folderId: folder.scope_id, folderName: folder.name })
@@ -324,6 +370,7 @@ export function NavigationPane({
                             failedFeedIcons={failedFeedIcons}
                             selectedScopeKey={selectedScopeKey}
                             selectedScopeType={selectedScopeType}
+                            density={density}
                             setFailedFeedIcons={setFailedFeedIcons}
                             onSelectFeed={onSelectFeed}
                             onOpenFeedMenu={(event) => setFeedMenu({ anchor: event.currentTarget, feedId: feed.id })}
@@ -337,24 +384,6 @@ export function NavigationPane({
             </List>
           </Box>
 
-          <Box>
-            <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
-            <List dense={density === "compact"} disablePadding>
-              {hierarchy.streams.map((stream) => (
-                <ListItemButton
-                  key={stream.scope_id}
-                  selected={selectedScopeType === "stream" && selectedScopeKey === stream.scope_id}
-                  onClick={() => onSelectStream(stream.scope_id)}
-                  className="workspace-nav__row"
-                >
-                  <ListItemText primary={stream.name} />
-                  <Typography variant="caption" color="text.secondary">
-                    {stream.unread_count}
-                  </Typography>
-                </ListItemButton>
-              ))}
-            </List>
-          </Box>
         </Stack>
       ) : null}
 
@@ -479,6 +508,7 @@ type FeedRowProps = {
   feed: NavigationHierarchy["folders"][number]["feeds"][number];
   feedIconByFeedId: Record<string, string | null>;
   failedFeedIcons: Record<string, true>;
+  density: "compact" | "comfortable";
   selectedScopeType: string;
   selectedScopeKey: string;
   onSelectFeed: (feedId: string) => void;
@@ -490,6 +520,7 @@ function FeedRow({
   feed,
   feedIconByFeedId,
   failedFeedIcons,
+  density,
   selectedScopeType,
   selectedScopeKey,
   onSelectFeed,
@@ -498,6 +529,7 @@ function FeedRow({
 }: FeedRowProps) {
   const feedIconSrc = failedFeedIcons[feed.id] ? null : (feedIconByFeedId[feed.id] ?? null);
   const feedAvatarHue = getFeedAvatarHue(feed.title);
+  const feedAvatarSize = density === "comfortable" ? 16 : 14;
 
   return (
     <Stack direction="row" alignItems="center">
@@ -518,6 +550,9 @@ function FeedRow({
               },
             }}
             sx={{
+              width: feedAvatarSize,
+              height: feedAvatarSize,
+              fontSize: feedAvatarSize <= 14 ? "0.56rem" : "0.62rem",
               bgcolor: `hsl(${feedAvatarHue} 45% 90%)`,
               color: `hsl(${feedAvatarHue} 45% 28%)`,
             }}
@@ -527,12 +562,13 @@ function FeedRow({
           </Avatar>
           <ListItemText primary={feed.title} />
         </Box>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
           {feed.unread_count}
         </Typography>
       </ListItemButton>
       <IconButton
         size="small"
+        className="workspace-nav__action-button"
         aria-label={`Feed actions for ${feed.title}`}
         onClick={onOpenFeedMenu}
       >

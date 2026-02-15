@@ -15,6 +15,8 @@
     "gen:openapi": "python ./scripts/export_openapi.py && openapi-typescript ./openapi.json --output ./src/shared/types/generated.ts"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@fontsource/source-serif-4": "^5.2.8",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.8",

@@ -120,3 +120,23 @@
   - `frontend/src/features/workspace/lib/feedIcons.test.ts`
   - `frontend/src/features/workspace/lib/navState.test.ts`
   - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+
+### Workspace Nav IA + Readability Polish v3
+
+- Navigation IA updates:
+  - moved `Monitoring feeds` to a standalone section above `Folders`
+  - kept stream routing semantics unchanged (`scope_type="stream"`)
+  - added section-level monitoring collapse/expand toggle with persisted browser-local state
+- Density and icon polish:
+  - reduced feed icon scale (compact-first)
+  - reduced nav row/action visual weight and tightened row spacing
+  - kept favicon fallback behavior for feed icons
+- Reader readability updates:
+  - adopted paper-editorial default in light mode (warm paper background + dark neutral text)
+  - switched frontend typography defaults to `IBM Plex Sans` (UI) and `Source Serif 4` (reader body)
+  - tuned reader line length, line-height, and paragraph rhythm for long-form scanning
+- Added/updated tests:
+  - `frontend/src/entities/navigation/model.test.ts`
+  - `frontend/src/features/workspace/lib/navState.test.ts`
+  - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`

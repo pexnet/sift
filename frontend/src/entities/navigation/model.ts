@@ -80,15 +80,15 @@ export type NavigationSection =
       items: NavigationSystemItem[];
     }
   | {
+      id: "monitoring";
+      title: "Monitoring feeds";
+      items: NavigationStreamItem[];
+    }
+  | {
       id: "folders";
       title: "Folders";
       items: NavigationFolderItem[];
     }
-  | {
-      id: "streams";
-      title: "Streams";
-      items: NavigationStreamItem[];
-    };
 
 export type NavigationHierarchy = {
   sections: NavigationSection[];
@@ -147,8 +147,8 @@ export function toNavigationHierarchy(tree: NavigationResponse): NavigationHiera
   return {
     sections: [
       { id: "systems", title: "System", items: systems },
+      { id: "monitoring", title: "Monitoring feeds", items: streams },
       { id: "folders", title: "Folders", items: folders },
-      { id: "streams", title: "Streams", items: streams },
     ],
     systems,
     folders,

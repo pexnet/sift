@@ -1,4 +1,4 @@
-import { NAV_FOLDERS_EXPANDED_KEY } from "../../../shared/lib/storage";
+import { NAV_FOLDERS_EXPANDED_KEY, NAV_MONITORING_EXPANDED_KEY } from "../../../shared/lib/storage";
 
 function resolveStorage(): Storage | null {
   if (typeof window !== "undefined" && typeof window.localStorage?.getItem === "function") {
@@ -52,4 +52,36 @@ export function saveExpandedFolderIds(ids: Set<string>): void {
     return;
   }
   storage.setItem(NAV_FOLDERS_EXPANDED_KEY, JSON.stringify(values));
+}
+
+export function loadMonitoringExpanded(): boolean | null {
+  try {
+    const storage = resolveStorage();
+    if (!storage) {
+      return null;
+    }
+
+    const raw = storage.getItem(NAV_MONITORING_EXPANDED_KEY);
+    if (raw === null) {
+      return null;
+    }
+
+    if (raw === "true") {
+      return true;
+    }
+    if (raw === "false") {
+      return false;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveMonitoringExpanded(value: boolean): void {
+  const storage = resolveStorage();
+  if (!storage) {
+    return;
+  }
+  storage.setItem(NAV_MONITORING_EXPANDED_KEY, value ? "true" : "false");
 }
