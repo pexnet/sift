@@ -19,7 +19,7 @@ services:
       SIFT_AUTH_COOKIE_SECURE: "false"
       SIFT_AUTO_CREATE_TABLES: "false"
       SIFT_DEV_SEED_ENABLED: "true"
-      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.local
+      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.dev
       SIFT_DEV_SEED_DEFAULT_USER_PASSWORD: devpassword123!
       SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME: Dev User
       SIFT_DEV_SEED_OPML_PATH: /workspaces/sift/dev-data/local-seed.opml
@@ -48,7 +48,7 @@ services:
       SIFT_AUTH_COOKIE_SECURE: "false"
       SIFT_AUTO_CREATE_TABLES: "false"
       SIFT_DEV_SEED_ENABLED: "true"
-      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.local
+      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.dev
       SIFT_DEV_SEED_DEFAULT_USER_PASSWORD: devpassword123!
       SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME: Dev User
       SIFT_DEV_SEED_OPML_PATH: /app/dev-data/local-seed.opml
@@ -62,6 +62,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: /bin/sh -c "cd /workspaces/sift/frontend && pnpm install --frozen-lockfile && pnpm run dev --host 0.0.0.0 --port 5173"
+    working_dir: /workspaces/sift
+    volumes:
+      - ..:/workspaces/sift
+      - devcontainer_frontend_node_modules:/workspaces/sift/frontend/node_modules
+      - devcontainer_frontend_pnpm_store:/pnpm/store
+    environment:
+      VITE_DEV_API_PROXY_TARGET: http://app:8000
+      PNPM_STORE_DIR: /pnpm/store
+    ports:
+      - "5173:5173"
+    depends_on:
+      app:
+        condition: service_started
 
   worker:
     build:
@@ -150,3 +169,5 @@ services:
 
 volumes:
   devcontainer_pgdata:
+  devcontainer_frontend_node_modules:
+  devcontainer_frontend_pnpm_store:

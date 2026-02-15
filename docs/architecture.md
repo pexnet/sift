@@ -2,12 +2,12 @@
 
 ## Architectural Style
 
-MVP uses a modular monolith with explicit boundaries:
+MVP uses a modular monolith backend with explicit boundaries:
 
 1. Ingestion (fetch + parse + normalize)
 2. Deduplication + filtering
 3. Plugin pipeline
-4. API/UI delivery
+4. API delivery and frontend integration contracts
 
 This keeps deployment simple while preserving clean seams for future service extraction.
 
@@ -15,33 +15,40 @@ This keeps deployment simple while preserving clean seams for future service ext
 
 **Current**
 
-1. `app`: FastAPI API plus React + MUI `/app` workspace delivery.
+1. `app`: FastAPI API-only runtime (`/api/v1/*`).
 2. `worker`: RQ worker for ingest jobs (`src/sift/tasks/worker.py`).
 3. `scheduler`: periodic feed polling and job enqueue loop (`src/sift/tasks/scheduler.py`).
 4. `db`: PostgreSQL (SQLite default for local bootstrap).
 5. `redis`: queue broker.
+6. `frontend`: standalone SPA runtime (Vite dev server in local dev, static host/CDN in deployment).
 
-## Web UI Architecture
+## Frontend Architecture
 
 **Current**
 
-- `/app` is an authenticated, reader-first React + MUI workspace.
-- It delivers a 3-pane shell (navigation tree, article list, reader pane), theme/density preferences, and core keyboard shortcuts.
-- Legacy HTMX/Jinja workspace routes/templates have been retired from the `/app` path.
-- `/app-react` is retained as a temporary redirect to `/app` for compatibility with older links.
+- Frontend is a standalone React + TypeScript SPA in `frontend/` (Vite + MUI + TanStack Router/Query).
+- Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and is deployed independently from FastAPI.
+- Backend no longer serves UI pages/static frontend bundles from `src/sift`.
+- Integration with backend is API-only via `/api/v1/*`.
 
 Reader UX target is a modern, responsive React workspace built with MUI components:
 
 1. Left navigation pane:
    - system scopes (All, Fresh, Saved, Archived, Recently read)
+   - monitoring feeds section (stream scopes) above regular folders
    - user folders with feed children and unread counts
-   - monitoring streams with unread counts
+   - compact feed icons and density-aware row sizing
 2. Center list pane:
    - scoped article listing with search/state/sort controls
+   - desktop resizable split with persisted pane widths
+   - slim top utility bar for workspace-level controls (theme/settings)
    - responsive density and layout behavior across breakpoints
    - row-level read/save actions
 3. Right reader pane:
    - article detail view and open-original action
+   - mark-read auto-advance to next article when transitioning unread -> read
+   - sanitized rich HTML rendering pipeline for article body content (DOMPurify-based allowlist)
+   - paper-editorial default reading surface in light mode (warm background + serif body typography)
 
 Routing and data model:
 
@@ -50,6 +57,8 @@ Routing and data model:
 3. TanStack Query manages API server-state caching, mutations, and invalidation.
 4. UI-only preferences (theme, list density) are persisted in local storage.
 5. Keyboard shortcuts remain a first-class UX feature (`j/k`, `o`, `m`, `s`, `/`).
+6. Reader rendering rule: frontend never trusts feed markup directly; article body is sanitized and link-normalized
+   before rendering.
 
 ## Frontend Plugin Surface (Minimal Extension Registry)
 
@@ -223,6 +232,7 @@ For day-to-day development, use the Dev Container stack in `.devcontainer/`:
 5. `db`: PostgreSQL 17
 6. `redis`: Redis 8
 7. `traefik`: local edge router to simplify service access (`http://sift.localhost`)
+8. `frontend`: Vite dev server for SPA runtime (`http://localhost:5173`)
 
 ## Development Seed Bootstrap
 
@@ -247,7 +257,7 @@ For day-to-day development, use the Dev Container stack in `.devcontainer/`:
 - `src/sift/db`: SQLAlchemy models and session management
 - `src/sift/plugins`: plugin protocol, loader, built-ins
 - `src/sift/tasks`: worker and scheduler entrypoints
-- `src/sift/web`: HTML routes, templates, static files
+- `frontend`: Vite + React + TypeScript source code and frontend tests
 
 ## Plugin Contract
 
@@ -328,36 +338,39 @@ Design goals:
    - feed-to-folder mapping through nullable `feeds.folder_id`
    - authenticated folder CRUD API and feed folder assignment endpoint
 
-## Frontend Cutover Plan (Big-Bang Rewrite)
+## Frontend Delivery Standard
 
 **Current**
 
-1. `/app` now serves the React + MUI workspace shell and is the active cutover surface.
-2. The React workspace currently supports API-backed navigation, article listing/reader loading, URL-state via TanStack Router, and state mutations for read/saved toggles.
-3. Dashboard card UI v2 is now implemented in `/app` as a React + MUI summary row (scope, unread, saved, fresh coverage, active sources) driven by existing navigation/article queries.
-4. `/app-react` now performs a temporary redirect to `/app` to preserve migration-era entry points.
+1. Frontend is implemented as a greenfield React + TypeScript app in `frontend/` using Vite.
+2. Folder layout is feature-first (`features/auth`, `features/workspace`) with shared typed API/domain layers.
+3. TanStack Router + TanStack Query power route state and server-state caching/mutations.
+4. OpenAPI-derived types are generated to `frontend/src/shared/types/generated.ts` and consumed through typed API contracts.
+5. Vite build output is `frontend/dist` and is deployed by a separate static host/runtime.
+6. Runtime CDN imports and legacy `React.createElement` frontend modules have been removed.
 
-**Target**
+### Quality Baseline
 
-1. Execute a big-bang cutover to a complete React + MUI `/app` workspace with parity for navigation tree, article list, reader pane, keyboard shortcuts, and user preferences.
-2. Use TanStack Router for URL-driven state and TanStack Query for API caching/mutations/invalidation.
-3. Gate release on parity + UX quality: responsive behavior, loading/error/empty/accessibility states.
-4. Keep backend API routes (`/api/v1/navigation`, `/api/v1/articles`, article state endpoints) as the stable UI data contract.
-
-### Cutover Parity Matrix
-
-| Category | Scope for React + MUI cutover |
+| Category | Current frontend standard |
 | --- | --- |
 | Must-match behaviors | Keyboard shortcuts (`j/k`, `o`, `m`, `s`, `/`), scope/navigation flows powered by `/api/v1/navigation`, article list/reader behavior from `/api/v1/articles`, and article state mutations via `PATCH /api/v1/articles/{article_id}/state` and `POST /api/v1/articles/state/bulk`; keep density/theme persistence behavior parity. |
-| Allowed improvements | Layout refinements, improved loading skeletons, and clearer error handling UX are encouraged as long as they preserve the fixed API contracts above. |
+| Required quality gates | `pnpm run lint`, `pnpm run typecheck`, `pnpm run test`, and backend route tests must pass before merge. |
+| Allowed improvements | Layout refinements, improved loading/error handling UX, and accessibility hardening are encouraged as long as they preserve fixed API contracts. |
 | Deferred / non-goals | Advanced stream ranking/prioritization controls are explicitly out of scope for this cutover slice. |
 
 ## Planned Next Moves
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-4. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+0. Frontend workspace polish completion (currently paused):
+   - finalize folder/nav micro-density defaults (`balanced` preset baseline)
+   - align navigation and article-list surface contrast in light theme
+   - consolidate display controls into settings while keeping top-bar quick theme toggle
+1. Stabilize local runtime baseline:
+   - fix scheduler job-id delimiter compatibility with current RQ
+   - keep dev seed idempotent without noisy duplicate-stream DB errors
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 

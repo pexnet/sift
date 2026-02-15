@@ -13,8 +13,8 @@ This file stores persistent project context for future Codex sessions.
 - Python backend using FastAPI.
 - Database-backed ingestion pipeline with SQLAlchemy.
 - Plugin-ready core for enrichment/transformation/integration use cases.
-- UI with React + MUI as the primary frontend stack.
-- Frontend migration strategy is now a full cutover: complete React + MUI rewrite and retire the HTMX/Jinja workspace.
+- Backend is API-only FastAPI service (`/api/v1/*`), with no server-rendered web routes.
+- UI is a standalone React + MUI frontend in `frontend/` (Vite + TypeScript).
 - Tooling standards: uv + Ruff + Pytest + Mypy.
 - Ruff width: 120 chars.
 - Alembic is the source of truth for schema changes.
@@ -33,7 +33,7 @@ This file stores persistent project context for future Codex sessions.
   - `docs/session-notes.md` for decision log + next steps.
 - Default development flow:
   - Open in Dev Container (`.devcontainer/devcontainer.json`).
-  - Use `.devcontainer/docker-compose.yml` stack for `app`, `worker`, `scheduler`, `db`, `redis`, and `traefik`.
+  - Use `.devcontainer/docker-compose.yml` stack for `app`, `frontend`, `worker`, `scheduler`, `db`, `redis`, and `traefik`.
 - Local IDE personalization:
   - Keep personal VS Code config in `.vscode/extensions.local.json` and `.vscode/settings.local.json` (gitignored).
   - Use `.vscode/*.example.json` as templates.
@@ -82,7 +82,8 @@ This file stores persistent project context for future Codex sessions.
   - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
   - `SIFT_SCHEDULER_BATCH_SIZE`
 - Dedupe guard:
-  - Scheduler uses stable job IDs (`ingest:<feed_id>`) and avoids duplicate active jobs.
+  - Scheduler uses stable job IDs for dedupe.
+  - Current issue: RQ rejects `:` in job IDs; update delimiter format before enabling scheduler by default.
 
 ## Current Implementation Status
 
@@ -110,13 +111,14 @@ This file stores persistent project context for future Codex sessions.
 - Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
 - Feed folders are implemented (per-user folders + feed-to-folder assignment endpoint).
-- Reader-first web UI workspace is implemented:
-  - `/app` authenticated 3-pane shell (tree/list/reader)
-  - HTMX partials for nav tree, article list, and reader panel
+- Reader-first frontend workspace is implemented:
+  - `/app` authenticated React + MUI 3-pane shell (tree/list/reader)
+  - frontend source: `frontend/` (Vite + TypeScript + TanStack Router/Query)
+  - build output: `frontend/dist`
   - Light/dark theme toggle with local persistence
   - Compact/comfortable density toggle (compact default)
   - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
-  - This workspace is transitional and scheduled for removal during the React big-bang rewrite.
+  - Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and talks to backend through REST APIs only.
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -126,11 +128,14 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+1. Stabilize local runtime baseline:
+   - fix scheduler job-id delimiter compatibility with current RQ
+   - keep dev seed idempotent without noisy duplicate-stream DB errors
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+6. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
 
 ## Feature Notes
 

@@ -2,11 +2,11 @@
   "name": "sift-dev",
   "dockerComposeFile": "docker-compose.yml",
   "service": "dev",
-  "runServices": ["dev", "app", "worker", "scheduler", "db", "redis", "traefik"],
+  "runServices": ["dev", "app", "frontend", "worker", "scheduler", "db", "redis", "traefik"],
   "workspaceFolder": "/workspaces/sift",
   "shutdownAction": "stopCompose",
   "overrideCommand": false,
-  "postCreateCommand": "uv sync --extra dev",
+  "postCreateCommand": "uv sync --extra dev && cd frontend && pnpm install && pnpm run gen:openapi",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -18,10 +18,13 @@
       ]
     }
   },
-  "forwardPorts": [80, 8000, 8081, 5432, 6379],
+  "forwardPorts": [80, 5173, 8000, 8081, 5432, 6379],
   "portsAttributes": {
     "80": {
-      "label": "Traefik Web (sift.localhost)"
+      "label": "Traefik (API route)"
+    },
+    "5173": {
+      "label": "Frontend Vite dev server"
     },
     "8000": {
       "label": "FastAPI direct"

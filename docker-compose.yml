@@ -11,13 +11,29 @@ services:
     environment:
       SIFT_DATABASE_URL: postgresql+asyncpg://sift:sift@db:5432/sift
       SIFT_DEV_SEED_ENABLED: "true"
-      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.local
+      SIFT_DEV_SEED_DEFAULT_USER_EMAIL: dev@sift.dev
       SIFT_DEV_SEED_DEFAULT_USER_PASSWORD: devpassword123!
       SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME: Dev User
       SIFT_DEV_SEED_OPML_PATH: /app/dev-data/local-seed.opml
     depends_on:
       - db
       - redis
+
+  frontend:
+    image: node:22
+    command: /bin/sh -c "corepack enable && cd /app/frontend && pnpm install --frozen-lockfile && pnpm run dev --host 0.0.0.0 --port 5173"
+    working_dir: /app/frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/frontend/node_modules
+      - frontend_pnpm_store:/pnpm/store
+    environment:
+      VITE_DEV_API_PROXY_TARGET: http://app:8000
+      PNPM_STORE_DIR: /pnpm/store
+    depends_on:
+      - app
 
   worker:
     build: .
@@ -63,3 +79,5 @@ services:
 
 volumes:
   pgdata:
+  frontend_node_modules:
+  frontend_pnpm_store:

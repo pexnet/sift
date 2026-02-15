@@ -1,0 +1,9 @@
+node_modules
+dist
+.pnpm-store
+pnpm-debug.log*
+.pnpm-debug.log*
+playwright-report
+test-results
+coverage
+openapi.json

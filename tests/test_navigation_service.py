@@ -54,3 +54,31 @@ async def test_navigation_tree_counts() -> None:
         assert tree.streams[0].unread_count == 1
 
     await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_navigation_stream_unread_count_is_zero_without_matches() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with session_maker() as session:
+        user = User(email="nav-zero@example.com")
+        session.add(user)
+        await session.flush()
+
+        stream = KeywordStream(
+            user_id=user.id,
+            name="empty-stream",
+            include_keywords_json='["anything"]',
+            exclude_keywords_json="[]",
+        )
+        session.add(stream)
+        await session.commit()
+
+        tree = await navigation_service.get_navigation_tree(session=session, user_id=user.id)
+        assert len(tree.streams) == 1
+        assert tree.streams[0].unread_count == 0
+
+    await engine.dispose()

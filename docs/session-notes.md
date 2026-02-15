@@ -2,198 +2,185 @@
 
 ## 2026-02-15
 
-- Completed a front-end consistency pass for the React + MUI `/app` workspace.
-- Fixed system navigation scope selection bugs in `app_react.js`:
-  - system nodes now use stable keys (`all`, `saved`, `fresh`) for active-state matching and click navigation
-  - dashboard scope labels now resolve correctly for system scopes
-  - reader detail content is now gated on `selectedArticleId` to avoid stale render edge-cases while list selection changes
-- Removed obsolete legacy frontend template `src/sift/web/templates/index.html` as part of continued Jinja/HTMX workspace retirement.
-- Verification:
-  - `python -m pytest tests/test_web_workspace_routes.py`
+### Architecture Baseline (Current)
 
-## 2026-02-14
+- Backend is API-only FastAPI (`/api/v1/*`) and does not serve frontend pages or static bundles.
+- Frontend is a standalone React + TypeScript app in `frontend/`.
+- Frontend routes (`/app`, `/login`, `/register`, `/account`) are owned by the SPA runtime.
+- Frontend/backend integration is API-only via REST endpoints.
 
-- Created initial project scaffold with FastAPI + Jinja2 + HTMX.
-- Added SQLAlchemy async setup and baseline models.
-- Added plugin protocol and dynamic plugin loader.
-- Added worker/scheduler stubs for queue-based processing.
-- Standardized tooling around uv + Ruff + Pytest + Mypy.
-- Ruff line width set to 120.
-- Added Alembic setup (`alembic.ini`, `alembic/`) with initial migration `20260214_0001`.
-- Added ingestion metadata to `feeds` (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_error`).
-- Added per-feed source-id dedupe keys on `raw_entries` and `articles`.
-- Added ingestion service and API endpoint: `POST /api/v1/feeds/{feed_id}/ingest`.
-- Added keyword filter service and API endpoint: `POST /api/v1/articles/filter-preview`.
-- Set `SIFT_AUTO_CREATE_TABLES=false` by default to favor migration-driven schema changes.
-- Added tests for ingestion helpers and keyword filtering.
-- Implemented recurring ingestion scheduling:
-  - RQ queue helpers in `src/sift/tasks/queueing.py`
-  - Feed ingest job wrapper in `src/sift/tasks/jobs.py`
-  - Scheduler due-feed enqueue loop in `src/sift/tasks/scheduler.py`
-  - Worker startup for ingest queue in `src/sift/tasks/worker.py`
-- Added scheduler due-feed tests (`tests/test_scheduler.py`).
-- Implemented provider-ready authentication and account foundation:
-  - Added models: `users`, `auth_identities`, `user_sessions`, `api_tokens`
-  - Added feed ownership column: `feeds.owner_id`
-  - Added Alembic migration: `20260214_0002_auth_accounts`
-  - Added auth service with Argon2 hashing + cookie session lifecycle
-  - Added API auth routes: register/login/logout/me
-  - Added web routes/templates: login/register/account/logout
-  - Protected feed/article APIs behind authenticated sessions
-  - Added auth service tests
-- Current limitation:
-  - `feeds.url` remains globally unique; cross-account shared-feed model is not yet implemented.
-- Implemented OPML import:
-  - Added OPML parser/import service in `src/sift/services/opml_service.py`
-  - Added authenticated upload endpoint: `POST /api/v1/imports/opml`
-  - Added detailed import report (created/skipped/invalid/duplicate)
-  - Added OPML parser/import tests
-- Implemented persisted ingest-time rule engine:
-  - Added `ingest_rules` model + migration `20260214_0003_ingest_rules`
-  - Added authenticated rules API (`GET/POST/PATCH/DELETE /api/v1/rules`)
-  - Added rule service (`src/sift/services/rule_service.py`) with priority + criteria matching
-  - Integrated rule evaluation into `ingestion_service` (drops matched items before article insert)
-  - Added `filtered_count` to ingestion result payload
-  - Added rule service tests
-- Implemented keyword streams as monitoring feeds:
-  - Added `keyword_streams` and `keyword_stream_matches` models + migration `20260214_0004_keyword_streams`
-  - Added streams API (`GET/POST/PATCH/DELETE /api/v1/streams`, `GET /api/v1/streams/{stream_id}/articles`)
-  - Added stream service (`src/sift/services/stream_service.py`) with criteria matching
-  - Integrated stream matching into `ingestion_service` for newly ingested articles
-  - Added `stream_match_count` to ingestion result payload
-  - Added stream service tests
-- Implemented stream classifier plugin foundation:
-  - Added stream classifier fields + migration `20260214_0005_stream_classifier_fields`
-  - Extended stream models/schemas/services with `rules_only`/`classifier_only`/`hybrid` modes
-  - Added classifier plugin contract + plugin manager dispatch by plugin name
-  - Added built-in `keyword_heuristic_classifier` plugin as reference
-  - Integrated classifier-aware stream matching into `ingestion_service`
-  - Added stream classifier mode tests
-- Implemented Dev Container-first development stack:
-  - Added `.devcontainer/devcontainer.json` with full run-services configuration
-  - Added `.devcontainer/docker-compose.yml` with `dev`, `app`, `worker`, `scheduler`, `db`, `redis`, `traefik`
-  - Added `.devcontainer/Dockerfile` to provide Python 3.13 + `uv` in workspace container
-  - Standardized local routing via Traefik (`http://sift.localhost`)
-  - Updated README + AGENTS + architecture docs with the new default dev workflow
-- Added local-only VS Code personalization support:
-  - Added gitignored local override files: `.vscode/extensions.local.json`, `.vscode/settings.local.json`
-  - Added committed templates: `.vscode/extensions.local.example.json`, `.vscode/settings.local.example.json`
-  - Added helper installer script: `scripts/setup-local-vscode.ps1`
-  - Updated README + AGENTS with local setup instructions
-- Implemented cross-feed canonical dedup foundation:
-  - Added article dedup metadata fields + migration `20260214_0006_article_canonical_dedup`
-  - Added canonical URL normalization + content fingerprinting service (`src/sift/services/dedup_service.py`)
-  - Integrated canonical duplicate lookup into ingestion flow with confidence scoring
-  - Added `canonical_duplicate_count` in ingest result payload
-  - Added dedup unit tests in `tests/test_ingestion_service.py`
-- Implemented feed folders:
-  - Added folder schema + migration `20260214_0007_feed_folders` (`feed_folders` + `feeds.folder_id`)
-  - Added folder service (`src/sift/services/folder_service.py`) with user-scoped CRUD
-  - Added folders API (`GET/POST/PATCH/DELETE /api/v1/folders`)
-  - Added feed folder assignment endpoint (`PATCH /api/v1/feeds/{feed_id}/folder`)
-  - Added folder service tests (`tests/test_folder_service.py`)
-- Implemented development seed bootstrap:
-  - Added config-driven dev seeding options in `src/sift/config.py`
-  - Added startup seed flow in `src/sift/main.py`
-  - Added seed service (`src/sift/services/dev_seed_service.py`) to:
-    - create default local dev user
-    - import OPML feed folders/feeds
-    - map Inoreader `Monitoring feeds` entries to keyword streams
-  - Added default seed OPML file: `dev-data/inoreader-default.opml`
-  - Added seed parsing and idempotency tests (`tests/test_dev_seed_service.py`)
-  - Enabled dev seed defaults in Docker and devcontainer app setup
-- Hardened dev seed data privacy:
-  - Switched default local seed path to `dev-data/local-seed.opml` (gitignored)
-  - Added committed sanitized sample `dev-data/public-sample.opml`
-  - Added `dev-data/README.md` with local/public seed-file guidance
-  - Added gitignore entries for personal OPML filenames
-- Implemented reader-first 3-pane UI workspace:
-  - Added authenticated `/app` shell with icon rail + nav tree + article list + reader pane
-  - Added light/dark theme toggle and compact/comfortable density preference persistence
-  - Added HTMX partial endpoints:
-    - `GET /web/partials/nav-tree`
-    - `GET /web/partials/article-list`
-    - `GET /web/partials/article-reader/{article_id}`
-  - Added HTMX state action endpoints:
-    - `PATCH /web/actions/article/{article_id}/state`
-    - `POST /web/actions/article/bulk-state`
-  - Added essential keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
-  - Marked as transitional and scheduled for removal in the React big-bang cutover.
-- Added article + navigation API surface for UI data flow:
-  - `GET /api/v1/articles`
-  - `GET /api/v1/articles/{article_id}`
-  - `PATCH /api/v1/articles/{article_id}/state`
-  - `POST /api/v1/articles/state/bulk`
-  - `GET /api/v1/navigation`
-- Added UI/service regression coverage:
-  - `tests/test_article_service.py`
-  - `tests/test_navigation_service.py`
-  - `tests/test_article_state_api.py`
-- Started React cutover vertical slice for `/app`:
-  - Added authenticated preview route `GET /app-react` to host React migration shell.
-  - Added `app_react.html` workspace scaffold with explicit loading/error/empty placeholders for nav/list/reader panes.
-  - Added `app_react.js` client bootstrap to consume existing APIs (`/api/v1/navigation`, `/api/v1/articles`, `/api/v1/articles/{article_id}`) and hydrate preview interactions.
-  - Added initial responsive styles for preview shell in `app.css`.
-  - Extended web workspace route tests to cover `/app-react` auth guard + render smoke checks.
-- Advanced React cutover foundations for `/app-react`:
-  - Replaced the vanilla bootstrap with a React application mounted into `#react-workspace-app`.
-  - Added MUI-based three-pane rendering (navigation, articles, reader) with responsive panel styling.
-  - Wired TanStack Router search params for scope/article selection URL-state behavior.
-  - Wired TanStack Query for navigation list, article list, and article detail loading/error/empty states.
-  - Kept `/app-react` server-rendered shell + auth guard behavior unchanged while improving client-side fidelity.
-- Hardened React `/app` parity for reader-first interactions:
-  - Added persisted theme toggle (light/dark) directly in the React workspace and synced `data-theme` + `localStorage`.
-  - Added persisted density selector (compact/comfortable) in React with list-density styling updates.
-  - Added keyboard shortcut parity in React workspace for `j/k`, `o`, `m`, `s`, and `/` behavior.
-  - Polished responsive controls layout in the articles toolbar for narrow viewports.
-- Executed React workspace route cutover for `/app`:
-  - Switched authenticated `/app` to render the React + MUI workspace shell (`app_react.html`) instead of the HTMX/Jinja template.
-  - Converted `/app-react` into a temporary redirect to `/app` to preserve legacy links during migration.
-  - Expanded React workspace interactions with API-driven article state actions (mark read/unread + save/unsave) and in-pane search/state controls.
-  - Added state endpoint config wiring in template data attributes and adjusted web route auth/redirect tests for the cutover behavior.
-- Removed legacy HTMX/Jinja `/app` workspace implementation after React cutover sign-off:
-  - Deleted transitional HTMX workspace routes (`/web/partials/*`, `/web/actions/*`) from `src/sift/web/routes.py`.
-  - Removed obsolete HTMX/Jinja workspace templates (`app.html` and `templates/partials/*`).
-  - Removed legacy workspace script `src/sift/web/static/js/app.js` and dropped global HTMX script include from `base.html`.
-  - Simplified web workspace route tests to validate `/app` auth guard + `/app-react` compatibility redirect only.
-- Implemented dashboard card UI v2 in the React `/app` workspace:
-  - Added a top dashboard summary row rendered with MUI Cards.
-  - Added cards for current scope, unread, saved, fresh coverage, and active sources.
-  - Wired card metrics to existing `/api/v1/navigation` and `/api/v1/articles` query data (no new API contracts).
-- Verified quality gates:
-  - `python -m ruff check .` passed
-  - `python -m pytest` passed (43 tests)
-  - `python -m mypy src` passed
-  - `python -m alembic upgrade head` passed against a temporary SQLite DB (through latest migration)
-  - `docker compose -f .devcontainer/docker-compose.yml config` passed
-  - `python -m pytest tests/test_web_workspace_routes.py` failed in this environment (missing `fastapi` dependency before env sync)
-  - `uv sync --extra dev` failed in this environment (network tunnel failure downloading `ruff`)
+### Implemented This Session
 
-## Current Priority Plan
+- Removed backend web delivery package and route surface (`src/sift/web/*`).
+- Added CORS configuration in backend settings and middleware wiring in `src/sift/main.py`.
+- Added API-only regression test: `tests/test_api_only_surface.py`.
+- Set frontend build output to `frontend/dist`.
+- Added frontend API base URL support through `VITE_API_BASE_URL`.
+- Standardized docs (`AGENTS.md`, architecture, getting-started, development, deployment) to the API-only + standalone SPA model.
+- Updated Dev Container stack to include frontend service and default port `5173`.
+- Updated root `docker-compose.yml` to start full local stack including frontend dev server (`http://localhost:5173`).
 
-> Source of truth: This roadmap order is canonical and must be mirrored in `AGENTS.md` and `docs/architecture.md` at the end of each session.
+### Verification
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+- Frontend:
+  - `pnpm --dir frontend run gen:openapi`
+  - `pnpm --dir frontend run lint`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run test`
+  - `pnpm --dir frontend run build`
+- Backend:
+  - `python -m ruff check src tests`
+  - `python -m mypy src`
+  - `python -m pytest`
 
-## Deferred Items
+### Current Priority Plan
 
-1. External OIDC provider integration (Google first, then Azure/Apple) using `auth_identities`.
+1. Stabilize local runtime baseline:
+   - fix scheduler job-id delimiter compatibility with current RQ
+   - keep dev seed idempotent without noisy duplicate-stream DB errors
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
-## Working Notes
+### Deferred
 
-- In dev, run migrations before app start:
-  - `python -m alembic upgrade head`
-- Preferred day-to-day dev flow is now Dev Container + `.devcontainer/docker-compose.yml`.
-- During transition, avoid mixing `create_all` with migrations in shared environments.
-- Keep this file concise: what changed, what was verified, and the next 3-5 concrete steps.
-- Documented minimal frontend plugin surface in architecture docs:
-  - Added extension points: `nav_badge_provider`, `article_row_action`, `reader_panel_tab`, `dashboard_card`, `command_palette_action`
-  - Defined shared registration contract (id/title/mount/capabilities), endpoint dependencies, auth constraints, and per-extension failure isolation behavior
-- Simplified top-level README into a concise project introduction and docs index.
-- Split setup/development/deployment guidance into dedicated docs pages:
-  - `docs/getting-started.md`
-  - `docs/development.md`
-  - `docs/deployment.md`
+1. External OIDC provider integration (Google first, then Azure/Apple).
+
+### Workspace UI Slice: Folder + Reader v1
+
+- Refactored `/app` to a light, compact reader-first shell:
+  - fixed app rail
+  - hierarchical navigation pane
+  - compact article list
+  - persistent reader pane
+- Removed dashboard cards from the `/app` workspace route.
+- Added hierarchical navigation view model mapping in `frontend/src/entities/navigation/model.ts`:
+  - system, folder, feed, and stream scope mapping
+  - unified scope label resolution for current URL scope
+- Added folder management and feed assignment flows using existing APIs:
+  - create/rename/delete folder
+  - move feed to folder / unfiled
+  - query invalidation for navigation, folders, feeds, and articles
+- Reworked article list rows for compact dense rendering with unread/saved indicators and metadata.
+- Reworked reader pane with core actions (`read`, `save`, `open original`, `prev`, `next`).
+- Added responsive behavior updates:
+  - desktop: fixed 3-pane layout
+  - tablet/mobile: collapsible navigation drawer from rail action
+  - mobile: progressive list/reader panel flow with back-to-list action
+- Added/updated frontend tests:
+  - navigation hierarchy mapping
+  - folder DTO/validation shaping
+  - compact article row rendering
+  - reader action wiring
+
+### Verification (Workspace Slice)
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test`
+- `pnpm --dir frontend run build`
+- `python -m pytest tests/test_article_state_api.py tests/test_article_service.py`
+
+### Workspace UI Modernization + Reader Formatting
+
+- Implemented editorial-light workspace polish for `/app`:
+  - updated visual tokens and spacing hierarchy for rail/nav/list/reader panes
+  - improved hover/active/focus states and compact readability
+  - replaced rail glyph labels with MUI icons for clearer affordances
+- Implemented safe reader content rendering:
+  - added `frontend/src/features/workspace/lib/readerContent.ts`
+  - sanitized article markup using DOMPurify with allowlisted semantic tags
+  - normalized rendered links with safe `target`/`rel` attributes
+  - converted plaintext payloads into paragraph-based HTML fallback
+- Updated reader component contract:
+  - `ReaderPane` now renders preprocessed sanitized HTML body content
+  - kept existing reader action behavior (`read/save/open/prev/next`)
+- Added tests for sanitizer and reader behavior:
+  - `frontend/src/features/workspace/lib/readerContent.test.ts`
+  - expanded `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Workspace Nav/Visual Polish v2
+
+- Implemented reliable folder interaction split in navigation:
+  - row click now selects folder scope only
+  - chevron click toggles expansion only (single-click behavior)
+- Added folder controls:
+  - `Expand all`
+  - `Collapse all`
+  - folder expansion state persisted in localStorage (`NAV_FOLDERS_EXPANDED_KEY`)
+- Added feed icons in folder/feed tree:
+  - favicon URL derived from feed `site_url` or `url`
+  - graceful fallback to deterministic initial avatar if favicon load fails
+- Applied softer visual tuning in workspace styles:
+  - lower-contrast borders/backgrounds
+  - calmer selected/hover states
+  - improved nav/feed row softness and spacing
+- Added/updated tests:
+  - `frontend/src/features/workspace/lib/feedIcons.test.ts`
+  - `frontend/src/features/workspace/lib/navState.test.ts`
+  - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+
+### Workspace Nav IA + Readability Polish v3
+
+- Navigation IA updates:
+  - moved `Monitoring feeds` to a standalone section above `Folders`
+  - kept stream routing semantics unchanged (`scope_type="stream"`)
+  - added section-level monitoring collapse/expand toggle with persisted browser-local state
+- Density and icon polish:
+  - reduced feed icon scale (compact-first)
+  - reduced nav row/action visual weight and tightened row spacing
+  - kept favicon fallback behavior for feed icons
+- Reader readability updates:
+  - adopted paper-editorial default in light mode (warm paper background + dark neutral text)
+  - switched frontend typography defaults to `IBM Plex Sans` (UI) and `Source Serif 4` (reader body)
+  - tuned reader line length, line-height, and paragraph rhythm for long-form scanning
+- Added/updated tests:
+  - `frontend/src/entities/navigation/model.test.ts`
+  - `frontend/src/features/workspace/lib/navState.test.ts`
+  - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Workspace UX Polish v4
+
+- Added desktop pane resizing across both split boundaries:
+  - navigation ↔ article list
+  - article list ↔ reader
+  - widths persisted in browser-local storage (`PANE_LAYOUT_KEY`)
+- Added keyboard-accessible separators (`role="separator"`) with arrow/home/end controls.
+- Updated monitoring header control from subtle icon-only toggle to visible labeled action (`Collapse` / `Expand`).
+- Added slim workspace top bar with icon controls for:
+  - dark/light mode toggle
+  - settings navigation (`/account`)
+- Removed density control from navigation/feed pane toolbar (to live on settings page later).
+- Updated reader mark-read behavior:
+  - when toggling unread -> read, selection now auto-advances to next article after mutation success
+  - mark-unread does not auto-advance
+- Stability improvement:
+  - selected article id now falls back to first visible row when current id no longer exists in filtered results.
+- Added/updated tests:
+  - `frontend/src/features/workspace/lib/paneLayout.test.ts`
+  - `frontend/src/features/workspace/hooks/usePaneResizing.test.tsx`
+  - `frontend/src/features/workspace/lib/readActions.test.ts`
+  - `frontend/src/entities/article/model.test.ts`
+  - updated `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+
+### Frontend Planning Backlog (Paused)
+
+- Session paused by user after theme/navigation polish on branch `feat/folder-nav-polish`.
+- Resume plan for the next UI pass:
+  1. Stabilize visual defaults:
+     - keep `balanced` as default nav preset
+     - keep `tight`/`airy` as optional variants, move the settings for this to a settings menu
+  2. Folder panel final pass:
+     - finalize row height, indent depth, and unread-count contrast values
+     - verify truncation and menu discoverability at narrower widths
+  3. Nav + list visual harmony:
+     - align article list hover/selected/read states with softened pistachio light theme
+     - keep reader pane styling unchanged
+  4. Settings consolidation:
+     - move display controls (nav preset/theme/density) into settings surface
+     - keep quick theme toggle in top bar
+  5. Wrap-up and merge readiness:
+     - rerun `lint`, `typecheck`, `test`, `build`
+     - open PR from `feat/folder-nav-polish` when approved
