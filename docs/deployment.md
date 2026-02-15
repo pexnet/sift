@@ -13,13 +13,13 @@ Frontend is deployed as a separate static SPA build from `frontend/dist`.
 
 See architecture details in [`docs/architecture.md`](architecture.md).
 
-## Docker Compose (Backend Services)
+## Docker Compose (Local Full Stack)
 
-Start backend stack:
+Start local full stack:
 
 - `docker compose up --build`
 
-This validates API, queue, scheduler, and database wiring.
+This runs API, frontend dev server, queue workers, and data services for local development.
 
 ## Dev Container Compose
 

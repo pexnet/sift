@@ -82,7 +82,8 @@ This file stores persistent project context for future Codex sessions.
   - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
   - `SIFT_SCHEDULER_BATCH_SIZE`
 - Dedupe guard:
-  - Scheduler uses stable job IDs (`ingest:<feed_id>`) and avoids duplicate active jobs.
+  - Scheduler uses stable job IDs for dedupe.
+  - Current issue: RQ rejects `:` in job IDs; update delimiter format before enabling scheduler by default.
 
 ## Current Implementation Status
 
@@ -127,11 +128,14 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-5. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+1. Stabilize local runtime baseline:
+   - fix scheduler job-id delimiter compatibility with current RQ
+   - keep dev seed idempotent without noisy duplicate-stream DB errors
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+6. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
 
 ## Feature Notes
 

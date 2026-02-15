@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     auth_cookie_secure: bool = False
     auto_create_tables: bool = False
     dev_seed_enabled: bool = False
-    dev_seed_default_user_email: str = "dev@sift.local"
+    dev_seed_default_user_email: str = "dev@sift.dev"
     dev_seed_default_user_password: str = "devpassword123!"
     dev_seed_default_user_display_name: str = "Dev User"
     dev_seed_opml_path: str | None = None

@@ -352,10 +352,13 @@ Design goals:
 
 ## Planned Next Moves
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-4. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+1. Stabilize local runtime baseline:
+   - fix scheduler job-id delimiter compatibility with current RQ
+   - keep dev seed idempotent without noisy duplicate-stream DB errors
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 

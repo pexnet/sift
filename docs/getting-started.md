@@ -48,7 +48,10 @@ For clean automation environments (including Codex):
 ## First Run with Containers
 
 - `docker compose up --build`
-- Start frontend separately from `frontend/` with `pnpm run dev`, or deploy `frontend/dist` via a static host.
+- This starts API, frontend dev server, worker, scheduler, db, and redis.
+- Open:
+  - Frontend: `http://localhost:5173`
+  - API docs: `http://localhost:8000/docs`
 
 ## First Run with Dev Container Stack
 
@@ -59,5 +62,5 @@ For clean automation environments (including Codex):
   - API docs: `http://localhost:8000/docs`
 
 If development seed is enabled, default credentials are:
-- email: `dev@sift.local`
+- email: `dev@sift.dev`
 - password: `devpassword123!`

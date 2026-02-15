@@ -211,6 +211,8 @@ __marimo__/
 *.db
 .DS_Store
 dev-data/local-seed.opml
+.pnpm-store/
+pnpm-debug.log*
 
 # Local VS Code developer overrides (personal machine only)
 .vscode/extensions.local.json

@@ -18,6 +18,7 @@
 - Added frontend API base URL support through `VITE_API_BASE_URL`.
 - Standardized docs (`AGENTS.md`, architecture, getting-started, development, deployment) to the API-only + standalone SPA model.
 - Updated Dev Container stack to include frontend service and default port `5173`.
+- Updated root `docker-compose.yml` to start full local stack including frontend dev server (`http://localhost:5173`).
 
 ### Verification
 
@@ -34,10 +35,13 @@
 
 ### Current Priority Plan
 
-1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+1. Stabilize local runtime baseline:
+   - fix scheduler job-id delimiter compatibility with current RQ
+   - keep dev seed idempotent without noisy duplicate-stream DB errors
+2. Add stream-level ranking and prioritization controls.
+3. Add classifier run persistence and model/version tracking.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ### Deferred
 

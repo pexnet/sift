@@ -28,6 +28,11 @@ Primary URLs:
 - API docs: `http://localhost:8000/docs`
 - Traefik dashboard: `http://localhost:8081`
 
+## Docker Compose (Outside Dev Container)
+
+- Run `docker compose up --build` from the repository root.
+- This starts the same core services plus the frontend dev server on `http://localhost:5173`.
+
 ## Daily Backend Commands
 
 - Lint: `uv run ruff check .`
