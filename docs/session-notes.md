@@ -232,3 +232,18 @@
 2. Ship first four curated theme presets with persistence and safe defaults.
 3. Perform visual consistency pass across workspace panes using shared design tokens.
 4. Validate responsiveness and keyboard/accessibility for settings controls.
+
+### CI Reliability Investigation (GitHub Actions)
+
+- Investigated the CI workflow (`.github/workflows/ci.yml`) after reproducing dependency-sync instability in this environment.
+- Observed transient package-download failure during `uv sync --extra dev` (network tunnel/connect issue) and treated install-phase flakiness as the primary risk area for action failures.
+- Hardened CI jobs by:
+  - enabling `setup-uv` cache for both backend and frontend jobs
+  - enabling `setup-node` pnpm cache for frontend lockfile
+  - adding bounded retry loops (3 attempts) for `uv sync` and frontend `pnpm install`
+  - adding job-level timeouts for clearer failure behavior (`backend` 20m, `frontend` 25m)
+
+### Verification (CI Reliability Slice)
+
+- `uv sync --extra dev` *(failed in this container due network tunnel/connectivity to Python package index; used as evidence for install-stage retry hardening)*
+- `python -m compileall -q src`
