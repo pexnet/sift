@@ -1,6 +1,5 @@
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import {
   Alert,
@@ -241,7 +240,7 @@ export function NavigationPane({
           </Box>
 
           <Box className="workspace-nav__section">
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">
               <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
               <Button
                 size="small"
@@ -249,7 +248,12 @@ export function NavigationPane({
                 className="workspace-nav__section-action"
                 aria-label={`${monitoringExpanded ? "Collapse" : "Expand"} monitoring feeds`}
                 startIcon={
-                  monitoringExpanded ? <ExpandMoreRoundedIcon fontSize="small" /> : <ChevronRightRoundedIcon fontSize="small" />
+                  <ChevronRightRoundedIcon
+                    className={`workspace-nav__section-chevron${
+                      monitoringExpanded ? " workspace-nav__section-chevron--open" : ""
+                    }`}
+                    fontSize="small"
+                  />
                 }
                 onClick={toggleMonitoringSection}
               >
@@ -276,7 +280,7 @@ export function NavigationPane({
           </Box>
 
           <Box className="workspace-nav__section">
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">
               <Typography className="workspace-nav__section-title">Folders</Typography>
               <Button
                 size="small"
@@ -313,11 +317,10 @@ export function NavigationPane({
                           toggleFolder(folderKey);
                         }}
                       >
-                        {open ? (
-                          <ExpandMoreRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
-                        ) : (
-                          <ChevronRightRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
-                        )}
+                        <ChevronRightRoundedIcon
+                          className={`workspace-nav__folder-icon${open ? " workspace-nav__folder-icon--open" : ""}`}
+                          fontSize="small"
+                        />
                       </IconButton>
                       <ListItemButton
                         selected={folderSelected}

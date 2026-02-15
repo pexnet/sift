@@ -167,7 +167,7 @@ body {
 .workspace-nav {
   background: color-mix(in srgb, var(--surface) 92%, var(--bg) 8%);
   border-right: 1px solid var(--border);
-  padding: 0.65rem 0.5rem 0.8rem;
+  padding: 0.6rem 0.45rem 0.8rem;
   overflow: auto;
 }
 
@@ -186,7 +186,7 @@ body {
   top: 0;
   z-index: 2;
   padding-bottom: 0.6rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.45rem;
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, var(--bg) 6%) 72%, transparent 100%);
 }
 
@@ -201,44 +201,58 @@ body {
 }
 
 .workspace-nav__section {
-  background: color-mix(in srgb, var(--surface) 96%, var(--bg) 4%);
-  border-radius: 12px;
-  padding: 0.18rem 0.08rem 0.22rem;
+  padding: 0.08rem 0.04rem 0.15rem;
+}
+
+.workspace-nav__section + .workspace-nav__section {
+  border-top: 1px solid color-mix(in srgb, var(--border) 58%, transparent 42%);
+  margin-top: 0.38rem;
+  padding-top: 0.45rem;
+}
+
+.workspace-nav__section-header {
+  padding: 0 0.2rem;
+  margin-bottom: 0.08rem;
 }
 
 .workspace-nav__section-title {
-  font-size: 0.73rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 0.38rem 0.4rem;
-  letter-spacing: 0.055em;
+  padding: 0.34rem 0.34rem 0.26rem;
+  letter-spacing: 0.07em;
 }
 
 .workspace-nav__row {
   border-radius: 8px;
-  min-height: 31px;
-  margin: 1px 0;
+  min-height: 30px;
+  margin: 0;
   flex: 1;
-  padding-left: 0.55rem;
+  padding-left: 0.5rem;
   padding-right: 0.45rem;
 }
 
 .workspace-nav__row .MuiListItemText-primary {
-  font-size: 0.91rem;
-  font-weight: 540;
+  font-size: 0.89rem;
+  font-weight: 520;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
 .workspace-nav__row--feed .MuiListItemText-primary {
-  font-weight: 490;
-  font-size: 0.87rem;
+  font-weight: 470;
+  font-size: 0.84rem;
 }
 
 .workspace-nav__row:hover {
   background: color-mix(in srgb, var(--surface-muted) 70%, var(--bg) 30%);
+}
+
+.workspace-nav__row.Mui-selected,
+.workspace-nav__row.Mui-selected:hover {
+  background: color-mix(in srgb, var(--row-selected) 72%, var(--surface) 28%);
 }
 
 .workspace-nav__row:focus-visible {
@@ -246,9 +260,9 @@ body {
 }
 
 .workspace-nav__children {
-  margin: 0.08rem 0.16rem 0.16rem 0.9rem;
+  margin: 0.06rem 0.12rem 0.12rem 0.82rem;
   padding-left: 0.26rem;
-  border-left: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  border-left: 1px solid color-mix(in srgb, var(--border) 64%, transparent 36%);
 }
 
 .workspace-nav__folder-label {
@@ -266,10 +280,11 @@ body {
 
 .workspace-nav__folder-toggle {
   color: var(--muted);
-  margin-right: 0.08rem;
-  width: 22px;
-  height: 22px;
-  opacity: 0.72;
+  margin-right: 0.12rem;
+  margin-left: 0.08rem;
+  width: 20px;
+  height: 20px;
+  opacity: 0.66;
 }
 
 .workspace-nav__folder-toggle:hover {
@@ -277,11 +292,29 @@ body {
   opacity: 1;
 }
 
+.workspace-nav__folder-icon {
+  transition: transform 130ms ease;
+}
+
+.workspace-nav__folder-icon--open {
+  transform: rotate(90deg);
+}
+
 .workspace-nav__section-action {
   margin-right: 0.2rem;
   min-height: 24px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-nav__section-chevron {
+  transition: transform 130ms ease;
+}
+
+.workspace-nav__section-chevron--open {
+  transform: rotate(90deg);
 }
 
 .workspace-nav__feed-label {
@@ -298,15 +331,16 @@ body {
 }
 
 .workspace-nav__row--feed {
-  min-height: 30px;
+  min-height: 28px;
 }
 
 .workspace-nav__count {
   font-variant-numeric: tabular-nums;
-  min-width: 1.45rem;
+  min-width: 1.38rem;
   text-align: right;
-  font-size: 0.72rem;
-  color: color-mix(in srgb, var(--muted) 92%, #ffffff 8%);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--muted) 78%, #ffffff 22%);
 }
 
 .workspace-nav__action-button {
@@ -341,7 +375,7 @@ body {
 }
 
 .workspace-nav__item-group--folder .workspace-nav__row .MuiListItemText-primary {
-  font-weight: 590;
+  font-weight: 560;
 }
 
 .workspace-content {
