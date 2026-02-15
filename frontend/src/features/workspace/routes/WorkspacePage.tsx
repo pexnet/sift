@@ -1,3 +1,7 @@
+import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
+import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import SpaceDashboardRoundedIcon from "@mui/icons-material/SpaceDashboardRounded";
 import { Box, Drawer, useMediaQuery } from "@mui/material";
 import { useMemo, useRef, useState } from "react";
 
@@ -21,6 +25,7 @@ import {
 } from "../api/workspaceHooks";
 import { useWorkspaceShortcuts } from "../hooks/useWorkspaceShortcuts";
 import { toCreateFolderRequest, toFeedFolderAssignmentRequest, toUpdateFolderRequest } from "../lib/folderForms";
+import { toReaderHtml } from "../lib/readerContent";
 
 type WorkspacePageProps = {
   search: WorkspaceSearch;
@@ -58,6 +63,10 @@ export function WorkspacePage({
   const selectedArticle = findArticleById(articles, selectedArticleId);
 
   const articleDetailQuery = useArticleDetailQuery(selectedArticleId);
+  const readerContentHtml = useMemo(
+    () => toReaderHtml(articleDetailQuery.data?.content_text ?? ""),
+    [articleDetailQuery.data?.content_text]
+  );
   const patchArticleStateMutation = usePatchArticleStateMutation(selectedArticleId);
   const createFolderMutation = useCreateFolderMutation();
   const updateFolderMutation = useUpdateFolderMutation();
@@ -197,13 +206,13 @@ export function WorkspacePage({
           {
             id: "dashboard",
             label: "Dashboard",
-            glyph: "⌂",
+            icon: <SpaceDashboardRoundedIcon fontSize="small" />,
             onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" }),
           },
           {
             id: "feeds",
             label: isTabletOrMobile ? "Nav" : "Feeds",
-            glyph: "☰",
+            icon: <RssFeedRoundedIcon fontSize="small" />,
             badge: systemAllCount,
             active: isTabletOrMobile
               ? navOpen
@@ -219,7 +228,7 @@ export function WorkspacePage({
           {
             id: "saved",
             label: "Saved",
-            glyph: "☆",
+            icon: <BookmarkBorderRoundedIcon fontSize="small" />,
             badge: systemSavedCount,
             active: search.scope_type === "system" && search.state === "saved",
             onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "saved", article_id: "" }),
@@ -227,7 +236,7 @@ export function WorkspacePage({
           {
             id: "search",
             label: "Search",
-            glyph: "/",
+            icon: <SearchRoundedIcon fontSize="small" />,
             onClick: () => searchInputRef.current?.focus(),
           },
         ]}
@@ -263,6 +272,7 @@ export function WorkspacePage({
             selectedArticle={selectedArticle}
             selectedArticleId={selectedArticleId}
             detail={articleDetailQuery.data}
+            contentHtml={readerContentHtml}
             isLoading={articleDetailQuery.isLoading}
             isError={articleDetailQuery.isError}
             isMutating={patchArticleStateMutation.isPending}

@@ -81,3 +81,21 @@
 - `pnpm --dir frontend run test`
 - `pnpm --dir frontend run build`
 - `python -m pytest tests/test_article_state_api.py tests/test_article_service.py`
+
+### Workspace UI Modernization + Reader Formatting
+
+- Implemented editorial-light workspace polish for `/app`:
+  - updated visual tokens and spacing hierarchy for rail/nav/list/reader panes
+  - improved hover/active/focus states and compact readability
+  - replaced rail glyph labels with MUI icons for clearer affordances
+- Implemented safe reader content rendering:
+  - added `frontend/src/features/workspace/lib/readerContent.ts`
+  - sanitized article markup using DOMPurify with allowlisted semantic tags
+  - normalized rendered links with safe `target`/`rel` attributes
+  - converted plaintext payloads into paragraph-based HTML fallback
+- Updated reader component contract:
+  - `ReaderPane` now renders preprocessed sanitized HTML body content
+  - kept existing reader action behavior (`read/save/open/prev/next`)
+- Added tests for sanitizer and reader behavior:
+  - `frontend/src/features/workspace/lib/readerContent.test.ts`
+  - expanded `frontend/src/features/workspace/components/ReaderPane.test.tsx`

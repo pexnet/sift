@@ -1,3 +1,7 @@
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import {
   Alert,
   Box,
@@ -133,7 +137,7 @@ export function NavigationPane({
 
   return (
     <Paper className="workspace-nav" component="section" elevation={0}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Typography variant="h6">Feeds</Typography>
         <Stack direction="row" spacing={0.5}>
           <Button size="small" variant="text" onClick={onToggleTheme}>
@@ -153,8 +157,8 @@ export function NavigationPane({
               <MenuItem value="comfortable">Comfortable</MenuItem>
             </Select>
           </FormControl>
-          <Button size="small" variant="outlined" onClick={() => setCreateOpen(true)}>
-            + Folder
+          <Button size="small" variant="outlined" onClick={() => setCreateOpen(true)} startIcon={<AddRoundedIcon />}>
+            Folder
           </Button>
         </Stack>
       </Stack>
@@ -204,7 +208,14 @@ export function NavigationPane({
                         }}
                         className="workspace-nav__row workspace-nav__row--folder"
                       >
-                        <ListItemText primary={`${open ? "▾" : "▸"} ${folder.name}`} />
+                        <Box className="workspace-nav__folder-label">
+                          {open ? (
+                            <ExpandMoreRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
+                          ) : (
+                            <ChevronRightRoundedIcon className="workspace-nav__folder-icon" fontSize="small" />
+                          )}
+                          <ListItemText primary={folder.name} />
+                        </Box>
                         <Typography variant="caption" color="text.secondary">
                           {folder.unread_count}
                         </Typography>
@@ -212,11 +223,12 @@ export function NavigationPane({
                       {!folder.is_unfiled ? (
                         <IconButton
                           size="small"
+                          aria-label={`Folder actions for ${folder.name}`}
                           onClick={(event) =>
                             setFolderMenu({ anchor: event.currentTarget, folderId: folder.scope_id, folderName: folder.name })
                           }
                         >
-                          ⋯
+                          <MoreHorizRoundedIcon fontSize="small" />
                         </IconButton>
                       ) : null}
                     </Stack>
@@ -237,9 +249,10 @@ export function NavigationPane({
                             </ListItemButton>
                             <IconButton
                               size="small"
+                              aria-label={`Feed actions for ${feed.title}`}
                               onClick={(event) => setFeedMenu({ anchor: event.currentTarget, feedId: feed.id })}
                             >
-                              ⋯
+                              <MoreHorizRoundedIcon fontSize="small" />
                             </IconButton>
                           </Stack>
                         ))}

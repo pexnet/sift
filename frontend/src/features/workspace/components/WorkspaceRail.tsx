@@ -1,9 +1,10 @@
 import { Badge, Box, ButtonBase, Stack, Tooltip, Typography } from "@mui/material";
+import type { ReactNode } from "react";
 
 type WorkspaceRailAction = {
   id: string;
   label: string;
-  glyph: string;
+  icon: ReactNode;
   active?: boolean;
   badge?: number;
   onClick?: () => void;
@@ -28,9 +29,7 @@ export function WorkspaceRail({ actions }: WorkspaceRailProps) {
               aria-label={action.label}
             >
               <Badge badgeContent={action.badge} color="primary" max={999}>
-                <span className="workspace-rail__glyph" aria-hidden="true">
-                  {action.glyph}
-                </span>
+                <span className="workspace-rail__glyph" aria-hidden="true">{action.icon}</span>
               </Badge>
               <Typography variant="caption" className="workspace-rail__label">
                 {action.label}

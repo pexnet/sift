@@ -42,6 +42,7 @@ describe("ReaderPane", () => {
           is_archived: false,
           stream_ids: [],
         }}
+        contentHtml="<p>Body</p>"
         isLoading={false}
         isError={false}
         isMutating={false}
@@ -59,6 +60,7 @@ describe("ReaderPane", () => {
     fireEvent.click(screen.getByRole("button", { name: /Prev/i }));
     fireEvent.click(screen.getByRole("button", { name: /Next/i }));
 
+    expect(screen.getByText("Body")).toBeVisible();
     expect(onToggleRead).toHaveBeenCalledTimes(1);
     expect(onToggleSaved).toHaveBeenCalledTimes(1);
     expect(onOpenOriginal).toHaveBeenCalledTimes(1);
@@ -101,6 +103,7 @@ describe("ReaderPane", () => {
           is_archived: false,
           stream_ids: [],
         }}
+        contentHtml="<p>Body</p>"
         isLoading={false}
         isError={false}
         isMutating={false}
@@ -115,5 +118,53 @@ describe("ReaderPane", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Back to list/i }));
     expect(onBackToList).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows empty placeholder when sanitized content is empty", () => {
+    render(
+      <ReaderPane
+        selectedArticle={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          title: "Reader title",
+          canonical_url: "https://example.com/article",
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: [],
+        }}
+        selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        detail={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          source_id: "source",
+          canonical_url: "https://example.com/article",
+          title: "Reader title",
+          content_text: "Body",
+          language: null,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: [],
+        }}
+        contentHtml=""
+        isLoading={false}
+        isError={false}
+        isMutating={false}
+        hasMutationError={false}
+        onToggleRead={vi.fn()}
+        onToggleSaved={vi.fn()}
+        onOpenOriginal={vi.fn()}
+        onMoveSelection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("No content available.")).toBeVisible();
   });
 });

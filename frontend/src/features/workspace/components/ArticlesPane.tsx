@@ -32,13 +32,13 @@ export function ArticlesPane({
 }: ArticlesPaneProps) {
   return (
     <Paper className="workspace-list" component="section" elevation={0}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }} className="workspace-list__header">
         <Typography variant="h4" className="workspace-list__title">
           {scopeLabel}
         </Typography>
       </Stack>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+      <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} className="workspace-list__controls">
         <TextField
           size="small"
           select
@@ -82,6 +82,7 @@ export function ArticlesPane({
             const selected = selectedArticleId === article.id;
             const unread = !article.is_read;
             const saved = article.is_starred;
+            const relativePublished = article.published_at ? formatRelativeTime(article.published_at) : "";
 
             return (
               <button
@@ -89,6 +90,7 @@ export function ArticlesPane({
                 type="button"
                 className={selected ? "workspace-row workspace-row--selected" : "workspace-row"}
                 onClick={() => onArticleSelect(article.id)}
+                aria-label={article.title || "Untitled article"}
               >
                 <span className={unread ? "workspace-row__dot workspace-row__dot--unread" : "workspace-row__dot"} />
                 <span className={saved ? "workspace-row__saved workspace-row__saved--active" : "workspace-row__saved"}>
@@ -96,11 +98,9 @@ export function ArticlesPane({
                 </span>
                 <span className="workspace-row__content">
                   <span className="workspace-row__title">{article.title || "Untitled article"}</span>
-                  <span className="workspace-row__meta">
-                    {article.feed_title ?? "Unknown source"}
-                    {article.published_at ? ` · ${formatRelativeTime(article.published_at)}` : ""}
-                  </span>
+                  <span className="workspace-row__meta">{article.feed_title ?? "Unknown source"}</span>
                 </span>
+                <span className="workspace-row__time">{relativePublished}</span>
               </button>
             );
           })}

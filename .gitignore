@@ -219,3 +219,11 @@ pnpm-debug.log*
 .vscode/settings.local.json
 
 private/
+
+# Keep frontend source lib directories tracked under ignored generic lib/ rule.
+!frontend/src/features/auth/lib/
+!frontend/src/features/auth/lib/**
+!frontend/src/features/workspace/lib/
+!frontend/src/features/workspace/lib/**
+!frontend/src/shared/lib/
+!frontend/src/shared/lib/**

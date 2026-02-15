@@ -43,6 +43,7 @@ Reader UX target is a modern, responsive React workspace built with MUI componen
    - row-level read/save actions
 3. Right reader pane:
    - article detail view and open-original action
+   - sanitized rich HTML rendering pipeline for article body content (DOMPurify-based allowlist)
 
 Routing and data model:
 
@@ -51,6 +52,8 @@ Routing and data model:
 3. TanStack Query manages API server-state caching, mutations, and invalidation.
 4. UI-only preferences (theme, list density) are persisted in local storage.
 5. Keyboard shortcuts remain a first-class UX feature (`j/k`, `o`, `m`, `s`, `/`).
+6. Reader rendering rule: frontend never trusts feed markup directly; article body is sanitized and link-normalized
+   before rendering.
 
 ## Frontend Plugin Surface (Minimal Extension Registry)
 

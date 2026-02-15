@@ -7,6 +7,7 @@ type ReaderPaneProps = {
   selectedArticle: ArticleListItem | undefined;
   selectedArticleId: string;
   detail: ArticleDetail | undefined;
+  contentHtml: string;
   isLoading: boolean;
   isError: boolean;
   isMutating: boolean;
@@ -22,6 +23,7 @@ export function ReaderPane({
   selectedArticle,
   selectedArticleId,
   detail,
+  contentHtml,
   isLoading,
   isError,
   isMutating,
@@ -46,47 +48,56 @@ export function ReaderPane({
 
       {detail ? (
         <Stack spacing={2}>
-          {onBackToList ? (
+          <Box className="workspace-reader__top">
+            {onBackToList ? (
+              <Box>
+                <Button size="small" variant="text" onClick={onBackToList}>
+                  Back to list
+                </Button>
+              </Box>
+            ) : null}
+
             <Box>
-              <Button size="small" variant="text" onClick={onBackToList}>
-                Back to list
-              </Button>
+              <Typography variant="h4" className="workspace-reader__title">
+                {detail.title || "Untitled article"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" className="workspace-reader__meta">
+                {detail.feed_title || "Unknown source"}
+                {detail.published_at ? ` · ${formatRelativeTime(detail.published_at)}` : ""}
+              </Typography>
             </Box>
-          ) : null}
 
-          <Box>
-            <Typography variant="h4" className="workspace-reader__title">
-              {detail.title || "Untitled article"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" className="workspace-reader__meta">
-              {detail.feed_title || "Unknown source"}
-              {detail.published_at ? ` · ${formatRelativeTime(detail.published_at)}` : ""}
-            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap className="workspace-reader__actions">
+              <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleRead}>
+                {selectedArticle?.is_read ? "Mark unread" : "Mark read"}
+              </Button>
+              <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleSaved}>
+                {selectedArticle?.is_starred ? "Unsave" : "Save"}
+              </Button>
+              <Button size="small" variant="outlined" onClick={onOpenOriginal} disabled={!detail.canonical_url}>
+                Open original
+              </Button>
+              <Button size="small" variant="text" onClick={() => onMoveSelection(-1)}>
+                Prev
+              </Button>
+              <Button size="small" variant="text" onClick={() => onMoveSelection(1)}>
+                Next
+              </Button>
+            </Stack>
           </Box>
-
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleRead}>
-              {selectedArticle?.is_read ? "Mark unread" : "Mark read"}
-            </Button>
-            <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleSaved}>
-              {selectedArticle?.is_starred ? "Unsave" : "Save"}
-            </Button>
-            <Button size="small" variant="outlined" onClick={onOpenOriginal} disabled={!detail.canonical_url}>
-              Open original
-            </Button>
-            <Button size="small" variant="text" onClick={() => onMoveSelection(-1)}>
-              Prev
-            </Button>
-            <Button size="small" variant="text" onClick={() => onMoveSelection(1)}>
-              Next
-            </Button>
-          </Stack>
 
           <Divider />
 
-          <Typography variant="body1" className="workspace-reader__body">
-            {detail.content_text || "No content available."}
-          </Typography>
+          {contentHtml ? (
+            <Box
+              className="workspace-reader__body"
+              dangerouslySetInnerHTML={{ __html: contentHtml }}
+            />
+          ) : (
+            <Typography variant="body1" className="workspace-reader__empty">
+              No content available.
+            </Typography>
+          )}
         </Stack>
       ) : null}
     </Paper>
