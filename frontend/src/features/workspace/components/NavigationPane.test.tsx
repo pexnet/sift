@@ -133,7 +133,7 @@ describe("NavigationPane", () => {
     });
   });
 
-  it("supports collapse all and expand all controls", async () => {
+  it("supports single-toggle collapse and expand all controls", async () => {
     storage.removeItem(NAV_FOLDERS_EXPANDED_KEY);
     renderPane();
 

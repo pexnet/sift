@@ -135,6 +135,8 @@ export function NavigationPane({
     return defaultFolderOpen;
   };
 
+  const allFoldersExpanded = folderKeys.length > 0 && folderKeys.every((folderKey) => isFolderOpen(folderKey));
+
   const toggleFolder = (folderKey: string) => {
     setHasExpansionPreference(true);
     setExpandedFolders((previous) => {
@@ -219,7 +221,7 @@ export function NavigationPane({
 
       {hierarchy ? (
         <Stack spacing={1.5}>
-          <Box>
+          <Box className="workspace-nav__section">
             <Typography className="workspace-nav__section-title">System</Typography>
             <List dense={density === "compact"} disablePadding>
               {hierarchy.systems.map((item) => (
@@ -238,7 +240,7 @@ export function NavigationPane({
             </List>
           </Box>
 
-          <Box>
+          <Box className="workspace-nav__section">
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
               <Button
@@ -273,14 +275,16 @@ export function NavigationPane({
             </Collapse>
           </Box>
 
-          <Box>
-            <Typography className="workspace-nav__section-title">Folders</Typography>
-            <Stack direction="row" spacing={0.5} sx={{ px: 0.5, pb: 0.5 }}>
-              <Button size="small" variant="text" onClick={expandAllFolders}>
-                Expand all
-              </Button>
-              <Button size="small" variant="text" onClick={collapseAllFolders}>
-                Collapse all
+          <Box className="workspace-nav__section">
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography className="workspace-nav__section-title">Folders</Typography>
+              <Button
+                size="small"
+                variant="text"
+                className="workspace-nav__section-action"
+                onClick={allFoldersExpanded ? collapseAllFolders : expandAllFolders}
+              >
+                {allFoldersExpanded ? "Collapse all" : "Expand all"}
               </Button>
             </Stack>
             <List dense={density === "compact"} disablePadding>
@@ -288,10 +292,17 @@ export function NavigationPane({
                 const folderKey = folder.scope_id || "unfiled";
                 const open = isFolderOpen(folderKey);
                 const selectable = !folder.is_unfiled && folder.scope_id.length > 0;
+                const folderSelected = selectable && selectedScopeType === "folder" && selectedScopeKey === folder.scope_id;
 
                 return (
                   <Box key={folderKey}>
-                    <Stack direction="row" alignItems="center">
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      className={`workspace-nav__item-group workspace-nav__item-group--folder${
+                        folderSelected ? " workspace-nav__item-group--selected" : ""
+                      }`}
+                    >
                       <IconButton
                         size="small"
                         aria-label={`${open ? "Collapse" : "Expand"} folder ${folder.name}`}
@@ -309,7 +320,7 @@ export function NavigationPane({
                         )}
                       </IconButton>
                       <ListItemButton
-                        selected={selectable && selectedScopeType === "folder" && selectedScopeKey === folder.scope_id}
+                        selected={folderSelected}
                         onClick={() => {
                           if (selectable) {
                             onSelectFolder(folder.scope_id);
@@ -508,11 +519,18 @@ function FeedRow({
   const feedIconSrc = failedFeedIcons[feed.id] ? null : (feedIconByFeedId[feed.id] ?? null);
   const feedAvatarHue = getFeedAvatarHue(feed.title);
   const feedAvatarSize = density === "comfortable" ? 16 : 14;
+  const isSelected = selectedScopeType === "feed" && selectedScopeKey === feed.scope_id;
 
   return (
-    <Stack direction="row" alignItems="center">
+    <Stack
+      direction="row"
+      alignItems="center"
+      className={`workspace-nav__item-group workspace-nav__item-group--feed${
+        isSelected ? " workspace-nav__item-group--selected" : ""
+      }`}
+    >
       <ListItemButton
-        selected={selectedScopeType === "feed" && selectedScopeKey === feed.scope_id}
+        selected={isSelected}
         onClick={() => onSelectFeed(String(feed.scope_id))}
         className="workspace-nav__row workspace-nav__row--feed"
       >
