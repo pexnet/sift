@@ -334,7 +334,7 @@ Design goals:
 
 1. `/app` now serves the React + MUI workspace shell and is the active cutover surface.
 2. The React workspace currently supports API-backed navigation, article listing/reader loading, URL-state via TanStack Router, and state mutations for read/saved toggles.
-3. Dashboard card UI v2 is not yet implemented and remains the next frontend delivery slice after React `/app` cutover cleanup.
+3. Dashboard card UI v2 is now implemented in `/app` as a React + MUI summary row (scope, unread, saved, fresh coverage, active sources) driven by existing navigation/article queries.
 4. `/app-react` now performs a temporary redirect to `/app` to preserve migration-era entry points.
 
 **Target**
@@ -350,15 +350,14 @@ Design goals:
 | --- | --- |
 | Must-match behaviors | Keyboard shortcuts (`j/k`, `o`, `m`, `s`, `/`), scope/navigation flows powered by `/api/v1/navigation`, article list/reader behavior from `/api/v1/articles`, and article state mutations via `PATCH /api/v1/articles/{article_id}/state` and `POST /api/v1/articles/state/bulk`; keep density/theme persistence behavior parity. |
 | Allowed improvements | Layout refinements, improved loading skeletons, and clearer error handling UX are encouraged as long as they preserve the fixed API contracts above. |
-| Deferred / non-goals | Dashboard card UI v2 and advanced stream ranking/prioritization controls are explicitly out of scope for this cutover slice. |
+| Deferred / non-goals | Advanced stream ranking/prioritization controls are explicitly out of scope for this cutover slice. |
 
 ## Planned Next Moves
 
-1. Define and implement dashboard card UI v2 in React + MUI.
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add optional vector database plugin layer for semantic retrieval/matching workflows.
+4. Add scheduler and ingest observability (metrics + structured logs) after core content features.
 
 ## Deferred
 
