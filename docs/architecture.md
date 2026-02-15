@@ -413,3 +413,116 @@ The frontend will move from scattered display controls to a centralized settings
 3. Implement sectioned settings UI and migrate current controls.
 4. Remove duplicate display controls from workspace shell.
 5. Run frontend verification (`lint`, `typecheck`, `test`, `build`).
+
+## Long-Term Product Backlog (Captured, Explicitly Deferred)
+
+These items are intentionally documented for future implementation and are **not** part of the current priority stack.
+
+### 1) Feed Health + Feed Lifecycle Management
+
+Planned capability:
+
+- A dedicated feed status/edit surface for operators/users to inspect feed health.
+- Health/quality indicators per feed:
+  - last successful fetch/ingest timestamp
+  - recent failures + latest error context
+  - ingest cadence metrics (for example, rolling articles/day)
+- Lifecycle controls directly on this page:
+  - pause/resume feed ingestion
+  - archive/unarchive feed from active navigation
+
+Architecture implications:
+
+- Extend feed domain/API contracts with lifecycle state (`active`/`paused`/`archived`) and health aggregates.
+- Add lightweight ingestion telemetry aggregation to power cadence and reliability indicators.
+
+### 2) Monitoring Feed Definition Management (Keyword/Regex/Plugin)
+
+Planned capability:
+
+- A management UI/API for monitoring feed definitions and rule evolution.
+- Matching primitives:
+  - keyword matcher
+  - regex matcher
+  - plugin-provided matcher hooks for advanced discovery logic
+- Optional historical backfill run when creating/updating monitoring definitions so existing article corpus can be rescored.
+- Explainability in monitoring article lists/reader:
+  - highlight matched keyword/regex spans
+  - show plugin-provided match reasons/snippets
+
+Architecture implications:
+
+- Introduce a matcher abstraction for monitoring definitions with versioned configuration payloads.
+- Add backend support for asynchronous historical match jobs against stored article corpus.
+- Persist match evidence payloads to enable frontend explainability rendering.
+
+### 3) Dashboard as Command Center
+
+Planned capability:
+
+- A top-level dashboard route optimized for daily triage.
+- User-configurable prioritization across sources (feeds, monitoring feeds, and future scoped sources).
+- Candidate cards:
+  - latest unread by priority
+  - high-signal monitoring matches
+  - stale/error feed watchlist
+  - saved/follow-up queue
+
+Architecture implications:
+
+- Extend existing `dashboard_card` plugin slot with source-priority context.
+- Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
+
+### 4) Duplicate Candidate Review (Iteration 1)
+
+Planned capability:
+
+- Settings-accessible duplicate candidate view as initial UX for canonical dedup transparency.
+- First version is read-centric:
+  - grouped duplicate candidates
+  - confidence and origin metadata
+  - navigation to canonical + variant articles
+
+Architecture implications:
+
+- Add read API for duplicate groups leveraging existing canonical dedup fields.
+- Preserve merge/resolve workflows for a later iteration.
+
+### 5) Plugin Roadmap Ideas
+
+Planned plugins:
+
+- LLM summarization plugin (initial provider target: Ollama Cloud).
+- Vector similarity plugin for article/topic relatedness and future semantic monitoring workflows.
+
+Architecture implications:
+
+- Ensure plugin execution contracts can persist model/provider/version metadata and outputs.
+- Keep vector/embedding storage optional and plugin-boundary isolated from core ingest requirements.
+
+
+### 6) Trends Detection Across Selected Feed Folders
+
+Planned capability:
+
+- Add a deferred trends subsystem that identifies rising topics in user-selected feed folders.
+- Primary consumption surface: dashboard cards and daily briefing widgets.
+- Trend outputs should include:
+  - topic/keyphrase label
+  - momentum signal (short-window lift vs baseline)
+  - evidence bundle (article count, source diversity, and article links)
+
+Architecture implications:
+
+- Add a trend-analysis pipeline (batch or periodic) over scoped article sets.
+- Persist trend snapshots so dashboard reads are fast and historically comparable.
+- Provide read APIs/view models for dashboard and future analytics surfaces.
+
+### Deferred Delivery Sequence (Post Current Core Priorities)
+
+1. Feed health/edit + lifecycle controls.
+2. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
+3. Dashboard v1 command center.
+4. Duplicate candidate review screen.
+5. Trends detection for selected feed folders (dashboard-oriented).
+6. Plugin implementations (LLM summary, vector similarity).
