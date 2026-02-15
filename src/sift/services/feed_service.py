@@ -40,7 +40,8 @@ class FeedService:
         query = (
             select(Feed)
             .where(Feed.is_active.is_(True), Feed.owner_id.is_not(None))
-            .order_by(Feed.updated_at.desc())
+            # Scheduler fairness: prioritize never-fetched feeds, then oldest fetch first.
+            .order_by(Feed.last_fetched_at.asc().nullsfirst(), Feed.created_at.asc())
             .limit(limit)
         )
         result = await session.execute(query)

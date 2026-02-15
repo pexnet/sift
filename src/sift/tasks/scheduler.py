@@ -1,5 +1,4 @@
 import asyncio
-import time
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -77,20 +76,23 @@ async def enqueue_due_feeds() -> int:
                 continue
 
             job_id = _ingest_job_id(feed.id)
-            queue.enqueue(
-                ingest_feed_job,
-                str(feed.id),
-                job_id=job_id,
-                job_timeout=600,
-                result_ttl=3600,
-                failure_ttl=86400,
-            )
-            enqueued += 1
+            try:
+                queue.enqueue(
+                    ingest_feed_job,
+                    str(feed.id),
+                    job_id=job_id,
+                    job_timeout=600,
+                    result_ttl=3600,
+                    failure_ttl=86400,
+                )
+                enqueued += 1
+            except Exception as exc:
+                print(f"[scheduler] failed to enqueue feed_id={feed.id}: {exc}")
 
     return enqueued
 
 
-def main() -> None:
+async def run_scheduler_loop() -> None:
     settings = get_settings()
     print(
         "[scheduler] starting with "
@@ -99,10 +101,17 @@ def main() -> None:
     )
 
     while True:
-        enqueued = asyncio.run(enqueue_due_feeds())
-        if enqueued:
-            print(f"[scheduler] enqueued {enqueued} feed job(s)")
-        time.sleep(settings.scheduler_poll_interval_seconds)
+        try:
+            enqueued = await enqueue_due_feeds()
+            if enqueued:
+                print(f"[scheduler] enqueued {enqueued} feed job(s)")
+        except Exception as exc:
+            print(f"[scheduler] loop error: {exc}")
+        await asyncio.sleep(settings.scheduler_poll_interval_seconds)
+
+
+def main() -> None:
+    asyncio.run(run_scheduler_loop())
 
 
 if __name__ == "__main__":

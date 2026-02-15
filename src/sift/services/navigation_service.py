@@ -128,7 +128,9 @@ class NavigationService:
                 select(
                     KeywordStream.id,
                     KeywordStream.name,
-                    func.sum(case((unread_expr, 1), else_=0)).label("unread"),
+                    func.sum(case((and_(KeywordStreamMatch.article_id.is_not(None), unread_expr), 1), else_=0)).label(
+                        "unread"
+                    ),
                 )
                 .select_from(KeywordStream)
                 .outerjoin(KeywordStreamMatch, KeywordStreamMatch.stream_id == KeywordStream.id)
