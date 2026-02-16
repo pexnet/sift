@@ -1,5 +1,34 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2 Baseline: Backfill Execution)
+
+### Implemented This Session
+
+- Added backend stream backfill endpoint: `POST /api/v1/streams/{stream_id}/backfill`.
+- Added stream backfill service flow:
+  - scan existing user-owned articles
+  - recompute stream match membership using current stream rules/query/classifier mode
+  - replace stale `keyword_stream_matches` rows for the stream with recomputed results
+  - return execution counts (`scanned_count`, `previous_match_count`, `matched_count`)
+- Added API coverage: `tests/test_stream_backfill_api.py`.
+- Added service coverage for replacement behavior: `tests/test_stream_service.py`.
+- Updated monitoring UI backfill feedback:
+  - success message now shows concrete counts (`matched` vs `scanned`)
+  - existing explicit unavailable-state handling for legacy/non-upgraded backends is preserved
+- Updated frontend typing/API client for backfill response payload shape.
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py`
+- `pnpm --dir frontend run test -- src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+- `python -m ruff check src tests`
+- `python -m mypy src`
+
+### Notes
+
+- This completes the historical backfill execution baseline for monitoring management v2.
+- Remaining v2 scope is regex/plugin matcher expansion and richer explainability rendering.
+
 ## 2026-02-16 (Monitoring Search Language v1 Slice Implemented)
 
 ### Implemented This Session

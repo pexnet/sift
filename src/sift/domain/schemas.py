@@ -314,3 +314,10 @@ class StreamArticleOut(BaseModel):
     matched_at: datetime
     article: ArticleOut
 
+
+class StreamBackfillResultOut(BaseModel):
+    stream_id: UUID
+    scanned_count: int
+    previous_match_count: int
+    matched_count: int
+

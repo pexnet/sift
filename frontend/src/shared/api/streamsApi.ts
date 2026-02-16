@@ -1,6 +1,7 @@
 import type {
   KeywordStream,
   KeywordStreamCreateRequest,
+  StreamBackfillResult,
   KeywordStreamUpdateRequest,
 } from "../types/contracts";
 import { apiClient } from "./client";
@@ -23,6 +24,6 @@ export async function deleteStream(streamId: string): Promise<void> {
   await apiClient.request<null>(`${STREAMS_ENDPOINT}/${streamId}`, { method: "DELETE" });
 }
 
-export async function runStreamBackfill(streamId: string): Promise<void> {
-  await apiClient.post<Record<string, never>, unknown>(`${STREAMS_ENDPOINT}/${streamId}/backfill`, {});
+export async function runStreamBackfill(streamId: string): Promise<StreamBackfillResult> {
+  return apiClient.post<Record<string, never>, StreamBackfillResult>(`${STREAMS_ENDPOINT}/${streamId}/backfill`, {});
 }

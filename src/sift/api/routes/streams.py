@@ -4,9 +4,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.api.deps.auth import get_current_user
+from sift.core.runtime import get_plugin_manager
 from sift.db.models import User
 from sift.db.session import get_db_session
-from sift.domain.schemas import KeywordStreamCreate, KeywordStreamOut, KeywordStreamUpdate, StreamArticleOut
+from sift.domain.schemas import (
+    KeywordStreamCreate,
+    KeywordStreamOut,
+    KeywordStreamUpdate,
+    StreamArticleOut,
+    StreamBackfillResultOut,
+)
 from sift.services.stream_service import StreamConflictError, StreamNotFoundError, StreamValidationError, stream_service
 
 router = APIRouter()
@@ -88,3 +95,21 @@ async def list_stream_articles(
     except StreamNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
+
+@router.post("/{stream_id}/backfill", response_model=StreamBackfillResultOut)
+async def run_stream_backfill(
+    stream_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> StreamBackfillResultOut:
+    try:
+        return await stream_service.run_stream_backfill(
+            session=session,
+            user_id=current_user.id,
+            stream_id=stream_id,
+            plugin_manager=get_plugin_manager(),
+        )
+    except StreamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except StreamValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

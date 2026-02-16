@@ -6,6 +6,7 @@ import { ApiError } from "../../../shared/api/client";
 import type {
   KeywordStream,
   KeywordStreamCreateRequest,
+  StreamBackfillResult,
   KeywordStreamUpdateRequest,
 } from "../../../shared/types/contracts";
 import {
@@ -67,7 +68,7 @@ describe("MonitoringFeedsPage", () => {
     (args: { streamId: string; payload: KeywordStreamUpdateRequest }) => Promise<KeywordStream>
   >();
   const deleteMutateAsync = vi.fn<(streamId: string) => Promise<void>>();
-  const backfillMutateAsync = vi.fn<(streamId: string) => Promise<void>>();
+  const backfillMutateAsync = vi.fn<(streamId: string) => Promise<StreamBackfillResult>>();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -162,6 +163,22 @@ describe("MonitoringFeedsPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Backfill endpoint is not available yet in this build.")).toBeVisible();
+    });
+  });
+
+  it("shows success feedback when backfill completes", async () => {
+    backfillMutateAsync.mockResolvedValue({
+      stream_id: "66ee748f-957b-4c5f-8d6c-5f8fab4dbf2d",
+      scanned_count: 5,
+      previous_match_count: 1,
+      matched_count: 2,
+    });
+
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "Run backfill" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Backfill completed: 2 matched of 5 scanned.")).toBeVisible();
     });
   });
 });

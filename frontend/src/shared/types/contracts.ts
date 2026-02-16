@@ -17,6 +17,12 @@ export type FeedFolderAssignmentRequest = components["schemas"]["FeedFolderAssig
 export type KeywordStream = components["schemas"]["KeywordStreamOut"];
 export type KeywordStreamCreateRequest = components["schemas"]["KeywordStreamCreate"];
 export type KeywordStreamUpdateRequest = components["schemas"]["KeywordStreamUpdate"];
+export type StreamBackfillResult = {
+  stream_id: string;
+  scanned_count: number;
+  previous_match_count: number;
+  matched_count: number;
+};
 
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
 export type ArticleStateFilter = "all" | "unread" | "saved" | "archived" | "fresh" | "recent";

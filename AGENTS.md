@@ -132,7 +132,8 @@ This file stores persistent project context for future Codex sessions.
 - Monitoring feed management v1 is implemented:
   - `/account/monitoring` route for stream-backed monitoring definition CRUD
   - settings entry point (`Manage monitoring feeds`) from `/account`
-  - optional backfill action entry point with explicit unavailable-state feedback when endpoint is not present
+  - backfill action executes historical stream match recalculation (`POST /api/v1/streams/{stream_id}/backfill`)
+  - backfill response includes scanned/matched counts and UI success feedback
   - workspace explainability labels for matched monitoring streams in article list and reader
 - Monitoring search language v1 is implemented:
   - backend parser/evaluator for `AND`/`OR`/`NOT`, parentheses, quoted phrases, suffix wildcard, and fuzzy tokens
@@ -158,9 +159,10 @@ This file stores persistent project context for future Codex sessions.
 
 1. Monitoring feed management v1 was completed on 2026-02-16.
 2. Monitoring search language v1 was completed on 2026-02-16.
-3. Next UI-focused deferred follow-up is monitoring feed management v2:
+3. Monitoring feed management v2 is in progress:
+   - historical backfill execution path is completed
+   - remaining v2 scope:
    - regex/plugin matcher expansion
-   - historical backfill execution path
    - richer match explainability
 
 ## Deferred

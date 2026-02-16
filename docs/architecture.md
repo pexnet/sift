@@ -348,6 +348,11 @@ Design goals:
    - stream create/update validates query syntax and returns explicit validation errors
    - ingest stream matching enforces query expression before include/exclude/source/language checks
    - article listing search supports advanced query syntax with validation on malformed expressions
+12. Monitoring backfill execution baseline:
+   - endpoint: `POST /api/v1/streams/{stream_id}/backfill`
+   - recomputes stream matches across existing user articles
+   - replaces stale stream-match rows with recomputed results
+   - returns execution counts (`scanned_count`, `previous_match_count`, `matched_count`)
 
 ## Frontend Delivery Standard
 
@@ -380,9 +385,10 @@ Design goals:
 
 1. Monitoring feed management v1 was completed on 2026-02-16.
 2. Monitoring search language v1 was completed on 2026-02-16.
-3. Next UI-focused deferred follow-up is monitoring feed management v2:
+3. Monitoring feed management v2 is in progress:
+   - backfill execution baseline is completed
+   - remaining v2 scope:
    - regex/plugin matcher expansion
-   - historical backfill execution path
    - richer match explainability
 
 ## Deferred
@@ -430,9 +436,11 @@ Design goals:
 1. Preset consistency, contrast/interaction tuning, and settings accessibility/responsiveness polish are completed.
 2. Monitoring feed management v1 is completed:
    - `/account/monitoring` stream-backed monitoring CRUD
-   - backfill trigger entry point with explicit unavailable-state feedback
+   - backfill execution endpoint integration with success feedback
    - list/reader explainability labels for matched monitoring streams
-3. Monitoring feed management v2 (regex/plugin matcher expansion + historical backfill execution) remains deferred.
+3. Monitoring feed management v2 remains in progress:
+   - completed: historical backfill execution baseline
+   - remaining: regex/plugin matcher expansion and richer match-evidence rendering
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
@@ -460,9 +468,10 @@ Architecture implications:
 
 Status:
 
-- v1 implementation is complete (CRUD route + baseline explainability + backfill entry point).
+- v1 implementation is complete (CRUD route + baseline explainability).
 - query language v1 for stream matching is complete (`AND`/`OR`/`NOT`, phrases/grouping, wildcard, fuzzy).
-- This section now captures deferred v2 expansion scope.
+- historical backfill execution baseline is complete (`POST /api/v1/streams/{stream_id}/backfill`).
+- this section now captures remaining v2 expansion scope.
 
 Planned capability:
 
@@ -471,7 +480,7 @@ Planned capability:
   - keyword matcher
   - regex matcher
   - plugin-provided matcher hooks for advanced discovery logic
-- Optional historical backfill run when creating/updating monitoring definitions so existing article corpus can be rescored.
+- Baseline manual backfill execution is implemented; optional create/update-triggered backfill remains deferred.
 - Explainability in monitoring article lists/reader:
   - highlight matched keyword/regex spans
   - show plugin-provided match reasons/snippets
@@ -479,7 +488,7 @@ Planned capability:
 Architecture implications:
 
 - Introduce a matcher abstraction for monitoring definitions with versioned configuration payloads.
-- Add backend support for asynchronous historical match jobs against stored article corpus.
+- Consider asynchronous job orchestration for historical backfill at larger scale.
 - Persist match evidence payloads to enable frontend explainability rendering.
 - Optional acceleration follow-up is deferred:
   - advanced query evaluation currently prioritizes correctness and is app-layer evaluated for complex expressions

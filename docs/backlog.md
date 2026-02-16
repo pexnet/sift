@@ -21,7 +21,9 @@ This is the source of truth for product backlog status and long-term roadmap ite
 
 1. Monitoring feed management v1 completed on 2026-02-16.
 2. Monitoring search language v1 completed on 2026-02-16.
-3. Next UI follow-up after core priorities: monitoring feed management v2 (regex/plugin matcher expansion + historical backfill execution + richer explainability).
+3. Monitoring feed management v2 is now in progress:
+   - completed on 2026-02-16: historical backfill execution endpoint and UI success feedback
+   - next: regex/plugin matcher expansion and richer explainability details
 
 ## Done (History)
 
@@ -100,6 +102,11 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - optional backfill action entry point with explicit unavailable-state feedback
    - matched monitoring stream explainability labels in article list and reader
 8. Frontend quality gates repeatedly verified on delivered slices (`lint`, `typecheck`, `test`, `build`).
+9. Monitoring feed management v2 (backfill execution baseline):
+   - backend endpoint implemented: `POST /api/v1/streams/{stream_id}/backfill`
+   - endpoint recalculates stream matches across existing user articles
+   - stale stream-match rows are replaced with recomputed results
+   - monitoring UI now reports concrete backfill completion counts
 
 ### Completed Session Index (Chronological)
 
@@ -116,6 +123,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - Monitoring feed management v1 delivered (route + CRUD + explainability + backfill entry point).
 4. 2026-02-16:
    - Monitoring search language v1 delivered (parser + stream persistence + matching + monitoring UI field + tests).
+5. 2026-02-16:
+   - Monitoring feed management v2 baseline delivered (historical backfill execution path).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.
 
@@ -139,7 +148,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
   - query language composition beyond v1 boolean/phrase/wildcard/fuzzy operators
   - regex rules
   - plugin-provided matchers for advanced semantic/domain-specific discovery
-- Add optional full historical search pass over existing stored articles on create/update.
+- Baseline manual backfill execution is implemented; optional create/update-triggered historical pass remains deferred.
 - Add article-view explainability:
   - highlight matched keyword/regex spans
   - render plugin finding snippets/reasons

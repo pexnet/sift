@@ -275,8 +275,11 @@ export function MonitoringFeedsPage() {
   const runBackfill = async (streamId: string) => {
     setFeedback(null);
     try {
-      await runBackfillMutation.mutateAsync(streamId);
-      setFeedback({ severity: "success", message: "Backfill job enqueued." });
+      const result = await runBackfillMutation.mutateAsync(streamId);
+      setFeedback({
+        severity: "success",
+        message: `Backfill completed: ${result.matched_count} matched of ${result.scanned_count} scanned.`,
+      });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         setFeedback({
@@ -309,7 +312,7 @@ export function MonitoringFeedsPage() {
               Monitoring feeds
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Manage monitoring definitions, matching configuration, and backfill entry points.
+              Manage monitoring definitions, matching configuration, and backfill execution.
             </Typography>
           </Box>
           <Button component="a" href="/account" size="small" variant="outlined">

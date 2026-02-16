@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
-from sift.db.models import Article, Feed, User
+from sift.db.models import Article, Feed, KeywordStreamMatch, User
 from sift.domain.schemas import KeywordStreamCreate, KeywordStreamUpdate
 from sift.plugins.base import StreamClassificationDecision
 from sift.search.query_language import parse_search_query
@@ -276,3 +276,72 @@ def test_stream_matches_respects_match_query() -> None:
         )
         is False
     )
+
+
+@pytest.mark.asyncio
+async def test_run_stream_backfill_replaces_existing_matches() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-backfill@example.com")
+        other_user = User(email="streams-backfill-other@example.com")
+        session.add_all([user, other_user])
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Owned feed", url="https://owned-backfill.example.com/rss")
+        other_feed = Feed(owner_id=other_user.id, title="Other feed", url="https://other-backfill.example.com/rss")
+        session.add_all([feed, other_feed])
+        await session.flush()
+
+        matching_article = Article(
+            feed_id=feed.id,
+            source_id="m1",
+            title="Microsoft Sentinel update",
+            content_text="security operations",
+        )
+        non_matching_article = Article(
+            feed_id=feed.id,
+            source_id="m2",
+            title="Football weekly",
+            content_text="sports roundup",
+        )
+        other_user_article = Article(
+            feed_id=other_feed.id,
+            source_id="m3",
+            title="Microsoft Sentinel incident",
+            content_text="other account",
+        )
+        session.add_all([matching_article, non_matching_article, other_user_article])
+        await session.flush()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="security", match_query="microsoft AND NOT sports"),
+        )
+        session.add(KeywordStreamMatch(stream_id=stream.id, article_id=non_matching_article.id))
+        await session.commit()
+
+        result = await stream_service.run_stream_backfill(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            plugin_manager=FakePluginManager(),  # type: ignore[arg-type]
+        )
+        assert result.scanned_count == 2
+        assert result.previous_match_count == 1
+        assert result.matched_count == 1
+
+        matches = await stream_service.list_stream_articles(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            limit=10,
+        )
+        assert len(matches) == 1
+        assert matches[0].article.id == matching_article.id
+
+    await engine.dispose()

@@ -4,17 +4,18 @@ from datetime import UTC, datetime
 from typing import Literal, cast
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Article, KeywordStream, KeywordStreamMatch
+from sift.db.models import Article, Feed, KeywordStream, KeywordStreamMatch, RawEntry
 from sift.domain.schemas import (
     ArticleOut,
     KeywordStreamCreate,
     KeywordStreamOut,
     KeywordStreamUpdate,
     StreamArticleOut,
+    StreamBackfillResultOut,
 )
 from sift.plugins.base import ArticleContext, StreamClassifierContext
 from sift.plugins.manager import PluginManager
@@ -117,7 +118,7 @@ def _validate_criteria(
     if normalized_mode in {"classifier_only", "hybrid"} and classifier_plugin:
         return
     raise StreamValidationError(
-        "A stream needs at least one positive criterion (include keyword, source, or language)"
+        "A stream needs at least one positive criterion (query, include keyword, source, or language)"
     )
 
 
@@ -337,6 +338,77 @@ class StreamService:
         for match, article in result.all():
             matches.append(StreamArticleOut(matched_at=match.matched_at, article=ArticleOut.model_validate(article)))
         return matches
+
+    async def run_stream_backfill(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        stream_id: UUID,
+        *,
+        plugin_manager: PluginManager,
+    ) -> StreamBackfillResultOut:
+        stream = await self.get_stream(session=session, user_id=user_id, stream_id=stream_id)
+        if stream is None:
+            raise StreamNotFoundError(f"Stream {stream_id} not found")
+
+        try:
+            compiled_stream = compile_stream(stream)
+        except SearchQuerySyntaxError as exc:
+            raise StreamValidationError(str(exc)) from exc
+
+        article_rows_result = await session.execute(
+            select(
+                Article.id,
+                Article.title,
+                Article.content_text,
+                Article.language,
+                RawEntry.source_url,
+            )
+            .join(Feed, Feed.id == Article.feed_id)
+            .outerjoin(
+                RawEntry,
+                and_(RawEntry.feed_id == Article.feed_id, RawEntry.source_id == Article.source_id),
+            )
+            .where(Feed.owner_id == user_id)
+        )
+        article_rows = article_rows_result.all()
+
+        matched_article_ids: list[UUID] = []
+        for article_id, title, content_text, language, source_url in article_rows:
+            matching_stream_ids = await self.collect_matching_stream_ids(
+                [compiled_stream],
+                title=title,
+                content_text=content_text,
+                source_url=source_url,
+                language=language,
+                plugin_manager=plugin_manager,
+            )
+            if matching_stream_ids:
+                matched_article_ids.append(article_id)
+
+        previous_count_result = await session.execute(
+            select(func.count())
+            .select_from(KeywordStreamMatch)
+            .where(KeywordStreamMatch.stream_id == stream_id)
+        )
+        previous_match_count = int(previous_count_result.scalar_one() or 0)
+
+        await session.execute(delete(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id))
+        now = datetime.now(UTC)
+        session.add_all(
+            [
+                KeywordStreamMatch(stream_id=stream_id, article_id=article_id, matched_at=now)
+                for article_id in matched_article_ids
+            ]
+        )
+        await session.commit()
+
+        return StreamBackfillResultOut(
+            stream_id=stream_id,
+            scanned_count=len(article_rows),
+            previous_match_count=previous_match_count,
+            matched_count=len(matched_article_ids),
+        )
 
     def to_out(self, stream: KeywordStream) -> KeywordStreamOut:
         return KeywordStreamOut(
