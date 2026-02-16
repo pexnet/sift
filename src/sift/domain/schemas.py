@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
@@ -277,6 +277,7 @@ class KeywordStreamCreate(BaseModel):
     language_equals: str | None = Field(default=None, max_length=32)
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"] = "rules_only"
     classifier_plugin: str | None = Field(default=None, max_length=128)
+    classifier_config: dict[str, Any] | None = None
     classifier_min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
@@ -294,6 +295,7 @@ class KeywordStreamUpdate(BaseModel):
     language_equals: str | None = Field(default=None, max_length=32)
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"] | None = None
     classifier_plugin: str | None = Field(default=None, max_length=128)
+    classifier_config: dict[str, Any] | None = None
     classifier_min_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
@@ -313,6 +315,7 @@ class KeywordStreamOut(BaseModel):
     language_equals: str | None
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"]
     classifier_plugin: str | None
+    classifier_config: dict[str, Any]
     classifier_min_confidence: float
     created_at: datetime
     updated_at: datetime

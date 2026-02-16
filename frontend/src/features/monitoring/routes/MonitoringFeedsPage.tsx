@@ -48,6 +48,7 @@ type StreamFormState = {
   languageEquals: string;
   classifierMode: ClassifierMode;
   classifierPlugin: string;
+  classifierConfig: string;
   classifierMinConfidence: string;
 };
 
@@ -65,6 +66,7 @@ const DEFAULT_FORM_STATE: StreamFormState = {
   languageEquals: "",
   classifierMode: "rules_only",
   classifierPlugin: "",
+  classifierConfig: "",
   classifierMinConfidence: "0.7",
 };
 
@@ -112,6 +114,10 @@ function regexToInput(value: string[]): string {
 }
 
 function toFormState(stream: KeywordStream): StreamFormState {
+  const classifierConfig =
+    stream.classifier_config && Object.keys(stream.classifier_config).length > 0
+      ? JSON.stringify(stream.classifier_config, null, 2)
+      : "";
   return {
     name: stream.name,
     description: stream.description ?? "",
@@ -126,6 +132,7 @@ function toFormState(stream: KeywordStream): StreamFormState {
     languageEquals: stream.language_equals ?? "",
     classifierMode: stream.classifier_mode,
     classifierPlugin: stream.classifier_plugin ?? "",
+    classifierConfig,
     classifierMinConfidence: String(stream.classifier_min_confidence),
   };
 }
@@ -195,10 +202,12 @@ export function MonitoringFeedsPage() {
     const sourceContains = form.sourceContains.trim();
     const languageEquals = form.languageEquals.trim();
     const classifierPlugin = form.classifierPlugin.trim();
+    const classifierConfigRaw = form.classifierConfig.trim();
     const includeKeywords = parseKeywordsInput(form.includeKeywords);
     const excludeKeywords = parseKeywordsInput(form.excludeKeywords);
     const includeRegex = parseRegexInput(form.includeRegex);
     const excludeRegex = parseRegexInput(form.excludeRegex);
+    let classifierConfig: Record<string, unknown> | null = null;
 
     if (name.length === 0) {
       setSubmitError("Name is required.");
@@ -219,6 +228,19 @@ export function MonitoringFeedsPage() {
     if (classifierEnabled && classifierPlugin.length === 0) {
       setSubmitError("Classifier plugin is required when classifier mode is enabled.");
       return;
+    }
+    if (classifierConfigRaw.length > 0) {
+      try {
+        const parsed = JSON.parse(classifierConfigRaw) as unknown;
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          setSubmitError("Classifier config must be a JSON object.");
+          return;
+        }
+        classifierConfig = parsed as Record<string, unknown>;
+      } catch {
+        setSubmitError("Classifier config must be valid JSON.");
+        return;
+      }
     }
 
     const priority = Math.max(0, Math.min(10_000, toNumber(form.priority, 100)));
@@ -243,6 +265,7 @@ export function MonitoringFeedsPage() {
           language_equals: languageEquals.length > 0 ? languageEquals : null,
           classifier_mode: form.classifierMode,
           classifier_plugin: classifierEnabled ? classifierPlugin : null,
+          classifier_config: classifierConfig,
           classifier_min_confidence: classifierMinConfidence,
         };
         await updateStreamMutation.mutateAsync({ streamId: editingStreamId, payload });
@@ -262,6 +285,7 @@ export function MonitoringFeedsPage() {
           language_equals: languageEquals.length > 0 ? languageEquals : null,
           classifier_mode: form.classifierMode,
           classifier_plugin: classifierEnabled ? classifierPlugin : null,
+          classifier_config: classifierConfig,
           classifier_min_confidence: classifierMinConfidence,
         };
         await createStreamMutation.mutateAsync(payload);
@@ -501,6 +525,22 @@ export function MonitoringFeedsPage() {
                   }
                 />
                 <TextField
+                  label="Classifier config (JSON)"
+                  size="small"
+                  multiline
+                  minRows={3}
+                  value={form.classifierConfig}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, classifierConfig: event.target.value }))
+                  }
+                  disabled={form.classifierMode === "rules_only"}
+                  helperText={
+                    form.classifierMode === "rules_only"
+                      ? "Optional when rules-only mode is selected."
+                      : "Optional JSON object passed to classifier plugin."
+                  }
+                />
+                <TextField
                   label="Classifier min confidence"
                   size="small"
                   type="number"
@@ -575,6 +615,9 @@ export function MonitoringFeedsPage() {
                       {stream.match_query ? <Chip label="Query enabled" size="small" /> : null}
                       {stream.classifier_plugin ? (
                         <Chip label={`Plugin: ${stream.classifier_plugin}`} size="small" />
+                      ) : null}
+                      {Object.keys(stream.classifier_config || {}).length > 0 ? (
+                        <Chip label="Plugin config" size="small" />
                       ) : null}
                     </Stack>
 

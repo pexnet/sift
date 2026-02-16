@@ -12,6 +12,7 @@ class KeywordHeuristicClassifierPlugin:
         payload = f"{article.title}\n{article.content_text}".lower()
         source = stream.metadata.get("source_url", "").lower()
         language = stream.metadata.get("language", "").lower()
+        config = dict(stream.classifier_config)
 
         if stream.exclude_keywords and any(keyword in payload for keyword in stream.exclude_keywords):
             return StreamClassificationDecision(matched=False, confidence=0.0, reason="excluded keyword present")
@@ -27,9 +28,21 @@ class KeywordHeuristicClassifierPlugin:
 
         matched_keywords = sum(1 for keyword in stream.include_keywords if keyword in payload)
         confidence = matched_keywords / len(stream.include_keywords)
+        min_ratio_raw = config.get("min_keyword_ratio", 0.0)
+        require_all_raw = config.get("require_all_include_keywords", False)
+        try:
+            min_ratio = float(min_ratio_raw)
+        except (TypeError, ValueError):
+            min_ratio = 0.0
+        min_ratio = max(0.0, min(1.0, min_ratio))
+        require_all = bool(require_all_raw)
+        threshold = 1.0 if require_all else min_ratio
+        matched = confidence >= threshold and confidence > 0.0
         return StreamClassificationDecision(
-            matched=confidence > 0.0,
+            matched=matched,
             confidence=confidence,
-            reason=f"{matched_keywords}/{len(stream.include_keywords)} include keywords matched",
+            reason=(
+                f"{matched_keywords}/{len(stream.include_keywords)} include keywords matched "
+                f"(threshold={threshold:.2f})"
+            ),
         )
-

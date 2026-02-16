@@ -22,10 +22,21 @@ from sift.services.stream_service import (
 class FakePluginManager:
     async def classify_stream(self, **kwargs):
         plugin_name = kwargs["plugin_name"]
+        stream_ctx = kwargs["stream"]
+        article_ctx = kwargs["article"]
         if plugin_name == "always_match":
             return StreamClassificationDecision(matched=True, confidence=0.95, reason="test")
         if plugin_name == "low_conf":
             return StreamClassificationDecision(matched=True, confidence=0.25, reason="low")
+        if plugin_name == "config_match":
+            expected = str(stream_ctx.classifier_config.get("expected_token", "")).lower()
+            payload = f"{article_ctx.title}\n{article_ctx.content_text}".lower()
+            matched = bool(expected and expected in payload)
+            return StreamClassificationDecision(
+                matched=matched,
+                confidence=0.9 if matched else 0.0,
+                reason=f"expected_token={expected}" if expected else "expected_token missing",
+            )
         return None
 
 
@@ -69,15 +80,21 @@ async def test_create_update_and_conflict_stream() -> None:
             payload=KeywordStreamCreate(name="ai-news", include_keywords=["ai"]),
         )
         assert stream.name == "ai-news"
+        assert stream.classifier_config_json == "{}"
 
         updated = await stream_service.update_stream(
             session=session,
             user_id=user.id,
             stream_id=stream.id,
-            payload=KeywordStreamUpdate(priority=10, description="AI stream"),
+            payload=KeywordStreamUpdate(
+                priority=10,
+                description="AI stream",
+                classifier_config={"topic": "security"},
+            ),
         )
         assert updated.priority == 10
         assert updated.description == "AI stream"
+        assert updated.classifier_config_json == '{"topic":"security"}'
 
         with pytest.raises(StreamConflictError):
             await stream_service.create_stream(
@@ -103,6 +120,7 @@ def test_stream_matches_include_exclude_source_language() -> None:
         language_equals="en",
         classifier_mode="rules_only",
         classifier_plugin=None,
+        classifier_config={},
         classifier_min_confidence=0.7,
     )
     match = stream_matches(
@@ -142,6 +160,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             language_equals=None,
             classifier_mode="rules_only",
             classifier_plugin=None,
+            classifier_config={},
             classifier_min_confidence=0.7,
         ),
         CompiledKeywordStream(
@@ -157,6 +176,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             language_equals=None,
             classifier_mode="classifier_only",
             classifier_plugin="always_match",
+            classifier_config={},
             classifier_min_confidence=0.7,
         ),
         CompiledKeywordStream(
@@ -172,6 +192,23 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             language_equals=None,
             classifier_mode="classifier_only",
             classifier_plugin="low_conf",
+            classifier_config={},
+            classifier_min_confidence=0.7,
+        ),
+        CompiledKeywordStream(
+            id=uuid4(),
+            name="config-match",
+            priority=40,
+            match_query=None,
+            include_keywords=[],
+            exclude_keywords=[],
+            include_regex=[],
+            exclude_regex=[],
+            source_contains=None,
+            language_equals=None,
+            classifier_mode="classifier_only",
+            classifier_plugin="config_match",
+            classifier_config={"expected_token": "launch"},
             classifier_min_confidence=0.7,
         ),
     ]
@@ -187,6 +224,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
     assert streams[0].id in matched
     assert streams[1].id in matched
     assert streams[2].id not in matched
+    assert streams[3].id in matched
 
     decisions = await stream_service.collect_matching_stream_decisions(
         streams,
@@ -199,6 +237,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
     decision_reasons = {decision.stream_id: decision.reason for decision in decisions}
     assert "keyword: ai" in (decision_reasons.get(streams[0].id) or "")
     assert "classifier:" in (decision_reasons.get(streams[1].id) or "")
+    assert "expected_token=launch" in (decision_reasons.get(streams[3].id) or "")
 
 
 @pytest.mark.asyncio
@@ -283,6 +322,7 @@ def test_stream_matches_respects_match_query() -> None:
         language_equals=None,
         classifier_mode="rules_only",
         classifier_plugin=None,
+        classifier_config={},
         classifier_min_confidence=0.7,
     )
 
@@ -322,6 +362,7 @@ def test_stream_matches_supports_regex_include_exclude() -> None:
         language_equals=None,
         classifier_mode="rules_only",
         classifier_plugin=None,
+        classifier_config={},
         classifier_min_confidence=0.7,
     )
 
@@ -386,6 +427,33 @@ async def test_create_stream_rejects_invalid_include_regex() -> None:
                 session=session,
                 user_id=user.id,
                 payload=KeywordStreamCreate(name="invalid-regex", include_regex=[r"([a-z"]),
+            )
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_create_stream_rejects_non_serializable_classifier_config() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-config-invalid@example.com")
+        session.add(user)
+        await session.commit()
+
+        payload = KeywordStreamCreate.model_construct(
+            name="invalid-config",
+            include_keywords=["ai"],
+            classifier_config={"bad": object()},
+        )
+        with pytest.raises(StreamValidationError):
+            await stream_service.create_stream(
+                session=session,
+                user_id=user.id,
+                payload=payload,
             )
 
     await engine.dispose()

@@ -49,6 +49,7 @@ function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
     language_equals: "en",
     classifier_mode: "rules_only",
     classifier_plugin: null,
+    classifier_config: {},
     classifier_min_confidence: 0.7,
     created_at: "2026-02-16T10:00:00Z",
     updated_at: "2026-02-16T10:00:00Z",
@@ -185,6 +186,35 @@ describe("MonitoringFeedsPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Backfill completed: 2 matched of 5 scanned.")).toBeVisible();
+    });
+  });
+
+  it("passes classifier config JSON when classifier mode is enabled", async () => {
+    createMutateAsync.mockResolvedValue(makeStream({ name: "plugin stream" }));
+
+    renderPage();
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
+      target: { value: "plugin stream" },
+    });
+    fireEvent.mouseDown(screen.getByLabelText(/Classifier mode/i));
+    fireEvent.click(screen.getByRole("option", { name: "Classifier only" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /Classifier plugin/i }), {
+      target: { value: "keyword_heuristic_classifier" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Classifier config \(JSON\)/i }), {
+      target: { value: '{"require_all_include_keywords":true}' },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create monitoring feed" }));
+
+    await waitFor(() => {
+      expect(createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          classifier_mode: "classifier_only",
+          classifier_plugin: "keyword_heuristic_classifier",
+          classifier_config: { require_all_include_keywords: true },
+        })
+      );
     });
   });
 });

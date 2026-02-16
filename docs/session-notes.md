@@ -1,5 +1,40 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2: Plugin Matcher Config Baseline)
+
+### Implemented This Session
+
+- Added persisted classifier config for monitoring streams:
+  - migration: `alembic/versions/20260216_0011_stream_classifier_config.py`
+  - model field: `keyword_streams.classifier_config_json`
+- Extended stream schemas with `classifier_config` for create/update/out payloads.
+- Added backend classifier config validation in stream service:
+  - must be a JSON object
+  - must be JSON-serializable
+  - bounded payload size (max 5000 chars serialized)
+- Extended classifier execution context (`StreamClassifierContext`) to include `classifier_config`.
+- Updated built-in heuristic classifier plugin to honor optional config flags:
+  - `require_all_include_keywords`
+  - `min_keyword_ratio`
+- Updated monitoring UI to edit classifier config JSON and validate JSON pre-submit.
+- Updated tests:
+  - `tests/test_stream_service.py` (config persistence and classifier-context usage)
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx` (config payload wiring)
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py tests/test_article_service.py`
+- `python -m ruff check src tests`
+- `python -m mypy src`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
+### Notes
+
+- This completes plugin matcher config wiring for monitoring v2.
+- Remaining v2 scope is deeper explainability rendering (matched spans/snippets).
+
 ## 2026-02-16 (Monitoring Management v2: Explainability Baseline)
 
 ### Implemented This Session

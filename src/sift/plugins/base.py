@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 @dataclass(slots=True)
@@ -26,6 +26,7 @@ class StreamClassifierContext:
     exclude_keywords: list[str]
     source_contains: str | None
     language_equals: str | None
+    classifier_config: Mapping[str, Any]
     metadata: Mapping[str, str]
 
 

@@ -182,6 +182,7 @@ class KeywordStream(TimestampMixin, Base):
     language_equals: Mapped[str | None] = mapped_column(String(32), index=True)
     classifier_mode: Mapped[str] = mapped_column(String(32), default="rules_only", index=True)
     classifier_plugin: Mapped[str | None] = mapped_column(String(128), index=True)
+    classifier_config_json: Mapped[str] = mapped_column(Text, default="{}")
     classifier_min_confidence: Mapped[float] = mapped_column(Float, default=0.7)
 
 

@@ -361,6 +361,11 @@ Design goals:
    - stream/article matches persist `match_reason` evidence
    - match reasons are generated for query/keyword/regex/source/language/classifier decisions
    - article list/detail API payloads include per-stream reason mappings
+15. Monitoring plugin matcher config baseline:
+   - stream model persists classifier config JSON payloads
+   - stream create/update validates classifier config shape and size
+   - classifier execution context includes per-stream plugin config
+   - monitoring UI supports editing classifier config JSON with pre-submit JSON validation
 
 ## Frontend Delivery Standard
 
@@ -397,8 +402,8 @@ Design goals:
    - backfill execution baseline is completed
    - regex matcher expansion baseline is completed
    - match-reason explainability baseline is completed
+   - plugin matcher config baseline is completed
    - remaining v2 scope:
-   - plugin matcher expansion
    - deeper match explainability (matched spans/snippets)
 
 ## Deferred
@@ -452,7 +457,8 @@ Design goals:
    - completed: historical backfill execution baseline
    - completed: regex matcher expansion baseline
    - completed: match-reason explainability baseline
-   - remaining: plugin matcher expansion and deeper match-evidence rendering (spans/snippets)
+   - completed: plugin matcher config baseline
+   - remaining: deeper match-evidence rendering (spans/snippets)
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
@@ -485,6 +491,7 @@ Status:
 - historical backfill execution baseline is complete (`POST /api/v1/streams/{stream_id}/backfill`).
 - regex matcher baseline is complete (stream include/exclude regex rules + validation + matching).
 - textual explainability baseline is complete (persisted match reasons surfaced in article list/reader).
+- plugin matcher config baseline is complete (stream-level classifier config persistence + context wiring).
 - this section now captures remaining v2 expansion scope.
 
 Planned capability:
@@ -493,7 +500,7 @@ Planned capability:
 - Matching primitives:
   - keyword matcher
   - regex matcher (baseline include/exclude regex support implemented)
-  - plugin-provided matcher hooks for advanced discovery logic
+  - plugin-provided matcher hooks for advanced discovery logic (config baseline implemented)
 - Baseline manual backfill execution is implemented; optional create/update-triggered backfill remains deferred.
 - Explainability in monitoring article lists/reader:
   - baseline textual `Why matched` summaries are implemented

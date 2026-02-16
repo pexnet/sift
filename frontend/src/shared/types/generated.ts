@@ -876,6 +876,10 @@ export interface components {
             classifier_mode: "rules_only" | "classifier_only" | "hybrid";
             /** Classifier Plugin */
             classifier_plugin?: string | null;
+            /** Classifier Config */
+            classifier_config?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Classifier Min Confidence
              * @default 0.7
@@ -923,6 +927,10 @@ export interface components {
             classifier_mode: "rules_only" | "classifier_only" | "hybrid";
             /** Classifier Plugin */
             classifier_plugin: string | null;
+            /** Classifier Config */
+            classifier_config: {
+                [key: string]: unknown;
+            };
             /** Classifier Min Confidence */
             classifier_min_confidence: number;
             /**
@@ -964,6 +972,10 @@ export interface components {
             classifier_mode?: ("rules_only" | "classifier_only" | "hybrid") | null;
             /** Classifier Plugin */
             classifier_plugin?: string | null;
+            /** Classifier Config */
+            classifier_config?: {
+                [key: string]: unknown;
+            } | null;
             /** Classifier Min Confidence */
             classifier_min_confidence?: number | null;
         };

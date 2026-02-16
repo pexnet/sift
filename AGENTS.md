@@ -135,6 +135,7 @@ This file stores persistent project context for future Codex sessions.
   - backfill action executes historical stream match recalculation (`POST /api/v1/streams/{stream_id}/backfill`)
   - backfill response includes scanned/matched counts and UI success feedback
   - stream matcher config supports include/exclude regex rules with backend validation
+  - stream classifier config supports persisted JSON config passed into plugin classifier context
   - workspace explainability labels for matched monitoring streams in article list and reader
   - match reason evidence is persisted and surfaced in article list/reader (`Why matched`)
 - Monitoring search language v1 is implemented:
@@ -165,8 +166,8 @@ This file stores persistent project context for future Codex sessions.
    - historical backfill execution path is completed
    - regex matcher expansion baseline is completed
    - match-reason explainability baseline is completed
+   - plugin matcher config baseline is completed
    - remaining v2 scope:
-   - plugin matcher expansion
    - deeper match explainability (matched spans/snippets)
 
 ## Deferred

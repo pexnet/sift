@@ -25,7 +25,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - completed on 2026-02-16: historical backfill execution endpoint and UI success feedback
    - completed on 2026-02-16: regex matcher rules in monitoring definition management
    - completed on 2026-02-16: richer explainability baseline (captured match reasons surfaced in list/reader)
-   - next: plugin matcher expansion and deeper explainability details (match spans/snippets)
+   - completed on 2026-02-16: plugin matcher config baseline (stream-level classifier config JSON)
+   - next: deeper explainability details (match spans/snippets)
 
 ## Done (History)
 
@@ -119,6 +120,11 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - reasons are generated from query/keyword/regex/source/language/classifier match decisions
    - article list/detail APIs now expose per-stream match reasons
    - workspace list/reader now render `Why matched` summaries for monitoring stream matches
+12. Monitoring plugin matcher config baseline:
+   - stream definitions now support persisted classifier config JSON payloads (`classifier_config`)
+   - backend validates classifier config payload shape/size/JSON-serializability
+   - classifier plugins receive per-stream config in classifier execution context
+   - monitoring UI supports editing classifier config JSON and validates JSON format before submit
 
 ### Completed Session Index (Chronological)
 
@@ -141,6 +147,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - Monitoring feed management v2 regex baseline delivered (include/exclude regex matching rules).
 7. 2026-02-16:
    - Monitoring explainability baseline delivered (persisted match reasons + workspace rendering).
+8. 2026-02-16:
+   - Monitoring plugin matcher config baseline delivered (classifier config persistence + UI + plugin context wiring).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.
 
@@ -163,7 +171,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 - Support multiple matcher types:
   - query language composition beyond v1 boolean/phrase/wildcard/fuzzy operators
   - regex rules (baseline include/exclude regex support is implemented)
-  - plugin-provided matchers for advanced semantic/domain-specific discovery
+  - plugin-provided matchers for advanced semantic/domain-specific discovery (config baseline is implemented)
 - Baseline manual backfill execution is implemented; optional create/update-triggered historical pass remains deferred.
 - Add article-view explainability:
   - highlight matched keyword/regex spans

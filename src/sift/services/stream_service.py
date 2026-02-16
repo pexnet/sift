@@ -2,7 +2,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal, cast
+from typing import Any, Literal, cast
 from uuid import UUID
 
 from sqlalchemy import and_, delete, func, select
@@ -49,6 +49,7 @@ class CompiledKeywordStream:
     language_equals: str | None
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"]
     classifier_plugin: str | None
+    classifier_config: dict[str, Any]
     classifier_min_confidence: float
 
 
@@ -130,6 +131,36 @@ def _normalize_optional_lower(value: str | None) -> str | None:
     return normalized.lower() if normalized else None
 
 
+def _classifier_config_to_json(value: dict[str, Any]) -> str:
+    return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
+def _classifier_config_from_json(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise StreamValidationError("Invalid persisted classifier_config payload") from exc
+    if not isinstance(loaded, dict):
+        raise StreamValidationError("Invalid persisted classifier_config payload")
+    return loaded
+
+
+def _normalize_classifier_config(value: dict[str, Any] | None) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise StreamValidationError("classifier_config must be a JSON object")
+    try:
+        encoded = _classifier_config_to_json(value)
+    except (TypeError, ValueError) as exc:
+        raise StreamValidationError("classifier_config must be JSON serializable") from exc
+    if len(encoded) > 5000:
+        raise StreamValidationError("classifier_config is too large (max 5000 chars)")
+    return value
+
+
 def _normalize_classifier_mode(value: str) -> Literal["rules_only", "classifier_only", "hybrid"]:
     mode = value.strip().lower()
     if mode in {"rules_only", "classifier_only", "hybrid"}:
@@ -188,6 +219,7 @@ def compile_stream(stream: KeywordStream) -> CompiledKeywordStream:
         language_equals=_normalize_optional_lower(stream.language_equals),
         classifier_mode=_normalize_classifier_mode(stream.classifier_mode),
         classifier_plugin=stream.classifier_plugin,
+        classifier_config=_classifier_config_from_json(stream.classifier_config_json),
         classifier_min_confidence=stream.classifier_min_confidence,
     )
 
@@ -291,6 +323,7 @@ class StreamService:
         match_query = _normalize_optional_text(payload.match_query)
         source_contains = _normalize_optional_text(payload.source_contains)
         language_equals = _normalize_optional_lower(payload.language_equals)
+        classifier_config = _normalize_classifier_config(payload.classifier_config)
 
         _compile_regex_patterns(include_regex, field_label="include")
         _compile_regex_patterns(exclude_regex, field_label="exclude")
@@ -327,6 +360,7 @@ class StreamService:
             language_equals=language_equals,
             classifier_mode=_normalize_classifier_mode(payload.classifier_mode),
             classifier_plugin=classifier_plugin,
+            classifier_config_json=_classifier_config_to_json(classifier_config),
             classifier_min_confidence=payload.classifier_min_confidence,
         )
         session.add(stream)
@@ -376,6 +410,10 @@ class StreamService:
             stream.classifier_mode = _normalize_classifier_mode(payload.classifier_mode)
         if payload.classifier_plugin is not None:
             stream.classifier_plugin = _normalize_optional_text(payload.classifier_plugin)
+        if payload.classifier_config is not None:
+            stream.classifier_config_json = _classifier_config_to_json(
+                _normalize_classifier_config(payload.classifier_config)
+            )
         if payload.classifier_min_confidence is not None:
             stream.classifier_min_confidence = payload.classifier_min_confidence
 
@@ -402,6 +440,7 @@ class StreamService:
             classifier_mode=stream.classifier_mode,
             classifier_plugin=stream.classifier_plugin,
         )
+        _normalize_classifier_config(_classifier_config_from_json(stream.classifier_config_json))
 
         try:
             await session.commit()
@@ -538,6 +577,7 @@ class StreamService:
             language_equals=stream.language_equals,
             classifier_mode=_normalize_classifier_mode(stream.classifier_mode),
             classifier_plugin=stream.classifier_plugin,
+            classifier_config=_classifier_config_from_json(stream.classifier_config_json),
             classifier_min_confidence=stream.classifier_min_confidence,
             created_at=stream.created_at,
             updated_at=stream.updated_at,
@@ -603,6 +643,7 @@ class StreamService:
                         exclude_keywords=stream.exclude_keywords,
                         source_contains=stream.source_contains,
                         language_equals=stream.language_equals,
+                        classifier_config=stream.classifier_config,
                         metadata={"source_url": source_url or "", "language": language or ""},
                     ),
                 )
