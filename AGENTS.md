@@ -127,6 +127,7 @@ This file stores persistent project context for future Codex sessions.
   - settings toggle groups support keyboard arrow/home/end selection and explicit focus-visible states
   - settings include reset-to-defaults for UI preferences
   - preset-aware interaction tokens are tuned across rail/nav/list/reader surfaces
+  - preset-aware base surfaces and MUI palette tokens are aligned per preset (light + dark)
   - targeted `/account` route tests cover interaction, accessibility labels, and preference persistence
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
@@ -145,7 +146,7 @@ This file stores persistent project context for future Codex sessions.
 ## Deferred
 
 1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
-2. Expand UI beyond settings-hub foundation with additional curated theme presets and final visual consistency polish.
+2. Add monitoring feed definition management UI/API (matcher config, explainability, optional backfill) after core slices.
 
 ## Feature Notes
 

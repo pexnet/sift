@@ -1,5 +1,29 @@
 # Session Notes
 
+## 2026-02-16 (Theme Consistency Follow-Up + Planning Alignment)
+
+### Implemented This Session
+
+- Completed final preset consistency follow-up for remaining non-themed surfaces:
+  - expanded preset-specific base surface tokens (`bg`, `surface`, `surface-soft`, `surface-muted`, `text`, `muted`, `border`)
+  - aligned MUI palette per preset/mode (`background`, `text`, `divider`, and `action` tokens) so controls match pane theme
+- Aligned planning docs (`AGENTS.md`, `docs/architecture.md`) to remove stale deferred UI-polish items that are now complete.
+- Set the next UI-focused deferred slice explicitly to monitoring feed definition management UX/API.
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- --run`
+- `pnpm --dir frontend run build`
+
+### Next Step (UI)
+
+1. Start monitoring feed definition management slice:
+   - define route + IA for monitoring definition CRUD
+   - add explainability affordances in list/reader for why an article matched
+   - wire optional backfill trigger entry point in the management flow
+
 ## 2026-02-16 (UI Extensions Completed: Preset Consistency + Contrast + Settings UX)
 
 ### Implemented This Session
@@ -165,7 +189,8 @@
 ### Deferred
 
 1. External OIDC provider integration (Google first, then Azure/Apple).
-2. Expand UI beyond settings-hub foundation with additional curated theme presets and final visual consistency polish.
+2. UI preset/consistency extension work completed on 2026-02-16; next deferred UI slice is monitoring feed
+   definition management.
 
 ### Workspace UI Slice: Folder + Reader v1
 
@@ -346,11 +371,11 @@
 - `pnpm --dir frontend run test`
 - `pnpm --dir frontend run build`
 
-#### Next Priorities (UI Extensions)
+#### Next Priorities (UI Extensions, Completed 2026-02-16)
 
-1. Perform deeper visual consistency pass across workspace panes per preset.
-2. Validate and tune contrast/interaction states for each preset in both theme modes.
-3. Expand settings UX with stronger accessibility affordances and responsive layout polish.
+1. Perform deeper visual consistency pass across workspace panes per preset. (Completed)
+2. Validate and tune contrast/interaction states for each preset in both theme modes. (Completed)
+3. Expand settings UX with stronger accessibility affordances and responsive layout polish. (Completed)
 
 ### Long-Term Backlog Capture (Not Prioritized Yet)
 

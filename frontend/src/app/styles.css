@@ -57,38 +57,74 @@
 }
 
 :root[data-theme-preset="ocean"] {
+  --bg: #ecf5fb;
+  --surface: #f4f9fd;
+  --surface-soft: #edf5fb;
+  --surface-muted: #e5eff7;
   --accent: #2693d8;
   --accent-soft: #d9ecf8;
+  --text: #1d2f42;
+  --muted: #5d7387;
+  --border: #c7d9e8;
   --row-selected: #dcecf8;
+  --surface-nav: #e4eef5;
+  --surface-list: #ecf4f9;
   --rail-gradient-top: #66b4df;
   --rail-bg: #1f5f86;
   --rail-item-hover: rgba(230, 246, 255, 0.2);
   --rail-item-active: rgba(230, 246, 255, 0.31);
   --rail-logo-text: color-mix(in srgb, var(--rail-bg) 58%, #0e3f64 42%);
+  --reader-paper-bg: #f1f7fc;
+  --reader-paper-muted: #4f6273;
+  --reader-paper-border: #d3e1ec;
 }
 
 :root[data-theme-preset="graphite"] {
+  --bg: #f1eef8;
+  --surface: #f8f5fc;
+  --surface-soft: #f2eef9;
+  --surface-muted: #ece7f4;
   --accent: #7c63f2;
   --accent-soft: #e3dcff;
+  --text: #2b2442;
+  --muted: #676082;
+  --border: #d4cbe7;
   --row-selected: #e5e0ff;
+  --surface-nav: #ebe7f4;
+  --surface-list: #f2eef8;
   --rail-gradient-top: #9587db;
   --rail-bg: #413a73;
   --rail-item-hover: rgba(245, 239, 255, 0.2);
   --rail-item-active: rgba(245, 239, 255, 0.31);
   --rail-logo-text: color-mix(in srgb, var(--rail-bg) 58%, #2a2f7a 42%);
   --saved-icon-active: color-mix(in srgb, var(--accent) 58%, #e5ca72 42%);
+  --reader-paper-bg: #f4f1fb;
+  --reader-paper-muted: #61597a;
+  --reader-paper-border: #ded8ef;
 }
 
 :root[data-theme-preset="sand"] {
+  --bg: #f8f1e8;
+  --surface: #fcf6ee;
+  --surface-soft: #f7efe4;
+  --surface-muted: #f1e5d7;
   --accent: #c9782e;
   --accent-soft: #f6e5d4;
+  --text: #3f2f22;
+  --muted: #786251;
+  --border: #e0cfbb;
   --row-selected: #f5e6da;
+  --surface-nav: #efe3d6;
+  --surface-list: #f5ece0;
   --rail-gradient-top: #d8b289;
   --rail-bg: #8d5727;
   --rail-item-hover: rgba(255, 245, 230, 0.24);
   --rail-item-active: rgba(255, 245, 230, 0.34);
   --rail-logo-text: color-mix(in srgb, var(--rail-bg) 58%, #5d3f1f 42%);
   --saved-icon-active: color-mix(in srgb, var(--accent) 65%, #d7903b 35%);
+  --reader-paper-bg: #fbf2e7;
+  --reader-paper-muted: #6a5a47;
+  --reader-paper-border: #e8dac7;
 }
 
 [data-theme="dark"] {
@@ -146,38 +182,74 @@
 }
 
 [data-theme="dark"][data-theme-preset="ocean"] {
+  --bg: #0d1923;
+  --surface: #132332;
+  --surface-soft: #192d3e;
+  --surface-muted: #1a2d3f;
   --accent: #63bae7;
   --accent-soft: #1d3644;
+  --text: #e4f1ff;
+  --muted: #9db8d0;
+  --border: #2b445c;
   --row-selected: #203750;
+  --surface-nav: #172939;
+  --surface-list: #152534;
   --rail-gradient-top: #2a556c;
   --rail-bg: #1c3f52;
   --rail-item-hover: rgba(221, 242, 255, 0.2);
   --rail-item-active: rgba(221, 242, 255, 0.32);
   --rail-logo-text: color-mix(in srgb, var(--accent) 56%, var(--text) 44%);
+  --reader-paper-bg: #142634;
+  --reader-paper-muted: #9db8d0;
+  --reader-paper-border: #2a4259;
 }
 
 [data-theme="dark"][data-theme-preset="graphite"] {
+  --bg: #151324;
+  --surface: #1b1930;
+  --surface-soft: #23203c;
+  --surface-muted: #262247;
   --accent: #a08fff;
   --accent-soft: #2d284b;
+  --text: #efeafd;
+  --muted: #b3aad9;
+  --border: #3b3558;
   --row-selected: #2c2952;
+  --surface-nav: #1f1d34;
+  --surface-list: #1a1830;
   --rail-gradient-top: #4f4a76;
   --rail-bg: #2e2c4d;
   --rail-item-hover: rgba(237, 232, 255, 0.2);
   --rail-item-active: rgba(237, 232, 255, 0.33);
   --rail-logo-text: color-mix(in srgb, var(--accent) 54%, var(--text) 46%);
   --saved-icon-active: color-mix(in srgb, var(--accent) 64%, #e4cc7b 36%);
+  --reader-paper-bg: #1a1830;
+  --reader-paper-muted: #b3aad9;
+  --reader-paper-border: #373153;
 }
 
 [data-theme="dark"][data-theme-preset="sand"] {
+  --bg: #1d1712;
+  --surface: #241d17;
+  --surface-soft: #2d241c;
+  --surface-muted: #33281f;
   --accent: #dea774;
   --accent-soft: #3c3127;
+  --text: #f5eee5;
+  --muted: #c6b6a5;
+  --border: #4a3b2e;
   --row-selected: #3b312b;
+  --surface-nav: #2a221a;
+  --surface-list: #241d17;
   --rail-gradient-top: #6d5a45;
   --rail-bg: #4d3d2f;
   --rail-item-hover: rgba(255, 236, 211, 0.2);
   --rail-item-active: rgba(255, 236, 211, 0.33);
   --rail-logo-text: color-mix(in srgb, var(--accent) 58%, var(--text) 42%);
   --saved-icon-active: color-mix(in srgb, var(--accent) 68%, #deb06c 32%);
+  --reader-paper-bg: #262017;
+  --reader-paper-muted: #c6b6a5;
+  --reader-paper-border: #4a3b2e;
 }
 
 body {

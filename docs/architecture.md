@@ -372,7 +372,7 @@ Design goals:
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
-2. Expand UI beyond settings-hub foundation with additional curated theme presets and final visual consistency polish.
+2. Add monitoring feed definition management UI/API (matcher config, explainability, optional backfill) after core slices.
 
 ## Frontend Settings and Theme Architecture (Current)
 
@@ -395,6 +395,7 @@ Design goals:
 - Theme creation uses `(themeMode, themePreset)` inputs.
 - Semantic CSS tokens are preset-aware across both light and dark modes.
 - Interaction tokens are preset-aware across workspace surfaces (rail/nav/list/reader hover + selected states).
+- Base surface and MUI palette tokens are preset-aware, so controls and panes stay visually consistent per preset.
 - Current curated presets:
   - Sift Classic
   - Ocean Slate
@@ -409,11 +410,10 @@ Design goals:
 - Settings surface includes a first-class `Reset to defaults` action for UI preference recovery.
 - Settings controls are responsive-first on mobile (full-width toggle groups and reset action sizing).
 
-### Next UI Extensions (Deferred)
+### UI Extension Status
 
-1. Additional preset tuning and theme-token refinement across rail/nav/list/reader surfaces.
-2. Final visual consistency pass for hover/selected/contrast behavior per preset.
-3. Extended accessibility/responsiveness pass for settings controls.
+1. Preset consistency, contrast/interaction tuning, and settings accessibility/responsiveness polish are completed.
+2. Next UI-focused deferred slice: monitoring feed definition management (configuration + explainability UX).
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
