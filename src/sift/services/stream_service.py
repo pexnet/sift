@@ -262,6 +262,7 @@ def _find_keyword_hit(title: str, content_text: str, keyword: str) -> dict[str, 
         end = title_index + len(keyword)
         return {
             "field": "title",
+            "offset_basis": "field_text_v1",
             "value": keyword,
             "start": title_index,
             "end": end,
@@ -273,6 +274,7 @@ def _find_keyword_hit(title: str, content_text: str, keyword: str) -> dict[str, 
         end = content_index + len(keyword)
         return {
             "field": "content_text",
+            "offset_basis": "field_text_v1",
             "value": keyword,
             "start": content_index,
             "end": end,
@@ -287,6 +289,7 @@ def _find_regex_hit(title: str, content_text: str, pattern: re.Pattern[str]) -> 
     if title_match:
         return {
             "field": "title",
+            "offset_basis": "field_text_v1",
             "pattern": pattern.pattern,
             "value": title_match.group(0),
             "start": title_match.start(),
@@ -298,6 +301,7 @@ def _find_regex_hit(title: str, content_text: str, pattern: re.Pattern[str]) -> 
     if content_match:
         return {
             "field": "content_text",
+            "offset_basis": "field_text_v1",
             "pattern": pattern.pattern,
             "value": content_match.group(0),
             "start": content_match.start(),
@@ -786,6 +790,7 @@ class StreamService:
                     if decision.reason.strip():
                         classifier_reason = f"classifier: {decision.reason.strip()}"
                         classifier_evidence["reason"] = decision.reason.strip()
+                        classifier_evidence["snippets"] = [{"text": decision.reason.strip()}]
                     else:
                         classifier_reason = (
                             f"classifier confidence {decision.confidence:.2f} ({stream.classifier_plugin})"

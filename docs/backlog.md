@@ -28,7 +28,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - completed on 2026-02-16: plugin matcher config baseline (stream-level classifier config JSON)
    - completed on 2026-02-16: structured match evidence payloads (keyword/regex snippets + classifier evidence) surfaced in reader metadata
    - completed on 2026-02-16: inline reader highlighting toggle using structured evidence values
-   - next: refine highlight precision with offset-aware span mapping and richer plugin snippet blocks
+   - completed on 2026-02-16: offset-aware reader highlighting with jump-to-highlight evidence panel
+   - next: extend plugin contracts to emit richer multi-finding evidence blocks (provider-native snippets/scores)
 
 ## Done (History)
 

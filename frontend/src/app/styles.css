@@ -963,6 +963,43 @@ body {
   margin-top: 0.35rem;
 }
 
+.workspace-reader__evidence {
+  margin-top: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--reader-paper-border) 75%, var(--accent) 25%);
+  background: color-mix(in srgb, var(--reader-callout-bg) 88%, transparent);
+  border-radius: 10px;
+  padding: 0.6rem 0.72rem;
+}
+
+.workspace-reader__evidence-label {
+  display: block;
+  margin-bottom: 0.38rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--reader-paper-muted) 74%, var(--accent) 26%);
+}
+
+.workspace-reader__evidence-row + .workspace-reader__evidence-row {
+  padding-top: 0.32rem;
+  border-top: 1px dashed color-mix(in srgb, var(--reader-paper-border) 82%, transparent);
+}
+
+.workspace-reader__evidence-title {
+  line-height: 1.45;
+}
+
+.workspace-reader__evidence-snippet {
+  display: block;
+  margin-top: 0.14rem;
+  color: var(--reader-paper-muted);
+}
+
+.workspace-reader__evidence-jump {
+  margin-top: 0.12rem;
+  min-width: 0;
+  padding-left: 0;
+}
+
 .workspace-reader__body {
   max-width: 75ch;
   color: var(--reader-paper-text);

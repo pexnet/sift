@@ -1,5 +1,36 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2: Offset-Aware Highlighting + Evidence Panel)
+
+### Implemented This Session
+
+- Extended stream evidence payloads with explicit offset metadata marker:
+  - rule hits now include `offset_basis: field_text_v1`
+- Extended classifier evidence payloads with snippet-ready structure:
+  - classifier reason now also emits `snippets: [{ text: ... }]`
+- Upgraded reader highlighting from term-only to offset-aware rendering:
+  - uses `field=content_text` + `start/end` offsets to apply precise `<mark>` ranges in reader body
+  - preserves term-based fallback when offset mapping cannot be applied
+- Added reader evidence panel with per-stream details:
+  - keyword/regex hit rows with snippets
+  - classifier rows/snippets
+  - `Jump to highlight` actions for rows mapped to rendered highlight anchors
+- Updated UI styling for evidence panel and highlight affordances.
+- Added frontend test coverage for evidence jump behavior and maintained highlight toggle coverage.
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py`
+- `python -m ruff check src tests`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ReaderPane.test.tsx`
+
+### Notes
+
+- Offset mapping is now primary for body highlighting; fallback term highlighting remains in place for resilience.
+- Remaining explainability follow-up is exposing richer plugin finding structures from plugin implementations (beyond classifier reason snippets).
+
 ## 2026-02-16 (Monitoring Management v2: Reader Inline Match Highlighting)
 
 ### Implemented This Session
