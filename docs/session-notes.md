@@ -1,5 +1,42 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Search Language v1 Slice Implemented)
+
+### Implemented This Session
+
+- Added backend monitoring/article search language module: `src/sift/search/query_language.py`.
+- Added query-language syntax support:
+  - boolean operators: `AND`, `OR`, `NOT` (case-insensitive)
+  - grouping with parentheses
+  - quoted phrases
+  - suffix wildcard (`term*`)
+  - fuzzy tokens (`term~1`, `term~2`)
+- Added stream persistence for query expressions:
+  - migration: `alembic/versions/20260216_0008_stream_match_query.py`
+  - model/schema support for `keyword_streams.match_query`
+- Integrated query parsing/validation into stream create/update and ingest-time stream matching.
+- Integrated advanced query handling in article listing search with clear 400-level validation failures for invalid syntax.
+- Added monitoring UI support for editing `Search query (v1)` in `/account/monitoring`.
+- Added/updated tests:
+  - `tests/test_query_language.py`
+  - `tests/test_stream_service.py`
+  - `tests/test_article_service.py`
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
+### Verification
+
+- `python -m pytest tests/test_query_language.py tests/test_stream_service.py tests/test_article_service.py`
+- `python -m ruff check src tests`
+- `python -m mypy src`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- --run`
+- `pnpm --dir frontend run build`
+
+### Notes
+
+- PostgreSQL acceleration for advanced query filtering is intentionally deferred to a follow-up optimization slice.
+
 ## 2026-02-16 (Planning: Monitoring Search Language v1 Sketched)
 
 ### Planning Update

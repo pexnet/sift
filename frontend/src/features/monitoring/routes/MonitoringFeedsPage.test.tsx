@@ -32,13 +32,14 @@ const useDeleteStreamMutationMock = vi.mocked(useDeleteStreamMutation);
 const useRunStreamBackfillMutationMock = vi.mocked(useRunStreamBackfillMutation);
 
 function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
-  return {
+  const base: KeywordStream = {
     id: "66ee748f-957b-4c5f-8d6c-5f8fab4dbf2d",
     user_id: "656e7cbf-aa77-4959-af8e-c4e322ae8f3d",
     name: "Threat watch",
     description: "Security monitoring feed",
     is_active: true,
     priority: 100,
+    match_query: null,
     include_keywords: ["threat", "alert"],
     exclude_keywords: [],
     source_contains: "example.com",
@@ -48,8 +49,8 @@ function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
     classifier_min_confidence: 0.7,
     created_at: "2026-02-16T10:00:00Z",
     updated_at: "2026-02-16T10:00:00Z",
-    ...overrides,
   };
+  return { ...base, ...overrides };
 }
 
 function renderPage() {
@@ -115,6 +116,9 @@ describe("MonitoringFeedsPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
       target: { value: "corelight feed" },
     });
+    fireEvent.change(screen.getByRole("textbox", { name: /Search query \(v1\)/i }), {
+      target: { value: "corelight AND microsoft" },
+    });
     fireEvent.change(screen.getByRole("textbox", { name: /Include keywords/i }), {
       target: { value: "corelight, microsoft" },
     });
@@ -124,6 +128,7 @@ describe("MonitoringFeedsPage", () => {
       expect(createMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "corelight feed",
+          match_query: "corelight AND microsoft",
           include_keywords: ["corelight", "microsoft"],
           classifier_mode: "rules_only",
         })

@@ -39,6 +39,7 @@ type StreamFormState = {
   description: string;
   isActive: boolean;
   priority: string;
+  matchQuery: string;
   includeKeywords: string;
   excludeKeywords: string;
   sourceContains: string;
@@ -53,6 +54,7 @@ const DEFAULT_FORM_STATE: StreamFormState = {
   description: "",
   isActive: true,
   priority: "100",
+  matchQuery: "",
   includeKeywords: "",
   excludeKeywords: "",
   sourceContains: "",
@@ -90,6 +92,7 @@ function toFormState(stream: KeywordStream): StreamFormState {
     description: stream.description ?? "",
     isActive: stream.is_active,
     priority: String(stream.priority),
+    matchQuery: stream.match_query ?? "",
     includeKeywords: keywordsToInput(stream.include_keywords),
     excludeKeywords: keywordsToInput(stream.exclude_keywords),
     sourceContains: stream.source_contains ?? "",
@@ -161,6 +164,7 @@ export function MonitoringFeedsPage() {
 
     const name = form.name.trim();
     const description = form.description.trim();
+    const matchQuery = form.matchQuery.trim();
     const sourceContains = form.sourceContains.trim();
     const languageEquals = form.languageEquals.trim();
     const classifierPlugin = form.classifierPlugin.trim();
@@ -174,9 +178,12 @@ export function MonitoringFeedsPage() {
 
     const classifierEnabled = form.classifierMode !== "rules_only";
     const hasPositiveCriteria =
-      includeKeywords.length > 0 || sourceContains.length > 0 || languageEquals.length > 0;
+      matchQuery.length > 0 ||
+      includeKeywords.length > 0 ||
+      sourceContains.length > 0 ||
+      languageEquals.length > 0;
     if (!hasPositiveCriteria && !classifierEnabled) {
-      setSubmitError("Provide at least one positive rule (keyword, source, or language).");
+      setSubmitError("Provide at least one positive rule (query, keyword, source, or language).");
       return;
     }
     if (classifierEnabled && classifierPlugin.length === 0) {
@@ -197,6 +204,7 @@ export function MonitoringFeedsPage() {
           description: description.length > 0 ? description : null,
           is_active: form.isActive,
           priority,
+          match_query: matchQuery.length > 0 ? matchQuery : null,
           include_keywords: includeKeywords,
           exclude_keywords: excludeKeywords,
           source_contains: sourceContains.length > 0 ? sourceContains : null,
@@ -213,6 +221,7 @@ export function MonitoringFeedsPage() {
           description: description.length > 0 ? description : null,
           is_active: form.isActive,
           priority,
+          match_query: matchQuery.length > 0 ? matchQuery : null,
           include_keywords: includeKeywords,
           exclude_keywords: excludeKeywords,
           source_contains: sourceContains.length > 0 ? sourceContains : null,
@@ -358,6 +367,15 @@ export function MonitoringFeedsPage() {
                   onChange={(event) => setForm((previous) => ({ ...previous, priority: event.target.value }))}
                 />
                 <TextField
+                  label="Search query (v1)"
+                  size="small"
+                  value={form.matchQuery}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, matchQuery: event.target.value }))
+                  }
+                  helperText='Supports AND/OR/NOT, quotes, (), suffix wildcard (*), and fuzzy term~1/term~2.'
+                />
+                <TextField
                   label="Include keywords"
                   size="small"
                   value={form.includeKeywords}
@@ -495,6 +513,7 @@ export function MonitoringFeedsPage() {
                     <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
                       <Chip label={`Priority ${stream.priority}`} size="small" />
                       <Chip label={formatMode(stream.classifier_mode)} size="small" />
+                      {stream.match_query ? <Chip label="Query enabled" size="small" /> : null}
                       {stream.classifier_plugin ? (
                         <Chip label={`Plugin: ${stream.classifier_plugin}`} size="small" />
                       ) : null}
@@ -502,6 +521,9 @@ export function MonitoringFeedsPage() {
 
                     <Divider />
 
+                    <Typography variant="caption" color="text.secondary">
+                      Query: {stream.match_query || "none"}
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Include: {stream.include_keywords.length > 0 ? stream.include_keywords.join(", ") : "none"}
                     </Typography>

@@ -18,6 +18,7 @@ from sift.domain.schemas import (
 )
 from sift.plugins.base import ArticleContext, StreamClassifierContext
 from sift.plugins.manager import PluginManager
+from sift.search.query_language import ParsedSearchQuery, SearchQuerySyntaxError, parse_search_query
 
 
 class StreamConflictError(Exception):
@@ -37,6 +38,7 @@ class CompiledKeywordStream:
     id: UUID
     name: str
     priority: int
+    match_query: ParsedSearchQuery | None
     include_keywords: list[str]
     exclude_keywords: list[str]
     source_contains: str | None
@@ -92,6 +94,7 @@ def _normalize_classifier_mode(value: str) -> Literal["rules_only", "classifier_
 
 def _validate_criteria(
     include_keywords: list[str],
+    match_query: str | None,
     source_contains: str | None,
     language_equals: str | None,
     *,
@@ -105,6 +108,8 @@ def _validate_criteria(
 
     if include_keywords:
         return
+    if match_query:
+        return
     if source_contains:
         return
     if language_equals:
@@ -117,10 +122,14 @@ def _validate_criteria(
 
 
 def compile_stream(stream: KeywordStream) -> CompiledKeywordStream:
+    compiled_query: ParsedSearchQuery | None = None
+    if stream.match_query:
+        compiled_query = parse_search_query(stream.match_query)
     return CompiledKeywordStream(
         id=stream.id,
         name=stream.name,
         priority=stream.priority,
+        match_query=compiled_query,
         include_keywords=_keywords_from_json(stream.include_keywords_json),
         exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
         source_contains=_normalize_optional_lower(stream.source_contains),
@@ -143,6 +152,12 @@ def stream_matches(
     source = (source_url or "").lower()
     normalized_language = (language or "").lower()
 
+    if stream.match_query and not stream.match_query.matches(
+        title=title,
+        content_text=content_text,
+        source_text=source_url,
+    ):
+        return False
     if stream.include_keywords and not any(keyword in payload for keyword in stream.include_keywords):
         return False
     if stream.exclude_keywords and any(keyword in payload for keyword in stream.exclude_keywords):
@@ -176,12 +191,20 @@ class StreamService:
     async def create_stream(self, session: AsyncSession, user_id: UUID, payload: KeywordStreamCreate) -> KeywordStream:
         include_keywords = _normalize_keywords(payload.include_keywords)
         exclude_keywords = _normalize_keywords(payload.exclude_keywords)
+        match_query = _normalize_optional_text(payload.match_query)
         source_contains = _normalize_optional_text(payload.source_contains)
         language_equals = _normalize_optional_lower(payload.language_equals)
+
+        if match_query:
+            try:
+                parse_search_query(match_query)
+            except SearchQuerySyntaxError as exc:
+                raise StreamValidationError(str(exc)) from exc
 
         classifier_plugin = _normalize_optional_text(payload.classifier_plugin)
         _validate_criteria(
             include_keywords,
+            match_query,
             source_contains,
             language_equals,
             classifier_mode=payload.classifier_mode,
@@ -194,6 +217,7 @@ class StreamService:
             description=_normalize_optional_text(payload.description),
             is_active=payload.is_active,
             priority=payload.priority,
+            match_query=match_query,
             include_keywords_json=_keywords_to_json(include_keywords),
             exclude_keywords_json=_keywords_to_json(exclude_keywords),
             source_contains=source_contains,
@@ -231,6 +255,8 @@ class StreamService:
             stream.is_active = payload.is_active
         if payload.priority is not None:
             stream.priority = payload.priority
+        if payload.match_query is not None:
+            stream.match_query = _normalize_optional_text(payload.match_query)
         if payload.include_keywords is not None:
             stream.include_keywords_json = _keywords_to_json(payload.include_keywords)
         if payload.exclude_keywords is not None:
@@ -246,11 +272,19 @@ class StreamService:
         if payload.classifier_min_confidence is not None:
             stream.classifier_min_confidence = payload.classifier_min_confidence
 
+        if stream.match_query:
+            try:
+                parse_search_query(stream.match_query)
+            except SearchQuerySyntaxError as exc:
+                raise StreamValidationError(str(exc)) from exc
+
         include_keywords = _keywords_from_json(stream.include_keywords_json)
+        match_query = _normalize_optional_text(stream.match_query)
         source_contains = _normalize_optional_text(stream.source_contains)
         language_equals = _normalize_optional_lower(stream.language_equals)
         _validate_criteria(
             include_keywords,
+            match_query,
             source_contains,
             language_equals,
             classifier_mode=stream.classifier_mode,
@@ -312,6 +346,7 @@ class StreamService:
             description=stream.description,
             is_active=stream.is_active,
             priority=stream.priority,
+            match_query=stream.match_query,
             include_keywords=_keywords_from_json(stream.include_keywords_json),
             exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
             source_contains=stream.source_contains,

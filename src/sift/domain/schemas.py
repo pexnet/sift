@@ -266,6 +266,7 @@ class KeywordStreamCreate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     is_active: bool = True
     priority: int = Field(default=100, ge=0, le=10000)
+    match_query: str | None = Field(default=None, max_length=5000)
     include_keywords: list[str] = Field(default_factory=list)
     exclude_keywords: list[str] = Field(default_factory=list)
     source_contains: str | None = Field(default=None, max_length=1000)
@@ -280,6 +281,7 @@ class KeywordStreamUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     is_active: bool | None = None
     priority: int | None = Field(default=None, ge=0, le=10000)
+    match_query: str | None = Field(default=None, max_length=5000)
     include_keywords: list[str] | None = None
     exclude_keywords: list[str] | None = None
     source_contains: str | None = Field(default=None, max_length=1000)
@@ -296,6 +298,7 @@ class KeywordStreamOut(BaseModel):
     description: str | None
     is_active: bool
     priority: int
+    match_query: str | None
     include_keywords: list[str]
     exclude_keywords: list[str]
     source_contains: str | None

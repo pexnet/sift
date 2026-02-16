@@ -846,6 +846,8 @@ export interface components {
              * @default 100
              */
             priority: number;
+            /** Match Query */
+            match_query?: string | null;
             /** Include Keywords */
             include_keywords?: string[];
             /** Exclude Keywords */
@@ -888,6 +890,8 @@ export interface components {
             is_active: boolean;
             /** Priority */
             priority: number;
+            /** Match Query */
+            match_query: string | null;
             /** Include Keywords */
             include_keywords: string[];
             /** Exclude Keywords */
@@ -926,6 +930,8 @@ export interface components {
             is_active?: boolean | null;
             /** Priority */
             priority?: number | null;
+            /** Match Query */
+            match_query?: string | null;
             /** Include Keywords */
             include_keywords?: string[] | null;
             /** Exclude Keywords */

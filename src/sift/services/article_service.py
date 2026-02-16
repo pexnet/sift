@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.db.models import Article, ArticleState, Feed, KeywordStream, KeywordStreamMatch
 from sift.domain.schemas import ArticleDetailOut, ArticleListItemOut, ArticleListResponse, ArticleStateOut
+from sift.search.query_language import SearchQuerySyntaxError, parse_search_query, requires_advanced_search
 
 ScopeType = Literal["system", "folder", "feed", "stream"]
 StateFilter = Literal["all", "unread", "saved", "archived", "fresh", "recent"]
@@ -154,8 +155,16 @@ class ArticleService:
         )
         filters.append(state_condition)
 
-        if q:
-            like = f"%{q.strip().lower()}%"
+        parsed_query = None
+        normalized_query = (q or "").strip()
+        if normalized_query and requires_advanced_search(normalized_query):
+            try:
+                parsed_query = parse_search_query(normalized_query)
+            except SearchQuerySyntaxError as exc:
+                raise ArticleStateValidationError(str(exc)) from exc
+
+        if parsed_query is None and normalized_query:
+            like = f"%{normalized_query.lower()}%"
             if like != "%%":
                 filters.append(
                     or_(
@@ -165,23 +174,42 @@ class ArticleService:
                     )
                 )
 
-        count_query = (
-            select(func.count())
-            .select_from(Article)
-            .join(Feed, Feed.id == Article.feed_id)
-            .outerjoin(
-                ArticleState,
-                and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
+        if parsed_query is None:
+            count_query = (
+                select(func.count())
+                .select_from(Article)
+                .join(Feed, Feed.id == Article.feed_id)
+                .outerjoin(
+                    ArticleState,
+                    and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
+                )
+                .where(Feed.owner_id == user_id, *filters)
             )
-            .where(Feed.owner_id == user_id, *filters)
-        )
-        total_result = await session.execute(count_query)
-        total = int(total_result.scalar_one() or 0)
+            total_result = await session.execute(count_query)
+            total = int(total_result.scalar_one() or 0)
 
-        rows_result = await session.execute(
-            base_query.where(*filters).order_by(*_sorting_clause(sort=sort, read_expr=context.read_expr)).limit(limit).offset(offset)
-        )
-        rows = rows_result.all()
+            rows_result = await session.execute(
+                base_query.where(*filters)
+                .order_by(*_sorting_clause(sort=sort, read_expr=context.read_expr))
+                .limit(limit)
+                .offset(offset)
+            )
+            rows = rows_result.all()
+        else:
+            all_rows_result = await session.execute(
+                base_query.where(*filters).order_by(*_sorting_clause(sort=sort, read_expr=context.read_expr))
+            )
+            filtered_rows = [
+                row
+                for row in all_rows_result.all()
+                if parsed_query.matches(
+                    title=row[0].title,
+                    content_text=row[0].content_text,
+                    source_text=row[1],
+                )
+            ]
+            total = len(filtered_rows)
+            rows = filtered_rows[offset : offset + limit]
         article_ids = [row[0].id for row in rows]
         stream_map = await self._stream_map(session=session, user_id=user_id, article_ids=article_ids)
 

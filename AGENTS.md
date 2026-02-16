@@ -134,6 +134,12 @@ This file stores persistent project context for future Codex sessions.
   - settings entry point (`Manage monitoring feeds`) from `/account`
   - optional backfill action entry point with explicit unavailable-state feedback when endpoint is not present
   - workspace explainability labels for matched monitoring streams in article list and reader
+- Monitoring search language v1 is implemented:
+  - backend parser/evaluator for `AND`/`OR`/`NOT`, parentheses, quoted phrases, suffix wildcard, and fuzzy tokens
+  - stream expression persistence via `keyword_streams.match_query`
+  - ingest-time stream matching evaluates saved expression query
+  - article listing search supports advanced query syntax with validation errors for invalid expressions
+  - monitoring feed editor supports creating/updating `match_query`
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -151,10 +157,7 @@ This file stores persistent project context for future Codex sessions.
 ## Next UI Slice (Prioritized)
 
 1. Monitoring feed management v1 was completed on 2026-02-16.
-2. Next requested slice: monitoring search language v1 (AND/OR/NOT):
-   - parser + validation with clear syntax errors
-   - stream expression persistence and ingest-time evaluation
-   - monitoring editor input + validation feedback
+2. Monitoring search language v1 was completed on 2026-02-16.
 3. Next UI-focused deferred follow-up is monitoring feed management v2:
    - regex/plugin matcher expansion
    - historical backfill execution path
@@ -170,7 +173,7 @@ This file stores persistent project context for future Codex sessions.
   - many streams per user should be supported
   - stream definitions should be saved and queryable like feeds
   - stream membership should eventually support both deterministic rules and classifier outputs
-  - next matcher evolution starts with a simple boolean query language (`AND`/`OR`/`NOT`)
+  - matcher baseline includes boolean query language (`AND`/`OR`/`NOT`) with phrases/grouping, suffix wildcard, and fuzzy tokens
 - Classifier plugin direction:
   - implement as plugin hooks, not hard-coded core logic
   - support provider/model versioning, score/confidence, and failure isolation

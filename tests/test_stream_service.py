@@ -7,6 +7,7 @@ from sift.db.base import Base
 from sift.db.models import Article, Feed, User
 from sift.domain.schemas import KeywordStreamCreate, KeywordStreamUpdate
 from sift.plugins.base import StreamClassificationDecision
+from sift.search.query_language import parse_search_query
 from sift.services.stream_service import (
     CompiledKeywordStream,
     StreamConflictError,
@@ -91,6 +92,7 @@ def test_stream_matches_include_exclude_source_language() -> None:
         id=uuid4(),
         name="test",
         priority=100,
+        match_query=None,
         include_keywords=["ai"],
         exclude_keywords=["sports"],
         source_contains="example.com",
@@ -127,6 +129,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             id=uuid4(),
             name="rules",
             priority=10,
+            match_query=None,
             include_keywords=["ai"],
             exclude_keywords=[],
             source_contains=None,
@@ -139,6 +142,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             id=uuid4(),
             name="classifier",
             priority=20,
+            match_query=None,
             include_keywords=[],
             exclude_keywords=[],
             source_contains=None,
@@ -151,6 +155,7 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             id=uuid4(),
             name="low-conf",
             priority=30,
+            match_query=None,
             include_keywords=[],
             exclude_keywords=[],
             source_contains=None,
@@ -212,3 +217,62 @@ async def test_list_stream_articles_returns_matches() -> None:
         assert matches[0].article.id == article.id
 
     await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_stream_create_supports_match_query_without_include_keywords() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams4@example.com")
+        session.add(user)
+        await session.commit()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="query-only", match_query="microsoft AND sentinel"),
+        )
+        assert stream.match_query == "microsoft AND sentinel"
+
+    await engine.dispose()
+
+
+def test_stream_matches_respects_match_query() -> None:
+    compiled_stream = CompiledKeywordStream(
+        id=uuid4(),
+        name="query",
+        priority=100,
+        match_query=parse_search_query("microsoft AND NOT sports"),
+        include_keywords=[],
+        exclude_keywords=[],
+        source_contains=None,
+        language_equals=None,
+        classifier_mode="rules_only",
+        classifier_plugin=None,
+        classifier_min_confidence=0.7,
+    )
+
+    assert (
+        stream_matches(
+            stream=compiled_stream,
+            title="microsoft sentinel update",
+            content_text="security telemetry",
+            source_url="https://example.com/feed",
+            language="en",
+        )
+        is True
+    )
+    assert (
+        stream_matches(
+            stream=compiled_stream,
+            title="microsoft sports roundup",
+            content_text="security telemetry",
+            source_url="https://example.com/feed",
+            language="en",
+        )
+        is False
+    )

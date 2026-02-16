@@ -341,6 +341,13 @@ Design goals:
    - per-user folder table (`feed_folders`) with stable ordering metadata
    - feed-to-folder mapping through nullable `feeds.folder_id`
    - authenticated folder CRUD API and feed folder assignment endpoint
+11. Monitoring search language v1:
+   - query parser/evaluator supports `AND`, `OR`, `NOT`, parentheses, quoted phrases, suffix wildcard (`term*`),
+     and fuzzy tokens (`term~1`, `term~2`)
+   - stream model persists query expression as `keyword_streams.match_query`
+   - stream create/update validates query syntax and returns explicit validation errors
+   - ingest stream matching enforces query expression before include/exclude/source/language checks
+   - article listing search supports advanced query syntax with validation on malformed expressions
 
 ## Frontend Delivery Standard
 
@@ -372,7 +379,8 @@ Design goals:
 ## Next UI Slice (Prioritized)
 
 1. Monitoring feed management v1 was completed on 2026-02-16.
-2. Next UI-focused deferred follow-up is monitoring feed management v2:
+2. Monitoring search language v1 was completed on 2026-02-16.
+3. Next UI-focused deferred follow-up is monitoring feed management v2:
    - regex/plugin matcher expansion
    - historical backfill execution path
    - richer match explainability
@@ -453,6 +461,7 @@ Architecture implications:
 Status:
 
 - v1 implementation is complete (CRUD route + baseline explainability + backfill entry point).
+- query language v1 for stream matching is complete (`AND`/`OR`/`NOT`, phrases/grouping, wildcard, fuzzy).
 - This section now captures deferred v2 expansion scope.
 
 Planned capability:
@@ -472,6 +481,9 @@ Architecture implications:
 - Introduce a matcher abstraction for monitoring definitions with versioned configuration payloads.
 - Add backend support for asynchronous historical match jobs against stored article corpus.
 - Persist match evidence payloads to enable frontend explainability rendering.
+- Optional acceleration follow-up is deferred:
+  - advanced query evaluation currently prioritizes correctness and is app-layer evaluated for complex expressions
+  - PostgreSQL acceleration (`tsvector`/`tsquery`, `pg_trgm`, or hybrid pre-filter) should be added in a later slice
 
 ### 3) Dashboard as Command Center
 

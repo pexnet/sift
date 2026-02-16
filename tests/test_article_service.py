@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
 from sift.db.models import Article, ArticleState, Feed, KeywordStream, KeywordStreamMatch, User
-from sift.services.article_service import article_service
+from sift.services.article_service import ArticleStateValidationError, article_service
 
 
 @pytest.mark.asyncio
@@ -169,5 +169,90 @@ async def test_patch_and_bulk_patch_state() -> None:
             sort="newest",
         )
         assert len(listed.items) == 2
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_list_articles_supports_advanced_query_language() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with session_maker() as session:
+        user = User(email="article-search@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Threat Feed", url=f"https://search-{uuid4()}.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        session.add_all(
+            [
+                Article(
+                    feed_id=feed.id,
+                    source_id="q1",
+                    title="Microsoft Sentinel incident",
+                    content_text="Cloud SIEM update",
+                ),
+                Article(
+                    feed_id=feed.id,
+                    source_id="q2",
+                    title="Microsoft sports bulletin",
+                    content_text="Irrelevant sports news",
+                ),
+            ]
+        )
+        await session.commit()
+
+        result = await article_service.list_articles(
+            session=session,
+            user_id=user.id,
+            scope_type="system",
+            scope_id=None,
+            state="all",
+            q="microsoft AND NOT sports",
+            limit=50,
+            offset=0,
+            sort="newest",
+        )
+        assert len(result.items) == 1
+        assert result.items[0].title == "Microsoft Sentinel incident"
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_list_articles_rejects_invalid_advanced_query() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with session_maker() as session:
+        user = User(email="article-search-invalid@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Feed", url=f"https://invalid-{uuid4()}.example.com/rss")
+        session.add(feed)
+        await session.flush()
+        session.add(Article(feed_id=feed.id, source_id="q3", title="One", content_text="Body"))
+        await session.commit()
+
+        with pytest.raises(ArticleStateValidationError):
+            await article_service.list_articles(
+                session=session,
+                user_id=user.id,
+                scope_type="system",
+                scope_id=None,
+                state="all",
+                q='"unterminated',
+                limit=50,
+                offset=0,
+                sort="newest",
+            )
 
     await engine.dispose()

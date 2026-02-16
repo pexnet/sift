@@ -20,38 +20,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
 ### Next UI Slice
 
 1. Monitoring feed management v1 completed on 2026-02-16.
-2. Next UI follow-up after core priorities: monitoring feed management v2 (regex/plugin matcher expansion + historical backfill execution + richer explainability).
-
-### Next Monitoring Search Slice (Requested)
-
-1. Implement monitoring search language v1 for stream definitions.
-2. Initial operators:
-   - `AND`
-   - `OR`
-   - `NOT`
-3. Initial syntax rules:
-   - case-insensitive operators
-   - support parenthesis grouping: `( ... )`
-   - support quoted phrases: `"network detection and response"`
-   - precedence: `NOT` > `AND` > `OR`
-4. Initial matching scope:
-   - article `title`
-   - article `content_text`
-   - optional source metadata string
-5. Implementation shape:
-   - add parser + validator in backend with clear 400-level error messages for invalid expressions
-   - add stream field for expression text (keep current include/exclude fields for migration compatibility in v1)
-   - evaluate expression during ingest stream matching path
-   - add UI control in monitoring feed editor for expression input and validation feedback
-6. Acceptance criteria:
-   - users can save a valid expression and receive clear errors for invalid syntax
-   - ingest matching honors boolean semantics for v1 operators
-   - unit tests cover parser precedence, grouping, `NOT`, and phrase behavior
-   - API + integration tests cover stream CRUD persistence and matching behavior
-7. Non-goals for v1:
-   - fuzzy search/stemming
-   - proximity/boost scoring
-   - regex and plugin matcher language composition
+2. Monitoring search language v1 completed on 2026-02-16.
+3. Next UI follow-up after core priorities: monitoring feed management v2 (regex/plugin matcher expansion + historical backfill execution + richer explainability).
 
 ## Done (History)
 
@@ -93,6 +63,12 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - seed creates default local user
    - seed imports folders/feeds
    - Inoreader monitoring feeds mapped to keyword streams
+12. Monitoring search language v1:
+   - parser + evaluator for `AND`, `OR`, `NOT`, parentheses, and quoted phrases
+   - suffix wildcard support (`term*`) and fuzzy token support (`term~1`, `term~2`)
+   - persisted stream expression field (`keyword_streams.match_query`) with create/update validation
+   - stream matching now evaluates saved query expressions
+   - article search now supports advanced query syntax with clear syntax errors
 
 ### Frontend Workspace and UX History
 
@@ -138,6 +114,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - Theme consistency follow-up and doc alignment completed.
 3. 2026-02-16:
    - Monitoring feed management v1 delivered (route + CRUD + explainability + backfill entry point).
+4. 2026-02-16:
+   - Monitoring search language v1 delivered (parser + stream persistence + matching + monitoring UI field + tests).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.
 
@@ -158,7 +136,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 
 - Add expanded management capabilities for monitoring feed definitions.
 - Support multiple matcher types:
-  - query language composition beyond v1 boolean operators
+  - query language composition beyond v1 boolean/phrase/wildcard/fuzzy operators
   - regex rules
   - plugin-provided matchers for advanced semantic/domain-specific discovery
 - Add optional full historical search pass over existing stored articles on create/update.
@@ -208,6 +186,17 @@ Reference for detailed per-session implementation and verification logs: `docs/s
   - supporting article count and source spread
   - links into matching article lists for drill-down
 
+### 7) Advanced Search Query Acceleration
+
+- Keep v1 search semantics stable, but defer DB-side acceleration work.
+- Candidate acceleration paths:
+  - PostgreSQL `tsvector`/`tsquery` indexing for boolean/phrase-oriented filtering
+  - `pg_trgm` indexes for wildcard/fuzzy support where needed
+  - hybrid strategy (DB pre-filter + app-layer exact evaluator) for semantic parity
+- Goal:
+  - avoid full in-memory scan for advanced expressions on large article sets
+  - preserve current query-language behavior and error model
+
 ### Suggested Deferred Delivery Sequence
 
 1. Feed health/edit page (operability baseline).
@@ -215,4 +204,5 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 3. Dashboard v1 (priority inbox and command-center widgets).
 4. Duplicate-candidate settings view.
 5. Trends detection for selected feed folders (dashboard-oriented).
-6. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+6. Advanced search query acceleration (PostgreSQL-oriented).
+7. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
