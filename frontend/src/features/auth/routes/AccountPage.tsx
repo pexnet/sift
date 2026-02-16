@@ -98,9 +98,14 @@ export function AccountPage() {
         <Typography id="settings-heading" variant="h4" component="h1" sx={{ mb: { xs: 0, sm: 1 } }}>
           Settings
         </Typography>
-        <Button className="settings-reset-button" size="small" variant="outlined" onClick={resetUiPreferences}>
-          Reset to defaults
-        </Button>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+          <Button component="a" href="/account/monitoring" size="small" variant="outlined">
+            Manage monitoring feeds
+          </Button>
+          <Button className="settings-reset-button" size="small" variant="outlined" onClick={resetUiPreferences}>
+            Reset to defaults
+          </Button>
+        </Stack>
       </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
         Appearance and layout preferences, plus account identity summary.

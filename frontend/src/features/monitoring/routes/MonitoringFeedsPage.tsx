@@ -1,0 +1,549 @@
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Switch,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useMemo, useState, type FormEvent } from "react";
+
+import { ApiError } from "../../../shared/api/client";
+import type {
+  KeywordStream,
+  KeywordStreamCreateRequest,
+  KeywordStreamUpdateRequest,
+} from "../../../shared/types/contracts";
+import {
+  useCreateStreamMutation,
+  useDeleteStreamMutation,
+  useRunStreamBackfillMutation,
+  useStreamsQuery,
+  useUpdateStreamMutation,
+} from "../api/monitoringHooks";
+
+type ClassifierMode = "rules_only" | "classifier_only" | "hybrid";
+
+type StreamFormState = {
+  name: string;
+  description: string;
+  isActive: boolean;
+  priority: string;
+  includeKeywords: string;
+  excludeKeywords: string;
+  sourceContains: string;
+  languageEquals: string;
+  classifierMode: ClassifierMode;
+  classifierPlugin: string;
+  classifierMinConfidence: string;
+};
+
+const DEFAULT_FORM_STATE: StreamFormState = {
+  name: "",
+  description: "",
+  isActive: true,
+  priority: "100",
+  includeKeywords: "",
+  excludeKeywords: "",
+  sourceContains: "",
+  languageEquals: "",
+  classifierMode: "rules_only",
+  classifierPlugin: "",
+  classifierMinConfidence: "0.7",
+};
+
+function parseKeywordsInput(value: string): string[] {
+  const tokens = value
+    .split(/[\n,]/g)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+  for (const token of tokens) {
+    const key = token.toLowerCase();
+    if (!seen.has(key)) {
+      deduped.push(token);
+      seen.add(key);
+    }
+  }
+  return deduped;
+}
+
+function keywordsToInput(value: string[]): string {
+  return value.join(", ");
+}
+
+function toFormState(stream: KeywordStream): StreamFormState {
+  return {
+    name: stream.name,
+    description: stream.description ?? "",
+    isActive: stream.is_active,
+    priority: String(stream.priority),
+    includeKeywords: keywordsToInput(stream.include_keywords),
+    excludeKeywords: keywordsToInput(stream.exclude_keywords),
+    sourceContains: stream.source_contains ?? "",
+    languageEquals: stream.language_equals ?? "",
+    classifierMode: stream.classifier_mode,
+    classifierPlugin: stream.classifier_plugin ?? "",
+    classifierMinConfidence: String(stream.classifier_min_confidence),
+  };
+}
+
+function toNumber(value: string, fallback: number): number {
+  const normalized = Number(value);
+  return Number.isFinite(normalized) ? normalized : fallback;
+}
+
+function formatMode(mode: ClassifierMode): string {
+  if (mode === "rules_only") {
+    return "Rules only";
+  }
+  if (mode === "classifier_only") {
+    return "Classifier only";
+  }
+  return "Hybrid";
+}
+
+type Feedback = {
+  severity: "success" | "error" | "info";
+  message: string;
+};
+
+export function MonitoringFeedsPage() {
+  const streamsQuery = useStreamsQuery();
+  const createStreamMutation = useCreateStreamMutation();
+  const updateStreamMutation = useUpdateStreamMutation();
+  const deleteStreamMutation = useDeleteStreamMutation();
+  const runBackfillMutation = useRunStreamBackfillMutation();
+
+  const [editingStreamId, setEditingStreamId] = useState<string | null>(null);
+  const [form, setForm] = useState<StreamFormState>(DEFAULT_FORM_STATE);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const streams = streamsQuery.data;
+  const streamItems = streams ?? [];
+  const editingStream = useMemo(
+    () => (streams ?? []).find((stream) => stream.id === editingStreamId) ?? null,
+    [editingStreamId, streams]
+  );
+  const isEditing = editingStream !== null;
+  const isSaving = createStreamMutation.isPending || updateStreamMutation.isPending;
+
+  const resetForm = () => {
+    setEditingStreamId(null);
+    setForm(DEFAULT_FORM_STATE);
+    setSubmitError(null);
+  };
+
+  const startEdit = (stream: KeywordStream) => {
+    setEditingStreamId(stream.id);
+    setForm(toFormState(stream));
+    setSubmitError(null);
+    setFeedback(null);
+  };
+
+  const submitForm = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitError(null);
+    setFeedback(null);
+
+    const name = form.name.trim();
+    const description = form.description.trim();
+    const sourceContains = form.sourceContains.trim();
+    const languageEquals = form.languageEquals.trim();
+    const classifierPlugin = form.classifierPlugin.trim();
+    const includeKeywords = parseKeywordsInput(form.includeKeywords);
+    const excludeKeywords = parseKeywordsInput(form.excludeKeywords);
+
+    if (name.length === 0) {
+      setSubmitError("Name is required.");
+      return;
+    }
+
+    const classifierEnabled = form.classifierMode !== "rules_only";
+    const hasPositiveCriteria =
+      includeKeywords.length > 0 || sourceContains.length > 0 || languageEquals.length > 0;
+    if (!hasPositiveCriteria && !classifierEnabled) {
+      setSubmitError("Provide at least one positive rule (keyword, source, or language).");
+      return;
+    }
+    if (classifierEnabled && classifierPlugin.length === 0) {
+      setSubmitError("Classifier plugin is required when classifier mode is enabled.");
+      return;
+    }
+
+    const priority = Math.max(0, Math.min(10_000, toNumber(form.priority, 100)));
+    const classifierMinConfidence = Math.max(
+      0,
+      Math.min(1, toNumber(form.classifierMinConfidence, 0.7))
+    );
+
+    try {
+      if (isEditing && editingStreamId) {
+        const payload: KeywordStreamUpdateRequest = {
+          name,
+          description: description.length > 0 ? description : null,
+          is_active: form.isActive,
+          priority,
+          include_keywords: includeKeywords,
+          exclude_keywords: excludeKeywords,
+          source_contains: sourceContains.length > 0 ? sourceContains : null,
+          language_equals: languageEquals.length > 0 ? languageEquals : null,
+          classifier_mode: form.classifierMode,
+          classifier_plugin: classifierEnabled ? classifierPlugin : null,
+          classifier_min_confidence: classifierMinConfidence,
+        };
+        await updateStreamMutation.mutateAsync({ streamId: editingStreamId, payload });
+        setFeedback({ severity: "success", message: "Monitoring feed updated." });
+      } else {
+        const payload: KeywordStreamCreateRequest = {
+          name,
+          description: description.length > 0 ? description : null,
+          is_active: form.isActive,
+          priority,
+          include_keywords: includeKeywords,
+          exclude_keywords: excludeKeywords,
+          source_contains: sourceContains.length > 0 ? sourceContains : null,
+          language_equals: languageEquals.length > 0 ? languageEquals : null,
+          classifier_mode: form.classifierMode,
+          classifier_plugin: classifierEnabled ? classifierPlugin : null,
+          classifier_min_confidence: classifierMinConfidence,
+        };
+        await createStreamMutation.mutateAsync(payload);
+        setFeedback({ severity: "success", message: "Monitoring feed created." });
+      }
+      resetForm();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save monitoring feed.";
+      setSubmitError(message);
+    }
+  };
+
+  const deleteStreamById = async (streamId: string) => {
+    setFeedback(null);
+    setSubmitError(null);
+    try {
+      await deleteStreamMutation.mutateAsync(streamId);
+      if (editingStreamId === streamId) {
+        resetForm();
+      }
+      setFeedback({ severity: "success", message: "Monitoring feed deleted." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete monitoring feed.";
+      setFeedback({ severity: "error", message });
+    }
+  };
+
+  const toggleActive = async (stream: KeywordStream) => {
+    setFeedback(null);
+    try {
+      await updateStreamMutation.mutateAsync({
+        streamId: stream.id,
+        payload: { is_active: !stream.is_active },
+      });
+      setFeedback({
+        severity: "success",
+        message: `Monitoring feed ${stream.is_active ? "disabled" : "enabled"}.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update monitoring feed state.";
+      setFeedback({ severity: "error", message });
+    }
+  };
+
+  const runBackfill = async (streamId: string) => {
+    setFeedback(null);
+    try {
+      await runBackfillMutation.mutateAsync(streamId);
+      setFeedback({ severity: "success", message: "Backfill job enqueued." });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setFeedback({
+          severity: "info",
+          message: "Backfill endpoint is not available yet in this build.",
+        });
+        return;
+      }
+      const message = error instanceof Error ? error.message : "Failed to run backfill.";
+      setFeedback({ severity: "error", message });
+    }
+  };
+
+  return (
+    <Paper
+      component="section"
+      className="panel settings-panel"
+      sx={{ maxWidth: 1100, mx: "auto" }}
+      aria-labelledby="monitoring-heading"
+    >
+      <Stack spacing={2.2}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          alignItems={{ xs: "flex-start", md: "center" }}
+          justifyContent="space-between"
+          spacing={1}
+        >
+          <Box>
+            <Typography id="monitoring-heading" variant="h4" component="h1">
+              Monitoring feeds
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              Manage monitoring definitions, matching configuration, and backfill entry points.
+            </Typography>
+          </Box>
+          <Button component="a" href="/account" size="small" variant="outlined">
+            Back to settings
+          </Button>
+        </Stack>
+
+        {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
+        {streamsQuery.isError ? (
+          <Alert severity="error">Failed to load monitoring feeds.</Alert>
+        ) : null}
+
+        <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
+          <Paper variant="outlined" sx={{ flex: "0 0 420px", p: 2 }}>
+            <Typography variant="h6" component="h2">
+              {isEditing ? "Edit monitoring feed" : "Create monitoring feed"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>
+              Define matching rules and classifier behavior.
+            </Typography>
+            <Box component="form" onSubmit={(event) => void submitForm(event)} sx={{ mt: 1.6 }}>
+              <Stack spacing={1.2}>
+                <TextField
+                  label="Name"
+                  size="small"
+                  value={form.name}
+                  onChange={(event) => setForm((previous) => ({ ...previous, name: event.target.value }))}
+                  required
+                />
+                <TextField
+                  label="Description"
+                  size="small"
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, description: event.target.value }))
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.isActive}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, isActive: event.target.checked }))
+                      }
+                    />
+                  }
+                  label="Active"
+                />
+                <TextField
+                  label="Priority"
+                  size="small"
+                  type="number"
+                  inputProps={{ min: 0, max: 10000 }}
+                  value={form.priority}
+                  onChange={(event) => setForm((previous) => ({ ...previous, priority: event.target.value }))}
+                />
+                <TextField
+                  label="Include keywords"
+                  size="small"
+                  value={form.includeKeywords}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, includeKeywords: event.target.value }))
+                  }
+                  helperText="Comma or newline separated"
+                />
+                <TextField
+                  label="Exclude keywords"
+                  size="small"
+                  value={form.excludeKeywords}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, excludeKeywords: event.target.value }))
+                  }
+                  helperText="Comma or newline separated"
+                />
+                <TextField
+                  label="Source contains"
+                  size="small"
+                  value={form.sourceContains}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, sourceContains: event.target.value }))
+                  }
+                />
+                <TextField
+                  label="Language equals"
+                  size="small"
+                  value={form.languageEquals}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, languageEquals: event.target.value }))
+                  }
+                />
+                <FormControl size="small">
+                  <InputLabel id="monitoring-classifier-mode-label">Classifier mode</InputLabel>
+                  <Select
+                    labelId="monitoring-classifier-mode-label"
+                    label="Classifier mode"
+                    value={form.classifierMode}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        classifierMode: event.target.value as ClassifierMode,
+                      }))
+                    }
+                  >
+                    <MenuItem value="rules_only">Rules only</MenuItem>
+                    <MenuItem value="classifier_only">Classifier only</MenuItem>
+                    <MenuItem value="hybrid">Hybrid</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Classifier plugin"
+                  size="small"
+                  value={form.classifierPlugin}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, classifierPlugin: event.target.value }))
+                  }
+                  disabled={form.classifierMode === "rules_only"}
+                  helperText={
+                    form.classifierMode === "rules_only"
+                      ? "Not required for rules-only mode."
+                      : "Required for classifier-enabled modes."
+                  }
+                />
+                <TextField
+                  label="Classifier min confidence"
+                  size="small"
+                  type="number"
+                  inputProps={{ min: 0, max: 1, step: 0.05 }}
+                  value={form.classifierMinConfidence}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      classifierMinConfidence: event.target.value,
+                    }))
+                  }
+                />
+                {submitError ? <Alert severity="error">{submitError}</Alert> : null}
+                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                  {isEditing ? (
+                    <Button type="button" size="small" variant="text" onClick={resetForm}>
+                      Cancel
+                    </Button>
+                  ) : null}
+                  <Button type="submit" size="small" variant="contained" disabled={isSaving}>
+                    {isEditing ? "Save changes" : "Create monitoring feed"}
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ flex: "1 1 auto", p: 2 }}>
+            <Typography variant="h6" component="h2">
+              Existing monitoring feeds
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6, mb: 1.1 }}>
+              Each definition maps to a stream scope in the workspace navigation.
+            </Typography>
+
+            {streamsQuery.isLoading ? <CircularProgress size={22} /> : null}
+            {!streamsQuery.isLoading && streamItems.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No monitoring feeds yet.
+              </Typography>
+            ) : null}
+
+            <Stack spacing={1.1}>
+              {streamItems.map((stream) => (
+                <Paper key={stream.id} variant="outlined" sx={{ p: 1.2 }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ lineHeight: 1.2 }}>
+                          {stream.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {stream.description || "No description"}
+                        </Typography>
+                      </Box>
+                      <FormControlLabel
+                        sx={{ mr: 0 }}
+                        control={
+                          <Switch
+                            size="small"
+                            checked={stream.is_active}
+                            onChange={() => void toggleActive(stream)}
+                          />
+                        }
+                        label={stream.is_active ? "Active" : "Inactive"}
+                      />
+                    </Stack>
+
+                    <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
+                      <Chip label={`Priority ${stream.priority}`} size="small" />
+                      <Chip label={formatMode(stream.classifier_mode)} size="small" />
+                      {stream.classifier_plugin ? (
+                        <Chip label={`Plugin: ${stream.classifier_plugin}`} size="small" />
+                      ) : null}
+                    </Stack>
+
+                    <Divider />
+
+                    <Typography variant="caption" color="text.secondary">
+                      Include: {stream.include_keywords.length > 0 ? stream.include_keywords.join(", ") : "none"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Exclude: {stream.exclude_keywords.length > 0 ? stream.exclude_keywords.join(", ") : "none"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Source: {stream.source_contains || "any"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Language: {stream.language_equals || "any"}
+                    </Typography>
+
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Button size="small" variant="text" onClick={() => startEdit(stream)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => void runBackfill(stream.id)}
+                        disabled={runBackfillMutation.isPending}
+                      >
+                        Run backfill
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="text"
+                        onClick={() => void deleteStreamById(stream.id)}
+                        disabled={deleteStreamMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          </Paper>
+        </Stack>
+      </Stack>
+    </Paper>
+  );
+}

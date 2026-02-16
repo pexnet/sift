@@ -129,6 +129,11 @@ This file stores persistent project context for future Codex sessions.
   - preset-aware interaction tokens are tuned across rail/nav/list/reader surfaces
   - preset-aware base surfaces and MUI palette tokens are aligned per preset (light + dark)
   - targeted `/account` route tests cover interaction, accessibility labels, and preference persistence
+- Monitoring feed management v1 is implemented:
+  - `/account/monitoring` route for stream-backed monitoring definition CRUD
+  - settings entry point (`Manage monitoring feeds`) from `/account`
+  - optional backfill action entry point with explicit unavailable-state feedback when endpoint is not present
+  - workspace explainability labels for matched monitoring streams in article list and reader
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -143,10 +148,21 @@ This file stores persistent project context for future Codex sessions.
 3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
 4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
+## Next UI Slice (Prioritized)
+
+1. Monitoring feed management v1 was completed on 2026-02-16.
+2. Next requested slice: monitoring search language v1 (AND/OR/NOT):
+   - parser + validation with clear syntax errors
+   - stream expression persistence and ingest-time evaluation
+   - monitoring editor input + validation feedback
+3. Next UI-focused deferred follow-up is monitoring feed management v2:
+   - regex/plugin matcher expansion
+   - historical backfill execution path
+   - richer match explainability
+
 ## Deferred
 
 1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
-2. Add monitoring feed definition management UI/API (matcher config, explainability, optional backfill) after core slices.
 
 ## Feature Notes
 
@@ -154,6 +170,7 @@ This file stores persistent project context for future Codex sessions.
   - many streams per user should be supported
   - stream definitions should be saved and queryable like feeds
   - stream membership should eventually support both deterministic rules and classifier outputs
+  - next matcher evolution starts with a simple boolean query language (`AND`/`OR`/`NOT`)
 - Classifier plugin direction:
   - implement as plugin hooks, not hard-coded core logic
   - support provider/model versioning, score/confidence, and failure isolation
@@ -168,15 +185,23 @@ This file stores persistent project context for future Codex sessions.
 
 ## Planning Workflow For Future Sessions
 
-1. Read `AGENTS.md` and `docs/session-notes.md`.
+1. Read `AGENTS.md`, `docs/backlog.md`, and `docs/session-notes.md`.
 2. Confirm or update the next 3-5 priority steps.
-3. Implement one vertical slice fully (code + tests + docs update).
-4. End each session by updating:
+3. Review newly captured long-horizon ideas and record/normalize them in `docs/backlog.md`.
+4. Implement one vertical slice fully (code + tests + docs update).
+5. End each session by updating:
    - `docs/session-notes.md` with verification results and next priorities.
    - `docs/architecture.md` if architecture changed.
+   - `docs/backlog.md` when backlog status/priorities change.
+
+## Backlog Governance
+
+- Any long-horizon idea captured during sessions must be reviewed and added to `docs/backlog.md`.
+- Avoid keeping durable backlog items only in `docs/session-notes.md`; session notes are log/history, backlog is planning source of truth.
 
 ## Where to Store Future Knowledge
 
 - Stable constraints/instructions: `AGENTS.md`.
 - Design/architecture decisions and tradeoffs: `docs/architecture.md`.
 - Iteration log (what changed, why, what is next): `docs/session-notes.md`.
+- Backlog source of truth (done/next/deferred): `docs/backlog.md`.

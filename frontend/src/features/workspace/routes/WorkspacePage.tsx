@@ -72,6 +72,13 @@ export function WorkspacePage({
     () => (navigationQuery.data ? toNavigationHierarchy(navigationQuery.data) : null),
     [navigationQuery.data]
   );
+  const streamNameById = useMemo<Record<string, string>>(() => {
+    const mapping: Record<string, string> = {};
+    for (const stream of hierarchy?.streams ?? []) {
+      mapping[stream.scope_id] = stream.name;
+    }
+    return mapping;
+  }, [hierarchy]);
   const feedIconByFeedId = useMemo<Record<string, string | null>>(() => {
     const mapping: Record<string, string | null> = {};
     for (const feed of feedsQuery.data ?? []) {
@@ -323,6 +330,7 @@ export function WorkspacePage({
             density={density}
             search={search}
             scopeLabel={selectedScopeLabel}
+            streamNameById={streamNameById}
             articleItems={articles}
             selectedArticleId={selectedArticleId}
             isLoading={articlesQuery.isLoading}
@@ -345,6 +353,7 @@ export function WorkspacePage({
           <ReaderPane
             selectedArticle={selectedArticle}
             selectedArticleId={selectedArticleId}
+            streamNameById={streamNameById}
             detail={articleDetailQuery.data}
             contentHtml={readerContentHtml}
             isLoading={articleDetailQuery.isLoading}

@@ -19,6 +19,7 @@ describe("ArticlesPane", () => {
           article_id: "",
         }}
         scopeLabel="All articles"
+        streamNameById={{}}
         articleItems={[
           {
             id: "e75df5eb-a748-42df-bf46-9cdde7cd5f6c",
@@ -63,6 +64,7 @@ describe("ArticlesPane", () => {
           article_id: "",
         }}
         scopeLabel="All articles"
+        streamNameById={{}}
         articleItems={[
           {
             id: "39c60769-d10b-4e37-9a0d-f4da89bcf9b7",
@@ -106,6 +108,7 @@ describe("ArticlesPane", () => {
           article_id: "",
         }}
         scopeLabel="All articles"
+        streamNameById={{}}
         articleItems={[]}
         selectedArticleId=""
         isLoading={false}
@@ -119,5 +122,49 @@ describe("ArticlesPane", () => {
 
     expect(screen.getByLabelText("State")).toBeInTheDocument();
     expect(screen.getByText("All")).toBeInTheDocument();
+  });
+
+  it("shows monitoring match explainability label when stream ids map to names", () => {
+    render(
+      <ArticlesPane
+        density="compact"
+        search={{
+          scope_type: "system",
+          scope_id: "",
+          state: "all",
+          sort: "newest",
+          q: "",
+          article_id: "",
+        }}
+        scopeLabel="All articles"
+        streamNameById={{
+          "fd6dd555-1902-4f29-b5ba-3f5a7246e9f1": "darktrace",
+        }}
+        articleItems={[
+          {
+            id: "0e0fe5f9-67b7-4f88-8e95-1dbd0ffeb708",
+            feed_id: null,
+            feed_title: "CyberChef",
+            title: "Matched article",
+            canonical_url: null,
+            published_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            is_read: false,
+            is_starred: false,
+            is_archived: false,
+            stream_ids: ["fd6dd555-1902-4f29-b5ba-3f5a7246e9f1"],
+          },
+        ]}
+        selectedArticleId=""
+        isLoading={false}
+        isError={false}
+        searchInputRef={{ current: null }}
+        onSearchChange={vi.fn()}
+        onStateChange={vi.fn()}
+        onArticleSelect={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Matched: darktrace")).toBeVisible();
   });
 });

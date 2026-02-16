@@ -1,0 +1,218 @@
+# Product Backlog
+
+This is the source of truth for product backlog status and long-term roadmap items.
+
+## Status Model
+
+- `Done`: Implemented and verified in prior sessions.
+- `Next`: Prioritized for upcoming implementation.
+- `Deferred`: Captured for future delivery after current priorities.
+
+## Next (Prioritized)
+
+### Core Platform Priorities
+
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+4. Add scheduler and ingestion observability (metrics, latency, failures).
+
+### Next UI Slice
+
+1. Monitoring feed management v1 completed on 2026-02-16.
+2. Next UI follow-up after core priorities: monitoring feed management v2 (regex/plugin matcher expansion + historical backfill execution + richer explainability).
+
+### Next Monitoring Search Slice (Requested)
+
+1. Implement monitoring search language v1 for stream definitions.
+2. Initial operators:
+   - `AND`
+   - `OR`
+   - `NOT`
+3. Initial syntax rules:
+   - case-insensitive operators
+   - support parenthesis grouping: `( ... )`
+   - support quoted phrases: `"network detection and response"`
+   - precedence: `NOT` > `AND` > `OR`
+4. Initial matching scope:
+   - article `title`
+   - article `content_text`
+   - optional source metadata string
+5. Implementation shape:
+   - add parser + validator in backend with clear 400-level error messages for invalid expressions
+   - add stream field for expression text (keep current include/exclude fields for migration compatibility in v1)
+   - evaluate expression during ingest stream matching path
+   - add UI control in monitoring feed editor for expression input and validation feedback
+6. Acceptance criteria:
+   - users can save a valid expression and receive clear errors for invalid syntax
+   - ingest matching honors boolean semantics for v1 operators
+   - unit tests cover parser precedence, grouping, `NOT`, and phrase behavior
+   - API + integration tests cover stream CRUD persistence and matching behavior
+7. Non-goals for v1:
+   - fuzzy search/stemming
+   - proximity/boost scoring
+   - regex and plugin matcher language composition
+
+## Done (History)
+
+### Core and Platform Foundations
+
+1. API-only FastAPI backend surface under `/api/v1/*`.
+2. Auth foundation:
+   - local auth identity provider
+   - Argon2 password hashing
+   - cookie sessions via `user_sessions`
+3. Feed/article authenticated ownership model (`feeds.owner_id`).
+4. Feed ingestion pipeline:
+   - RSS/Atom fetch + parse
+   - raw payload storage
+   - normalized article creation
+   - plugin ingest hook dispatch
+5. Dedupe foundations:
+   - feed+source-id dedupe
+   - cross-feed canonical dedupe with normalized URL/content fingerprint + duplicate linking/confidence
+6. Persisted rule engine and ingestion enforcement.
+7. Keyword streams:
+   - persisted definitions
+   - stream membership matching
+   - stream article views
+8. Stream classifier foundation:
+   - `rules_only`, `classifier_only`, `hybrid`
+   - plugin name + confidence threshold controls
+9. Redis/RQ scheduler-worker orchestration:
+   - queue wiring
+   - worker process
+   - scheduler loop with due-feed enqueueing
+   - stable dedupe job IDs (`ingest-<feed_id>`) with legacy lookup compatibility
+10. Feed folders:
+   - per-user folder model
+   - folder CRUD
+   - feed-to-folder assignment
+11. OPML import and development seed bootstrap:
+   - per-user OPML dedupe/import reporting
+   - seed creates default local user
+   - seed imports folders/feeds
+   - Inoreader monitoring feeds mapped to keyword streams
+
+### Frontend Workspace and UX History
+
+1. Reader-first workspace delivered:
+   - `/app` 3-pane shell (navigation/list/reader)
+   - responsive behavior for desktop/tablet/mobile
+   - core keyboard shortcuts (`j/k`, `o`, `m`, `s`, `/`)
+2. Workspace data/navigation foundations:
+   - unified hierarchy mapping for system/folder/feed/stream scopes
+   - monitoring feeds section in navigation
+3. Folder/feed management flows integrated in SPA.
+4. Reader improvements:
+   - sanitized rich content rendering
+   - reader action wiring (`read`, `save`, `open original`, `prev`, `next`)
+5. Multiple workspace polish iterations:
+   - navigation IA and readability tuning
+   - section collapse/expand persistence
+   - pane resizing with persistence and keyboard-accessible separators
+   - compact visual/interaction refinements
+6. Settings hub and theme system:
+   - `/account` as centralized settings
+   - unified UI preferences model (`themeMode`, `themePreset`, `density`, `navPreset`)
+   - multiple curated theme presets
+   - preset-aware tokens and MUI palette alignment
+   - reset-to-defaults action
+   - accessibility and keyboard interaction hardening
+7. Monitoring feed management v1:
+   - `/account/monitoring` stream-backed monitoring definition CRUD
+   - optional backfill action entry point with explicit unavailable-state feedback
+   - matched monitoring stream explainability labels in article list and reader
+8. Frontend quality gates repeatedly verified on delivered slices (`lint`, `typecheck`, `test`, `build`).
+
+### Completed Session Index (Chronological)
+
+1. 2026-02-15:
+   - API-only architecture baseline finalized.
+   - Workspace UI slices delivered (`Folder + Reader v1`, modernization, nav/readability polish, UX polish v4).
+2. 2026-02-16:
+   - Planning alignment and reprioritization updates completed.
+   - Settings hub foundation delivered.
+   - Settings accessibility + route tests delivered.
+   - Preset consistency/contrast/settings UX extension pass completed.
+   - Theme consistency follow-up and doc alignment completed.
+3. 2026-02-16:
+   - Monitoring feed management v1 delivered (route + CRUD + explainability + backfill entry point).
+
+Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.
+
+## Deferred (Not Prioritized Yet)
+
+### 1) Feed Health + Edit Surface
+
+- Add a dedicated feed status/edit page showing per-feed health and operational metadata.
+- Include feed freshness and cadence metrics:
+  - last successful ingest time
+  - recent ingest failures and error reason
+  - estimated article frequency (for example: articles/day and 7-day rolling cadence)
+- Add feed lifecycle actions:
+  - pause/resume scheduled ingestion
+  - archive/unarchive feed
+
+### 2) Monitoring Feed Search Management v2
+
+- Add expanded management capabilities for monitoring feed definitions.
+- Support multiple matcher types:
+  - query language composition beyond v1 boolean operators
+  - regex rules
+  - plugin-provided matchers for advanced semantic/domain-specific discovery
+- Add optional full historical search pass over existing stored articles on create/update.
+- Add article-view explainability:
+  - highlight matched keyword/regex spans
+  - render plugin finding snippets/reasons
+
+### 3) Dashboard as Daily Command Center
+
+- Introduce a dashboard route focused on first-read triage and daily priorities.
+- Add prioritization controls to weight content sources (regular feeds vs monitoring feeds vs other scopes).
+- Candidate dashboard widgets:
+  - latest unread by priority
+  - high-signal monitoring matches
+  - feed health summary (errors/stale feeds)
+  - saved/flagged follow-up queue
+
+### 4) Duplicate Detection Visibility (Iteration 1)
+
+- Provide an initial duplicate-candidate screen accessible from Settings.
+- Keep first iteration read-focused:
+  - list suspected duplicate groups
+  - show confidence/source metadata
+  - link out to canonical article + variants
+
+### 5) Plugin Backlog Ideas
+
+- LLM summarization plugin:
+  - generate concise article summaries
+  - first provider target: Ollama Cloud
+- Vector-similarity plugin:
+  - embeddings-backed article/topic similarity
+  - supports related-content surfacing and future semantic monitoring workflows
+
+### 6) Trends Detection for Selected Feed Folders
+
+- Add a deferred trends feature that detects emerging topics across selected feed folders.
+- Intended use cases:
+  - dashboard briefing cards ("what is trending today")
+  - editor/research triage for fast signal detection
+- Candidate approach:
+  - rolling-window term/keyphrase extraction and scoring
+  - compare short-term lift vs longer baseline to estimate trend momentum
+  - allow user-selected folder scope as trend input
+- Output explainability:
+  - representative keywords/keyphrases
+  - supporting article count and source spread
+  - links into matching article lists for drill-down
+
+### Suggested Deferred Delivery Sequence
+
+1. Feed health/edit page (operability baseline).
+2. Monitoring feed management v2 (keyword/regex + historical backfill + match highlighting).
+3. Dashboard v1 (priority inbox and command-center widgets).
+4. Duplicate-candidate settings view.
+5. Trends detection for selected feed folders (dashboard-oriented).
+6. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.

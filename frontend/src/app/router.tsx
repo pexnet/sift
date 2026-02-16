@@ -7,6 +7,7 @@ import type { WorkspaceSearch } from "../shared/types/contracts";
 import { AccountPage } from "../features/auth/routes/AccountPage";
 import { LoginPage } from "../features/auth/routes/LoginPage";
 import { RegisterPage } from "../features/auth/routes/RegisterPage";
+import { MonitoringFeedsPage } from "../features/monitoring/routes/MonitoringFeedsPage";
 import { WorkspacePage } from "../features/workspace/routes/WorkspacePage";
 import { AppProviders, queryClient, useAppUiState } from "./providers";
 import { AppShell } from "./AppShell";
@@ -102,6 +103,13 @@ const accountRoute = createRoute({
   component: AccountPage,
 });
 
+const monitoringFeedsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account/monitoring",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: MonitoringFeedsPage,
+});
+
 function WorkspaceRouteComponent() {
   const navigate = useNavigate({ from: "/app" });
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
@@ -134,7 +142,14 @@ const workspaceRoute = createRoute({
   component: WorkspaceRouteComponent,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, loginRoute, registerRoute, accountRoute, workspaceRoute]);
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  loginRoute,
+  registerRoute,
+  accountRoute,
+  monitoringFeedsRoute,
+  workspaceRoute,
+]);
 
 const router = createRouter({
   routeTree,

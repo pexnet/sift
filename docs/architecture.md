@@ -369,10 +369,17 @@ Design goals:
 3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
 4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
+## Next UI Slice (Prioritized)
+
+1. Monitoring feed management v1 was completed on 2026-02-16.
+2. Next UI-focused deferred follow-up is monitoring feed management v2:
+   - regex/plugin matcher expansion
+   - historical backfill execution path
+   - richer match explainability
+
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
-2. Add monitoring feed definition management UI/API (matcher config, explainability, optional backfill) after core slices.
 
 ## Frontend Settings and Theme Architecture (Current)
 
@@ -413,7 +420,11 @@ Design goals:
 ### UI Extension Status
 
 1. Preset consistency, contrast/interaction tuning, and settings accessibility/responsiveness polish are completed.
-2. Next UI-focused deferred slice: monitoring feed definition management (configuration + explainability UX).
+2. Monitoring feed management v1 is completed:
+   - `/account/monitoring` stream-backed monitoring CRUD
+   - backfill trigger entry point with explicit unavailable-state feedback
+   - list/reader explainability labels for matched monitoring streams
+3. Monitoring feed management v2 (regex/plugin matcher expansion + historical backfill execution) remains deferred.
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
@@ -438,6 +449,11 @@ Architecture implications:
 - Add lightweight ingestion telemetry aggregation to power cadence and reliability indicators.
 
 ### 2) Monitoring Feed Definition Management (Keyword/Regex/Plugin)
+
+Status:
+
+- v1 implementation is complete (CRUD route + baseline explainability + backfill entry point).
+- This section now captures deferred v2 expansion scope.
 
 Planned capability:
 

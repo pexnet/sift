@@ -1,5 +1,98 @@
 # Session Notes
 
+## 2026-02-16 (Planning: Monitoring Search Language v1 Sketched)
+
+### Planning Update
+
+- Added a new prioritized backlog item for a monitoring search language v1 using boolean operators.
+- Captured initial syntax/behavior sketch in `docs/backlog.md`:
+  - operators: `AND`, `OR`, `NOT`
+  - grouping with parentheses
+  - quoted phrase support
+  - operator precedence (`NOT` > `AND` > `OR`)
+- Captured implementation outline:
+  - backend parser/validator + clear syntax errors
+  - expression persistence on monitoring definitions
+  - ingest-time evaluation for stream matching
+  - monitoring UI editor input + validation feedback
+- Marked advanced matcher composition (regex/plugin combinations) as deferred v2 scope.
+
+## 2026-02-16 (Monitoring Feed Management v1 Slice Implemented)
+
+### Implemented This Session
+
+- Added stream-backed monitoring management route: `/account/monitoring`.
+- Added monitoring management frontend data layer:
+  - stream API client module (`GET/POST/PATCH/DELETE /api/v1/streams`)
+  - optional backfill trigger entry point (`POST /api/v1/streams/{stream_id}/backfill`) with explicit unavailable-state UX
+  - React Query hooks for list/create/update/delete/backfill operations
+- Added settings entry point:
+  - `Manage monitoring feeds` action on `/account`
+- Added monitoring management UX:
+  - create/edit/delete/toggle-active monitoring definitions
+  - classifier mode/plugin/confidence controls
+  - keyword/source/language criteria editing
+  - user feedback banners for success/error/info outcomes
+- Added explainability affordances in workspace:
+  - article list rows show matched monitoring stream labels
+  - reader header shows matched monitoring stream labels
+- Added and updated tests:
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+  - `frontend/src/features/auth/routes/AccountPage.test.tsx`
+  - `frontend/src/features/workspace/components/ArticlesPane.test.tsx`
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- --run`
+- `pnpm --dir frontend run build`
+
+## 2026-02-16 (Backlog Source-of-Truth Consolidation)
+
+### Implemented This Session
+
+- Added `docs/backlog.md` as the canonical backlog source of truth.
+- Consolidated backlog state into explicit status buckets:
+  - `Done` (historical completed work)
+  - `Next` (current prioritized items)
+  - `Deferred` (future backlog)
+- Added references in `AGENTS.md` so future sessions read/update `docs/backlog.md` during planning.
+
+### Notes
+
+- Detailed long-term backlog content was migrated from this file to `docs/backlog.md` to avoid drift.
+
+## 2026-02-16 (Project/UI Plan Review + Monitoring Management Prioritized)
+
+### Planning Review (UI)
+
+- Confirmed completed UI improvements in the current plan:
+  - reader-first `/app` shell with 3-pane responsive behavior
+  - folder/feed navigation IA and folder management flows
+  - topbar quick theme toggle + settings entry point
+  - unified `/account` settings hub (`themeMode`, `themePreset`, `density`, `navPreset`)
+  - preset-aware theming across rail/nav/list/reader (light + dark)
+  - settings accessibility hardening (group semantics, keyboard support, focus-visible states)
+  - reset-to-defaults action and settings route test coverage
+  - monitoring section placement/expand-collapse behavior in navigation
+
+### Priority Update
+
+- Promoted monitoring feed definition management to the next prioritized UI slice.
+- Kept the core platform sequence unchanged:
+  1. stream-level ranking/prioritization
+  2. classifier run persistence/model tracking
+  3. vector-database plugin integration
+  4. scheduler/ingestion observability
+
+### Next Step (UI Slice Scope)
+
+1. Define route + information architecture for monitoring definition CRUD.
+2. Add explainability affordances in list/reader for match reasons.
+3. Add optional historical backfill trigger in the management flow.
+
 ## 2026-02-16 (Theme Consistency Follow-Up + Planning Alignment)
 
 ### Implemented This Session
@@ -377,82 +470,7 @@
 2. Validate and tune contrast/interaction states for each preset in both theme modes. (Completed)
 3. Expand settings UX with stronger accessibility affordances and responsive layout polish. (Completed)
 
-### Long-Term Backlog Capture (Not Prioritized Yet)
+### Backlog Reference
 
-The following ideas were captured for future sprints and are intentionally **deferred** until current core priorities
-are complete.
-
-#### 1) Feed Health + Edit Surface
-
-- Add a dedicated feed status/edit page showing per-feed health and operational metadata.
-- Include feed freshness and cadence metrics, such as:
-  - last successful ingest time
-  - recent ingest failures and error reason
-  - estimated article frequency (for example: articles/day and 7-day rolling cadence)
-- Add feed lifecycle actions from the same surface:
-  - pause/resume scheduled ingestion
-  - archive/unarchive feed
-
-#### 2) Monitoring Feed Search Management
-
-- Add a management page for monitoring feed definitions.
-- Support multiple matcher types:
-  - keyword rules
-  - regex rules
-  - plugin-provided matchers for advanced semantic/domain-specific discovery
-- When creating/updating a monitoring feed, add an optional full historical search pass over existing stored articles.
-- In monitoring feed article views, visually annotate why an article matched:
-  - highlight matched keywords/regex spans
-  - render plugin finding snippets/reasons where available
-
-#### 3) Dashboard as Daily Command Center
-
-- Introduce a dashboard route focused on first-read triage and daily priorities.
-- Add prioritization controls to weight content sources (regular feeds vs monitoring feeds vs other scopes).
-- Candidate dashboard widgets:
-  - latest unread by priority
-  - high-signal monitoring matches
-  - feed health summary (errors/stale feeds)
-  - saved/flagged follow-up queue
-
-#### 4) Duplicate Detection Visibility (Iteration 1)
-
-- Provide an initial duplicate-candidate screen accessible from Settings.
-- Keep first iteration read-focused:
-  - list suspected duplicate groups
-  - show confidence/source metadata
-  - link out to canonical article + variants
-
-#### 5) Plugin Backlog Ideas
-
-- LLM summarization plugin:
-  - generate concise article summaries
-  - first provider target: Ollama Cloud
-- Vector-similarity plugin:
-  - embeddings-backed article/topic similarity
-  - supports related-content surfacing and future semantic monitoring workflows
-
-
-#### 6) Trends Detection for Selected Feed Folders
-
-- Add a deferred trends feature that detects emerging topics across selected feed folders.
-- Intended use cases:
-  - dashboard briefing cards ("what is trending today")
-  - editor/research triage for fast signal detection
-- Candidate approach for future iteration:
-  - rolling-window term/keyphrase extraction and scoring
-  - compare short-term lift vs longer baseline to estimate trend momentum
-  - allow user-selected folder scope as trend input
-- Output should include explainability:
-  - representative keywords/keyphrases
-  - supporting article count and source spread
-  - links into matching article lists for drill-down
-
-#### Suggested Deferred Delivery Sequence (After Current Priorities)
-
-1. Feed health/edit page (operability baseline).
-2. Monitoring feed management v2 (keyword/regex + historical backfill + match highlighting).
-3. Dashboard v1 (priority inbox and command-center widgets).
-4. Duplicate-candidate settings view.
-5. Trends detection for selected feed folders (dashboard-oriented).
-6. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+- Backlog source of truth is maintained in `docs/backlog.md`.
+- This file remains the chronological session log only.

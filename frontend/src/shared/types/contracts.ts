@@ -14,6 +14,9 @@ export type FeedFolder = components["schemas"]["FeedFolderOut"];
 export type FeedFolderCreateRequest = components["schemas"]["FeedFolderCreate"];
 export type FeedFolderUpdateRequest = components["schemas"]["FeedFolderUpdate"];
 export type FeedFolderAssignmentRequest = components["schemas"]["FeedFolderAssignmentUpdate"];
+export type KeywordStream = components["schemas"]["KeywordStreamOut"];
+export type KeywordStreamCreateRequest = components["schemas"]["KeywordStreamCreate"];
+export type KeywordStreamUpdateRequest = components["schemas"]["KeywordStreamUpdate"];
 
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
 export type ArticleStateFilter = "all" | "unread" | "saved" | "archived" | "fresh" | "recent";

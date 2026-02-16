@@ -1,0 +1,162 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { AppProviders } from "../../../app/providers";
+import { ApiError } from "../../../shared/api/client";
+import type {
+  KeywordStream,
+  KeywordStreamCreateRequest,
+  KeywordStreamUpdateRequest,
+} from "../../../shared/types/contracts";
+import {
+  useCreateStreamMutation,
+  useDeleteStreamMutation,
+  useRunStreamBackfillMutation,
+  useStreamsQuery,
+  useUpdateStreamMutation,
+} from "../api/monitoringHooks";
+import { MonitoringFeedsPage } from "./MonitoringFeedsPage";
+
+vi.mock("../api/monitoringHooks", () => ({
+  useStreamsQuery: vi.fn(),
+  useCreateStreamMutation: vi.fn(),
+  useUpdateStreamMutation: vi.fn(),
+  useDeleteStreamMutation: vi.fn(),
+  useRunStreamBackfillMutation: vi.fn(),
+}));
+
+const useStreamsQueryMock = vi.mocked(useStreamsQuery);
+const useCreateStreamMutationMock = vi.mocked(useCreateStreamMutation);
+const useUpdateStreamMutationMock = vi.mocked(useUpdateStreamMutation);
+const useDeleteStreamMutationMock = vi.mocked(useDeleteStreamMutation);
+const useRunStreamBackfillMutationMock = vi.mocked(useRunStreamBackfillMutation);
+
+function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
+  return {
+    id: "66ee748f-957b-4c5f-8d6c-5f8fab4dbf2d",
+    user_id: "656e7cbf-aa77-4959-af8e-c4e322ae8f3d",
+    name: "Threat watch",
+    description: "Security monitoring feed",
+    is_active: true,
+    priority: 100,
+    include_keywords: ["threat", "alert"],
+    exclude_keywords: [],
+    source_contains: "example.com",
+    language_equals: "en",
+    classifier_mode: "rules_only",
+    classifier_plugin: null,
+    classifier_min_confidence: 0.7,
+    created_at: "2026-02-16T10:00:00Z",
+    updated_at: "2026-02-16T10:00:00Z",
+    ...overrides,
+  };
+}
+
+function renderPage() {
+  return render(
+    <AppProviders>
+      <MonitoringFeedsPage />
+    </AppProviders>
+  );
+}
+
+describe("MonitoringFeedsPage", () => {
+  const createMutateAsync = vi.fn<(payload: KeywordStreamCreateRequest) => Promise<KeywordStream>>();
+  const updateMutateAsync = vi.fn<
+    (args: { streamId: string; payload: KeywordStreamUpdateRequest }) => Promise<KeywordStream>
+  >();
+  const deleteMutateAsync = vi.fn<(streamId: string) => Promise<void>>();
+  const backfillMutateAsync = vi.fn<(streamId: string) => Promise<void>>();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useStreamsQueryMock.mockReturnValue({
+      data: [makeStream()],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamsQuery>);
+    useCreateStreamMutationMock.mockReturnValue({
+      mutateAsync: createMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCreateStreamMutation>);
+    useUpdateStreamMutationMock.mockReturnValue({
+      mutateAsync: updateMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useUpdateStreamMutation>);
+    useDeleteStreamMutationMock.mockReturnValue({
+      mutateAsync: deleteMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useDeleteStreamMutation>);
+    useRunStreamBackfillMutationMock.mockReturnValue({
+      mutateAsync: backfillMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useRunStreamBackfillMutation>);
+  });
+
+  it("renders existing monitoring feeds and settings entry links", () => {
+    renderPage();
+
+    expect(screen.getByRole("heading", { name: "Monitoring feeds" })).toBeVisible();
+    expect(screen.getByText("Threat watch")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Back to settings" })).toHaveAttribute("href", "/account");
+  });
+
+  it("creates a monitoring feed from form input", async () => {
+    useStreamsQueryMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamsQuery>);
+    createMutateAsync.mockResolvedValue(makeStream({ name: "corelight" }));
+
+    renderPage();
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
+      target: { value: "corelight feed" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Include keywords/i }), {
+      target: { value: "corelight, microsoft" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create monitoring feed" }));
+
+    await waitFor(() => {
+      expect(createMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "corelight feed",
+          include_keywords: ["corelight", "microsoft"],
+          classifier_mode: "rules_only",
+        })
+      );
+    });
+  });
+
+  it("edits an existing monitoring feed", async () => {
+    updateMutateAsync.mockResolvedValue(makeStream({ name: "edited stream" }));
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
+      target: { value: "edited stream" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(updateMutateAsync).toHaveBeenCalledTimes(1);
+    });
+    expect(updateMutateAsync.mock.calls[0]?.[0].streamId).toBe("66ee748f-957b-4c5f-8d6c-5f8fab4dbf2d");
+    expect(updateMutateAsync.mock.calls[0]?.[0].payload.name).toBe("edited stream");
+  });
+
+  it("shows explicit feedback when backfill endpoint is unavailable", async () => {
+    backfillMutateAsync.mockRejectedValue(new ApiError("Request failed with status 404", 404));
+
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "Run backfill" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Backfill endpoint is not available yet in this build.")).toBeVisible();
+    });
+  });
+});

@@ -908,6 +908,14 @@ body {
   overflow: hidden;
 }
 
+.workspace-row__match {
+  color: color-mix(in srgb, var(--muted) 84%, var(--accent) 16%);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
 .workspace-row__time {
   color: var(--muted);
   font-size: 0.81rem;
@@ -943,6 +951,12 @@ body {
   margin-top: 0.4rem;
   font-size: 0.94rem;
   color: var(--reader-paper-muted);
+}
+
+.workspace-reader__match {
+  margin-top: 0.25rem;
+  font-size: 0.84rem;
+  color: color-mix(in srgb, var(--reader-paper-muted) 80%, var(--accent) 20%);
 }
 
 .workspace-reader__actions {

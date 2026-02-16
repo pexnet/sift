@@ -26,6 +26,7 @@ describe("ReaderPane", () => {
           stream_ids: [],
         }}
         selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{}}
         detail={{
           id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
           feed_id: null,
@@ -87,6 +88,7 @@ describe("ReaderPane", () => {
           stream_ids: [],
         }}
         selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{}}
         detail={{
           id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
           feed_id: null,
@@ -137,6 +139,7 @@ describe("ReaderPane", () => {
           stream_ids: [],
         }}
         selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{}}
         detail={{
           id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
           feed_id: null,
@@ -185,6 +188,7 @@ describe("ReaderPane", () => {
           stream_ids: [],
         }}
         selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{}}
         detail={{
           id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
           feed_id: null,
@@ -215,5 +219,56 @@ describe("ReaderPane", () => {
 
     expect(document.querySelector(".workspace-reader")).toBeTruthy();
     expect(document.querySelector(".workspace-reader__body")).toBeTruthy();
+  });
+
+  it("shows monitoring match explainability in reader metadata", () => {
+    render(
+      <ReaderPane
+        selectedArticle={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          title: "Reader title",
+          canonical_url: "https://example.com/article",
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+        }}
+        selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{
+          "d76760f1-ba73-416b-8b4c-a70f1734720f": "darktrace",
+        }}
+        detail={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          source_id: "source",
+          canonical_url: "https://example.com/article",
+          title: "Reader title",
+          content_text: "Body",
+          language: null,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+        }}
+        contentHtml="<p>Body</p>"
+        isLoading={false}
+        isError={false}
+        isMutating={false}
+        hasMutationError={false}
+        onToggleRead={vi.fn()}
+        onToggleSaved={vi.fn()}
+        onOpenOriginal={vi.fn()}
+        onMoveSelection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Matched by monitoring feeds: darktrace")).toBeVisible();
   });
 });

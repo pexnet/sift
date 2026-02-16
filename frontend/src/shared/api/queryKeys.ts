@@ -5,6 +5,7 @@ export const queryKeys = {
     me: () => ["auth", "me"] as const,
   },
   navigation: () => ["navigation"] as const,
+  streams: () => ["streams"] as const,
   folders: () => ["folders"] as const,
   feeds: () => ["feeds"] as const,
   articles: (search: WorkspaceSearch) =>

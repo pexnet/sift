@@ -8,6 +8,7 @@ type ArticlesPaneProps = {
   density: "compact" | "comfortable";
   search: WorkspaceSearch;
   scopeLabel: string;
+  streamNameById: Record<string, string>;
   articleItems: ArticleListItem[];
   selectedArticleId: string;
   isLoading: boolean;
@@ -21,6 +22,7 @@ type ArticlesPaneProps = {
 export function ArticlesPane({
   search,
   scopeLabel,
+  streamNameById,
   articleItems,
   selectedArticleId,
   isLoading,
@@ -30,6 +32,19 @@ export function ArticlesPane({
   onStateChange,
   onArticleSelect,
 }: ArticlesPaneProps) {
+  const formatMatchedStreams = (streamIds: string[]): string | null => {
+    const names = streamIds
+      .map((streamId) => streamNameById[streamId])
+      .filter((name): name is string => Boolean(name));
+    if (names.length === 0) {
+      return null;
+    }
+    if (names.length <= 2) {
+      return names.join(", ");
+    }
+    return `${names[0]}, ${names[1]} +${names.length - 2}`;
+  };
+
   return (
     <Paper className="workspace-list" component="section" elevation={0}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }} className="workspace-list__header">
@@ -83,6 +98,7 @@ export function ArticlesPane({
             const unread = !article.is_read;
             const saved = article.is_starred;
             const relativePublished = article.published_at ? formatRelativeTime(article.published_at) : "";
+            const matchedStreams = formatMatchedStreams(article.stream_ids ?? []);
             const rowClassName = [
               "workspace-row",
               selected ? "workspace-row--selected" : "",
@@ -106,6 +122,9 @@ export function ArticlesPane({
                 <span className="workspace-row__content">
                   <span className="workspace-row__title">{article.title || "Untitled article"}</span>
                   <span className="workspace-row__meta">{article.feed_title ?? "Unknown source"}</span>
+                  {matchedStreams ? (
+                    <span className="workspace-row__match">Matched: {matchedStreams}</span>
+                  ) : null}
                 </span>
                 <span className="workspace-row__time">{relativePublished}</span>
               </button>

@@ -6,6 +6,7 @@ import type { ArticleDetail, ArticleListItem } from "../../../shared/types/contr
 type ReaderPaneProps = {
   selectedArticle: ArticleListItem | undefined;
   selectedArticleId: string;
+  streamNameById: Record<string, string>;
   detail: ArticleDetail | undefined;
   contentHtml: string;
   isLoading: boolean;
@@ -22,6 +23,7 @@ type ReaderPaneProps = {
 export function ReaderPane({
   selectedArticle,
   selectedArticleId,
+  streamNameById,
   detail,
   contentHtml,
   isLoading,
@@ -34,6 +36,10 @@ export function ReaderPane({
   onMoveSelection,
   onBackToList,
 }: ReaderPaneProps) {
+  const matchedStreamNames = (detail?.stream_ids ?? selectedArticle?.stream_ids ?? [])
+    .map((streamId) => streamNameById[streamId])
+    .filter((name): name is string => Boolean(name));
+
   return (
     <Paper className="workspace-reader" component="section" elevation={0}>
       {!selectedArticleId ? (
@@ -65,6 +71,11 @@ export function ReaderPane({
                 {detail.feed_title || "Unknown source"}
                 {detail.published_at ? ` · ${formatRelativeTime(detail.published_at)}` : ""}
               </Typography>
+              {matchedStreamNames.length > 0 ? (
+                <Typography variant="body2" className="workspace-reader__match">
+                  Matched by monitoring feeds: {matchedStreamNames.join(", ")}
+                </Typography>
+              ) : null}
             </Box>
 
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap className="workspace-reader__actions">
