@@ -1,5 +1,99 @@
 # Session Notes
 
+## 2026-02-16 (UI Polish + Settings Accessibility + Route Tests)
+
+### Implemented This Session
+
+- Completed preset-by-preset interaction polish across workspace surfaces:
+  - introduced semantic interaction tokens for hover/selected states, list banners, reader callouts/code blocks
+  - made rail gradient and rail interaction states preset-aware (Classic/Ocean/Graphite/Sand in light+dark)
+  - removed stale navigation-preset toolbar CSS that is no longer used
+- Improved settings accessibility and keyboard behavior on `/account`:
+  - upgraded settings controls to semantic `fieldset`/`legend` groups
+  - added helper text for keyboard operation
+  - implemented arrow/home/end keyboard selection handling for toggle groups
+  - improved focus-visible and selected-state styling for settings toggle controls
+- Added targeted settings route tests for interaction and persistence:
+  - `frontend/src/features/auth/routes/AccountPage.test.tsx`
+  - validates accessible settings sections/labels
+  - validates persisted unified preferences and legacy key synchronization
+  - validates keyboard arrow selection behavior for theme mode group
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test`
+- `pnpm --dir frontend run build`
+
+## 2026-02-16 (UI Settings Hub Slice Implemented)
+
+### Implemented This Session
+
+- Implemented unified frontend UI preferences model in `frontend/src/app/uiPreferences.ts`:
+  - persisted model: `themeMode`, `themePreset`, `density`, `navPreset`
+  - migration-friendly read path from legacy keys
+  - synchronized writes to unified + legacy keys for backward compatibility
+- Updated app providers and theme wiring:
+  - `AppProviders` now stores and exposes unified UI preferences state
+  - theme factory now supports `(themeMode, themePreset)`
+  - document theme attributes now include both mode and preset
+- Expanded `/account` into a settings hub:
+  - Appearance controls: theme mode + theme preset
+  - Reading/Layout controls: density + nav preset
+  - Account section retains identity summary
+- Removed duplicate inline display controls from workspace navigation:
+  - nav preset selection removed from `NavigationPane`
+  - navigation visual preset now flows from app settings state
+- Added curated preset token variants in CSS for light/dark presentation tuning:
+  - Sift Classic, Ocean Slate, Graphite Violet, Warm Sand
+- Added/updated frontend tests:
+  - `frontend/src/app/uiPreferences.test.ts`
+  - `frontend/src/features/workspace/lib/navState.test.ts`
+  - `frontend/src/features/workspace/components/NavigationPane.test.tsx`
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test`
+- `pnpm --dir frontend run build`
+
+## 2026-02-16 (Reprioritization Update)
+
+### Priority Update
+
+- Reprioritized active work to make the UI settings-hub vertical slice priority #1.
+- Updated `AGENTS.md`, `docs/architecture.md`, and `docs/session-notes.md` to use the same ordering.
+- Kept OIDC deferred and reframed deferred UI work to post-foundation preset/polish expansion.
+
+## 2026-02-16
+
+### Planning Alignment Audit
+
+- Aligned planning language across `AGENTS.md`, `docs/architecture.md`, and `docs/session-notes.md`.
+- Confirmed one canonical current core priority sequence:
+  1. stream-level ranking/prioritization
+  2. classifier run persistence/model tracking
+  3. vector-database plugin integration
+  4. scheduler/ingestion observability
+- Validated runtime baseline stabilization items as complete:
+  - scheduler job-id delimiter compatibility (`ingest-<feed_id>`, legacy `ingest:<feed_id>` lookup)
+  - dev seed idempotent behavior for feeds/folders/monitoring streams
+- Moved OIDC planning consistently into deferred scope.
+- Frontend settings/theme sprint planning from this audit is superseded by the reprioritization update above.
+
+### Verification
+
+- Cross-doc planning sections checked via ripgrep for:
+  - `Next Delivery Sequence`
+  - `Current Priority Plan`
+  - `Planned Next Moves`
+  - `Deferred Delivery Sequence`
+  - `Next UI Sprint`
+- Runtime baseline checks:
+  - `python -m pytest tests/test_scheduler.py tests/test_dev_seed_service.py`
+
 ## 2026-02-15
 
 ### Architecture Baseline (Current)
@@ -35,17 +129,15 @@
 
 ### Current Priority Plan
 
-1. Stabilize local runtime baseline:
-   - fix scheduler job-id delimiter compatibility with current RQ
-   - keep dev seed idempotent without noisy duplicate-stream DB errors
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ### Deferred
 
 1. External OIDC provider integration (Google first, then Azure/Apple).
+2. Expand UI beyond settings-hub foundation with additional curated theme presets and final visual consistency polish.
 
 ### Workspace UI Slice: Folder + Reader v1
 
@@ -185,32 +277,32 @@
      - rerun `lint`, `typecheck`, `test`, `build`
      - open PR from `feat/folder-nav-polish` when approved
 
-### UI Sprint Planning: Settings Hub + Theme Presets (Next)
+### UI Sprint: Settings Hub + Theme Presets (Completed Foundation Slice)
 
 - Goal: complete a sleek, modern UI pass by centralizing preferences and shipping multiple prebuilt visual themes.
-- Product direction for next sprint:
-  1. Introduce a multi-preset theme system (not only light/dark) with curated presets.
-  2. Build out `/account` as a full settings hub and move UI preferences there.
-  3. Remove duplicated display controls from workspace chrome after settings migration.
-  4. Define consistent design tokens to keep visual polish coherent across rail/nav/list/reader surfaces.
+- Foundation slice outcome:
+  1. Added multi-preset theme system with curated presets.
+  2. Expanded `/account` into a settings hub for UI preferences.
+  3. Removed duplicate workspace navigation display controls after settings migration.
+  4. Added preset-aware theme tokens for coherent rail/nav/list/reader styling.
 
-#### Planned Vertical Slice
+#### Delivered Vertical Slice
 
 1. Theme model and persistence
-   - Extend frontend UI state with `themePreset` and setter.
-   - Add storage key for preset persistence and backward-compatible default behavior.
-   - Update theme factory to accept both `themeMode` and `themePreset`.
+   - Extended frontend UI state with `themePreset` and setter.
+   - Added unified preference storage with backward-compatible legacy migration/synchronization.
+   - Updated theme factory to accept both `themeMode` and `themePreset`.
 2. Settings hub structure
    - Expand account/settings route into sectioned settings UI:
      - Appearance (theme mode + preset)
      - Reading/Layout (density and related display controls)
      - Account (existing identity summary)
 3. Workspace cleanup
-   - Keep topbar settings entry point.
-   - Remove duplicated inline appearance controls once settings equivalents are live.
+   - Kept topbar settings entry point and quick theme toggle.
+   - Removed duplicated inline nav preset controls from workspace navigation.
 4. Token-driven polish
-   - Implement semantic color/surface token contract for presets.
-   - Retune shell surfaces to consume theme tokens consistently.
+   - Implemented semantic color/surface token contract for presets.
+   - Updated shell surfaces to consume preset-aware tokens in light/dark.
 
 #### Candidate Presets (Initial)
 
@@ -219,19 +311,18 @@
 - Graphite Violet (dark-forward premium)
 - Warm Sand (light neutral with warm accent)
 
-#### Verification Plan (Next Sprint)
+#### Verification (Completed)
 
 - `pnpm --dir frontend run lint`
 - `pnpm --dir frontend run typecheck`
 - `pnpm --dir frontend run test`
 - `pnpm --dir frontend run build`
 
-#### Next Priorities (UI)
+#### Next Priorities (UI Extensions)
 
-1. Ship settings hub foundation and migrate all current UI display settings into it.
-2. Ship first four curated theme presets with persistence and safe defaults.
-3. Perform visual consistency pass across workspace panes using shared design tokens.
-4. Validate responsiveness and keyboard/accessibility for settings controls.
+1. Perform deeper visual consistency pass across workspace panes per preset.
+2. Validate and tune contrast/interaction states for each preset in both theme modes.
+3. Expand settings UX with stronger accessibility affordances and responsive layout polish.
 
 ### Long-Term Backlog Capture (Not Prioritized Yet)
 

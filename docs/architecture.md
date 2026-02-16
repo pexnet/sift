@@ -55,7 +55,11 @@ Routing and data model:
 1. Route state is URL-driven (`scope_type`, `scope_id`, `state`, `sort`, `q`, pagination).
 2. TanStack Router defines typed route/search-param boundaries for `/app`.
 3. TanStack Query manages API server-state caching, mutations, and invalidation.
-4. UI-only preferences (theme, list density) are persisted in local storage.
+4. UI-only preferences are persisted as a unified local model:
+   - `themeMode` (`light`/`dark`)
+   - `themePreset` (curated preset id)
+   - `density` (`compact`/`comfortable`)
+   - `navPreset` (`tight`/`balanced`/`airy`)
 5. Keyboard shortcuts remain a first-class UX feature (`j/k`, `o`, `m`, `s`, `/`).
 6. Reader rendering rule: frontend never trusts feed markup directly; article body is sanitized and link-normalized
    before rendering.
@@ -311,7 +315,7 @@ Design goals:
 4. Scheduler-driven background ingestion:
    - scheduler polls active feeds and enqueues due jobs
    - worker executes ingest jobs via RQ
-   - queue dedupe by stable job id (`ingest:<feed_id>`)
+   - queue dedupe by stable RQ-compatible job id (`ingest-<feed_id>`) with legacy `ingest:<feed_id>` lookup
 5. Authentication and account foundation:
    - local account registration/login/logout/me endpoints
    - provider-ready identity schema to support Google/Azure/Apple later
@@ -358,61 +362,56 @@ Design goals:
 | Allowed improvements | Layout refinements, improved loading/error handling UX, and accessibility hardening are encouraged as long as they preserve fixed API contracts. |
 | Deferred / non-goals | Advanced stream ranking/prioritization controls are explicitly out of scope for this cutover slice. |
 
-## Planned Next Moves
+## Planned Next Moves (Current Core Priority Plan)
 
-0. Frontend workspace polish completion (currently paused):
-   - finalize folder/nav micro-density defaults (`balanced` preset baseline)
-   - align navigation and article-list surface contrast in light theme
-   - consolidate display controls into settings while keeping top-bar quick theme toggle
-1. Stabilize local runtime baseline:
-   - fix scheduler job-id delimiter compatibility with current RQ
-   - keep dev seed idempotent without noisy duplicate-stream DB errors
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Add optional vector database plugin layer for semantic retrieval/matching workflows.
-5. Add scheduler and ingest observability (metrics + structured logs) after core content features.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
+2. Expand UI beyond settings-hub foundation with additional curated theme presets and final visual consistency polish.
 
-## Planned Frontend Settings and Theme Architecture (Next UI Sprint)
+## Frontend Settings and Theme Architecture (Current)
 
-### Intent
+### Implemented
 
-The frontend will move from scattered display controls to a centralized settings hub, while expanding from a single accent + light/dark toggle to a curated multi-preset theme system.
-
-### Planned UI Preferences Model
-
-- Continue using browser-local persistence for UI-only preferences.
-- Extend preference shape to include:
-  - `themeMode` (`light`/`dark`)
-  - `themePreset` (curated preset id)
-  - `density` (`compact`/`comfortable`)
-- Keep safe fallback defaults so unknown/legacy stored values never break rendering.
-
-### Planned Theme System
-
-- Evolve theme factory to use `(themeMode, themePreset)` inputs.
-- Implement semantic token contract per preset (surfaces, text emphasis, accent, borders, focus).
-- Map each preset onto the same semantic slots to keep component styling consistent.
-
-### Planned Settings Surface
-
-- Use the existing authenticated settings route (`/account`) as the consolidated settings hub.
-- Organize controls into sections:
+- Settings are centralized on `/account` with three sections:
   - Appearance
   - Reading/Layout
   - Account
-- Workspace topbar remains a navigation entry point to settings instead of hosting duplicate controls.
+- Workspace keeps only a quick theme toggle in the top bar and a settings entry point.
+- Unified browser-local preferences are persisted under one model:
+  - `themeMode`
+  - `themePreset`
+  - `density`
+  - `navPreset`
+- Legacy single-key preferences are still synchronized for backward compatibility.
 
-### Rollout Strategy
+### Theme System
 
-1. Add preference model + persistence updates.
-2. Add curated presets and theme factory expansion.
-3. Implement sectioned settings UI and migrate current controls.
-4. Remove duplicate display controls from workspace shell.
-5. Run frontend verification (`lint`, `typecheck`, `test`, `build`).
+- Theme creation uses `(themeMode, themePreset)` inputs.
+- Semantic CSS tokens are preset-aware across both light and dark modes.
+- Interaction tokens are preset-aware across workspace surfaces (rail/nav/list/reader hover + selected states).
+- Current curated presets:
+  - Sift Classic
+  - Ocean Slate
+  - Graphite Violet
+  - Warm Sand
+
+### Settings Accessibility Baseline
+
+- Settings controls use semantic grouped forms (`fieldset` + `legend`) for screen-reader clarity.
+- Keyboard navigation in settings toggle groups supports arrow keys and home/end movement.
+- Focus-visible and selected-state styles are explicit and token-driven to maintain contrast per preset.
+
+### Next UI Extensions (Deferred)
+
+1. Additional preset tuning and theme-token refinement across rail/nav/list/reader surfaces.
+2. Final visual consistency pass for hover/selected/contrast behavior per preset.
+3. Extended accessibility/responsiveness pass for settings controls.
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 

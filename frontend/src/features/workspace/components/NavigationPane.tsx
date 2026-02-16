@@ -6,7 +6,6 @@ import {
   Avatar,
   Box,
   Button,
-  ButtonGroup,
   Collapse,
   Dialog,
   DialogActions,
@@ -30,16 +29,14 @@ import type { FeedFolder } from "../../../shared/types/contracts";
 import { getFeedAvatarHue, getFeedInitial } from "../lib/feedIcons";
 import {
   loadExpandedFolderIds,
-  loadNavVisualPreset,
   loadMonitoringExpanded,
   saveExpandedFolderIds,
-  saveNavVisualPreset,
   saveMonitoringExpanded,
-  type NavVisualPreset,
 } from "../lib/navState";
 
 type NavigationPaneProps = {
   density: "compact" | "comfortable";
+  navPreset: "tight" | "balanced" | "airy";
   hierarchy: NavigationHierarchy | null;
   folders: FeedFolder[];
   feedIconByFeedId: Record<string, string | null>;
@@ -65,11 +62,6 @@ type InitialFolderState = {
   hasPreference: boolean;
   map: Record<string, boolean>;
 };
-const NAV_VISUAL_PRESETS: ReadonlyArray<{ value: NavVisualPreset; label: string }> = [
-  { value: "tight", label: "Tight" },
-  { value: "balanced", label: "Balanced" },
-  { value: "airy", label: "Airy" },
-];
 
 function getInitialFolderState(): InitialFolderState {
   const stored = loadExpandedFolderIds();
@@ -92,6 +84,7 @@ function getExpandedFolderIds(expandedFolders: Record<string, boolean>): Set<str
 
 export function NavigationPane({
   density,
+  navPreset,
   hierarchy,
   folders,
   feedIconByFeedId,
@@ -123,7 +116,6 @@ export function NavigationPane({
   const [folderMenu, setFolderMenu] = useState<FolderActionMenuState>(null);
   const [failedFeedIcons, setFailedFeedIcons] = useState<Record<string, true>>({});
   const [monitoringExpanded, setMonitoringExpanded] = useState(() => loadMonitoringExpanded() ?? true);
-  const [navVisualPreset, setNavVisualPreset] = useState<NavVisualPreset>(() => loadNavVisualPreset() ?? "balanced");
   const [localError, setLocalError] = useState<string | null>(null);
 
   const folderOptions = useMemo(
@@ -214,13 +206,8 @@ export function NavigationPane({
     }
   };
 
-  const selectNavVisualPreset = (preset: NavVisualPreset) => {
-    setNavVisualPreset(preset);
-    saveNavVisualPreset(preset);
-  };
-
   return (
-    <Paper className={`workspace-nav workspace-nav--preset-${navVisualPreset}`} component="section" elevation={0}>
+    <Paper className={`workspace-nav workspace-nav--preset-${navPreset}`} component="section" elevation={0}>
       <Stack sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Feeds</Typography>
@@ -229,22 +216,6 @@ export function NavigationPane({
               Folder
             </Button>
           </Stack>
-        </Stack>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__preset-row">
-          <Typography className="workspace-nav__preset-label">Density</Typography>
-          <ButtonGroup size="small" variant="text" aria-label="Navigation density preset">
-            {NAV_VISUAL_PRESETS.map((preset) => (
-              <Button
-                key={preset.value}
-                className={`workspace-nav__preset-button${
-                  navVisualPreset === preset.value ? " workspace-nav__preset-button--active" : ""
-                }`}
-                onClick={() => selectNavVisualPreset(preset.value)}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </ButtonGroup>
         </Stack>
       </Stack>
 

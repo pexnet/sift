@@ -3,28 +3,29 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { DENSITY_KEY, THEME_KEY } from "../shared/lib/storage";
 import { createAppTheme } from "./theme";
-
-export type DensityMode = "compact" | "comfortable";
+import {
+  loadUiPreferences,
+  saveUiPreferences,
+  type DensityMode,
+  type NavVisualPreset,
+  type ThemeMode,
+  type ThemePreset,
+} from "./uiPreferences";
 
 export type AppUiState = {
   density: DensityMode;
   setDensity: (density: DensityMode) => void;
-  themeMode: "light" | "dark";
-  setThemeMode: (themeMode: "light" | "dark") => void;
+  navPreset: NavVisualPreset;
+  setNavPreset: (navPreset: NavVisualPreset) => void;
+  themeMode: ThemeMode;
+  setThemeMode: (themeMode: ThemeMode) => void;
+  themePreset: ThemePreset;
+  setThemePreset: (themePreset: ThemePreset) => void;
 };
 
 const AppUiStateContext = createContext<AppUiState | null>(null);
 export const queryClient = new QueryClient();
-
-function getStoredTheme(): "light" | "dark" {
-  return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
-}
-
-function getStoredDensity(): DensityMode {
-  return localStorage.getItem(DENSITY_KEY) === "comfortable" ? "comfortable" : "compact";
-}
 
 export function useAppUiState(): AppUiState {
   const value = useContext(AppUiStateContext);
@@ -40,28 +41,31 @@ type AppProvidersProps = {
 };
 
 export function AppProviders({ children }: AppProvidersProps) {
-  const [themeMode, setThemeModeState] = useState<"light" | "dark">(getStoredTheme);
-  const [density, setDensityState] = useState<DensityMode>(getStoredDensity);
+  const [uiPreferences, setUiPreferences] = useState(loadUiPreferences);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", themeMode);
-    localStorage.setItem(THEME_KEY, themeMode);
-  }, [themeMode]);
+    document.documentElement.setAttribute("data-theme", uiPreferences.themeMode);
+    document.documentElement.setAttribute("data-theme-preset", uiPreferences.themePreset);
+    saveUiPreferences(uiPreferences);
+  }, [uiPreferences]);
 
-  useEffect(() => {
-    localStorage.setItem(DENSITY_KEY, density);
-  }, [density]);
-
-  const theme = useMemo(() => createAppTheme(themeMode), [themeMode]);
+  const theme = useMemo(
+    () => createAppTheme(uiPreferences.themeMode, uiPreferences.themePreset),
+    [uiPreferences.themeMode, uiPreferences.themePreset]
+  );
 
   const uiState = useMemo<AppUiState>(
     () => ({
-      density,
-      setDensity: setDensityState,
-      themeMode,
-      setThemeMode: setThemeModeState,
+      density: uiPreferences.density,
+      setDensity: (density) => setUiPreferences((previous) => ({ ...previous, density })),
+      navPreset: uiPreferences.navPreset,
+      setNavPreset: (navPreset) => setUiPreferences((previous) => ({ ...previous, navPreset })),
+      themeMode: uiPreferences.themeMode,
+      setThemeMode: (themeMode) => setUiPreferences((previous) => ({ ...previous, themeMode })),
+      themePreset: uiPreferences.themePreset,
+      setThemePreset: (themePreset) => setUiPreferences((previous) => ({ ...previous, themePreset })),
     }),
-    [density, themeMode]
+    [uiPreferences]
   );
 
   return (

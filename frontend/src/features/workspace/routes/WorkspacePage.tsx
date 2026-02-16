@@ -38,6 +38,7 @@ import { usePaneResizing } from "../hooks/usePaneResizing";
 type WorkspacePageProps = {
   search: WorkspaceSearch;
   density: "compact" | "comfortable";
+  navPreset: "tight" | "balanced" | "airy";
   themeMode: "light" | "dark";
   setThemeMode: (mode: "light" | "dark") => void;
   setSearch: (patch: Partial<WorkspaceSearch>) => void;
@@ -46,6 +47,7 @@ type WorkspacePageProps = {
 export function WorkspacePage({
   search,
   density,
+  navPreset,
   themeMode,
   setThemeMode,
   setSearch,
@@ -174,6 +176,7 @@ export function WorkspacePage({
   const navigationPane = (
     <NavigationPane
       density={density}
+      navPreset={navPreset}
       hierarchy={hierarchy}
       folders={foldersQuery.data ?? []}
       feedIconByFeedId={feedIconByFeedId}

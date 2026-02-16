@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { NavigationHierarchy } from "../../../entities/navigation/model";
 import type { FeedFolder } from "../../../shared/types/contracts";
-import { NAV_FOLDERS_EXPANDED_KEY, NAV_VISUAL_PRESET_KEY } from "../../../shared/lib/storage";
+import { NAV_FOLDERS_EXPANDED_KEY } from "../../../shared/lib/storage";
 import { NavigationPane } from "./NavigationPane";
 
 const folders: FeedFolder[] = [];
@@ -81,6 +81,7 @@ const hierarchy: NavigationHierarchy = {
 function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = {}) {
   const defaults: ComponentProps<typeof NavigationPane> = {
     density: "compact",
+    navPreset: "balanced",
     hierarchy,
     folders,
     feedIconByFeedId: {
@@ -198,13 +199,38 @@ describe("NavigationPane", () => {
     expect(avatar).toHaveStyle({ width: "14px", height: "14px" });
   });
 
-  it("persists selected nav visual preset", () => {
-    const { container } = renderPane();
+  it("applies nav visual preset from props", () => {
+    const { container, rerender } = renderPane({ navPreset: "balanced" });
     const navRoot = container.querySelector(".workspace-nav");
     expect(navRoot?.className).toContain("workspace-nav--preset-balanced");
 
-    fireEvent.click(screen.getByRole("button", { name: "Tight" }));
+    rerender(
+      <NavigationPane
+        density="compact"
+        navPreset="tight"
+        hierarchy={hierarchy}
+        folders={folders}
+        feedIconByFeedId={{
+          "d60831f4-f2e5-45ef-8b2f-2f29fed2abf5": "https://example.com/favicon.ico",
+          "df9f1c13-d75a-48ec-9e2c-9f69debd7a0d": "https://example.org/favicon.ico",
+        }}
+        selectedScopeType="system"
+        selectedScopeKey="all"
+        isLoading={false}
+        isError={false}
+        onSelectSystem={vi.fn()}
+        onSelectFolder={vi.fn()}
+        onSelectFeed={vi.fn()}
+        onSelectStream={vi.fn()}
+        onCreateFolder={vi.fn(async () => {})}
+        onRenameFolder={vi.fn(async () => {})}
+        onDeleteFolder={vi.fn(async () => {})}
+        onAssignFeedFolder={vi.fn(async () => {})}
+        isFolderMutationPending={false}
+        isAssignPending={false}
+      />
+    );
+
     expect(navRoot?.className).toContain("workspace-nav--preset-tight");
-    expect(storage.getItem(NAV_VISUAL_PRESET_KEY)).toBe("tight");
   });
 });

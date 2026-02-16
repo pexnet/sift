@@ -15,12 +15,46 @@
   --row-selected: #deecde;
   --focus-ring: 0 0 0 2px rgba(63, 191, 115, 0.28);
   --shadow-soft: 0 10px 30px rgba(20, 34, 59, 0.05);
+  --rail-gradient-top: #74ab8c;
   --rail-bg: #3a7859;
   --rail-text: #e8f0ff;
+  --rail-item-hover: rgba(255, 255, 255, 0.14);
+  --rail-item-active: rgba(255, 255, 255, 0.24);
+  --surface-interaction-hover: color-mix(in srgb, var(--surface-muted) 70%, var(--bg) 30%);
+  --surface-interaction-selected: color-mix(in srgb, var(--row-selected) 72%, var(--surface) 28%);
+  --list-banner-border: color-mix(in srgb, var(--accent) 30%, var(--border) 70%);
+  --reader-callout-bg: color-mix(in srgb, var(--reader-paper-bg) 84%, var(--accent-soft) 16%);
+  --reader-code-bg: color-mix(in srgb, var(--reader-paper-bg) 90%, var(--surface-muted) 10%);
+  --settings-chip-border: color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
+  --settings-chip-selected: color-mix(in srgb, var(--accent-soft) 68%, var(--surface) 32%);
   --reader-paper-bg: #f7f3ea;
   --reader-paper-text: #1a1a16;
   --reader-paper-muted: #594f42;
   --reader-paper-border: #e2d8c6;
+}
+
+:root[data-theme-preset="ocean"] {
+  --accent: #2693d8;
+  --accent-soft: #d9ecf8;
+  --row-selected: #dcecf8;
+  --rail-gradient-top: #66b4df;
+  --rail-bg: #1f5f86;
+}
+
+:root[data-theme-preset="graphite"] {
+  --accent: #7c63f2;
+  --accent-soft: #e3dcff;
+  --row-selected: #e5e0ff;
+  --rail-gradient-top: #9587db;
+  --rail-bg: #413a73;
+}
+
+:root[data-theme-preset="sand"] {
+  --accent: #c9782e;
+  --accent-soft: #f6e5d4;
+  --row-selected: #f5e6da;
+  --rail-gradient-top: #d8b289;
+  --rail-bg: #8d5727;
 }
 
 [data-theme="dark"] {
@@ -38,12 +72,44 @@
   --row-selected: #243a5a;
   --focus-ring: 0 0 0 2px rgba(99, 209, 145, 0.35);
   --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.35);
+  --rail-gradient-top: #2a5d48;
   --rail-bg: #183f31;
   --rail-text: #dbe8ff;
+  --rail-item-hover: rgba(255, 255, 255, 0.18);
+  --rail-item-active: rgba(255, 255, 255, 0.3);
+  --surface-interaction-hover: color-mix(in srgb, var(--surface-soft) 64%, #203145 36%);
+  --surface-interaction-selected: color-mix(in srgb, var(--row-selected) 74%, var(--surface) 26%);
+  --list-banner-border: color-mix(in srgb, var(--accent) 35%, var(--border) 65%);
+  --settings-chip-border: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+  --settings-chip-selected: color-mix(in srgb, var(--accent-soft) 76%, var(--surface) 24%);
   --reader-paper-bg: var(--surface);
   --reader-paper-text: var(--text);
   --reader-paper-muted: var(--muted);
   --reader-paper-border: var(--border);
+}
+
+[data-theme="dark"][data-theme-preset="ocean"] {
+  --accent: #63bae7;
+  --accent-soft: #1d3644;
+  --row-selected: #203750;
+  --rail-gradient-top: #2a556c;
+  --rail-bg: #1c3f52;
+}
+
+[data-theme="dark"][data-theme-preset="graphite"] {
+  --accent: #a08fff;
+  --accent-soft: #2d284b;
+  --row-selected: #2c2952;
+  --rail-gradient-top: #4f4a76;
+  --rail-bg: #2e2c4d;
+}
+
+[data-theme="dark"][data-theme-preset="sand"] {
+  --accent: #dea774;
+  --accent-soft: #3c3127;
+  --row-selected: #3b312b;
+  --rail-gradient-top: #6d5a45;
+  --rail-bg: #4d3d2f;
 }
 
 body {
@@ -51,7 +117,12 @@ body {
   min-height: 100vh;
   font-family: var(--font-ui);
   color: var(--text);
-  background: radial-gradient(circle at 18% 0%, rgba(35, 104, 217, 0.05), transparent 34%), var(--bg);
+  background: radial-gradient(
+      circle at 18% 0%,
+      color-mix(in srgb, var(--accent) 12%, transparent 88%),
+      transparent 34%
+    ),
+    var(--bg);
 }
 
 .layout {
@@ -85,6 +156,45 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
+.settings-panel .MuiDivider-root {
+  border-color: color-mix(in srgb, var(--border) 82%, transparent 18%);
+}
+
+.settings-control-row {
+  gap: 0.45rem;
+}
+
+.settings-control-row .MuiFormLabel-root {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 540;
+}
+
+.settings-toggle-group {
+  width: fit-content;
+}
+
+.settings-toggle-group--wrap {
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.settings-toggle-group .MuiToggleButton-root {
+  border-color: var(--settings-chip-border);
+}
+
+.settings-toggle-group .MuiToggleButton-root.Mui-selected,
+.settings-toggle-group .MuiToggleButton-root.Mui-selected:hover {
+  background: var(--settings-chip-selected);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--settings-chip-border) 55%);
+}
+
+.settings-toggle-group .MuiToggleButton-root:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}
+
 .auth-panel {
   max-width: 540px;
   margin: 0 auto;
@@ -104,7 +214,7 @@ body {
 }
 
 .workspace-rail {
-  background: linear-gradient(180deg, #74ab8c 0%, var(--rail-bg) 100%);
+  background: linear-gradient(180deg, var(--rail-gradient-top) 0%, var(--rail-bg) 100%);
   color: var(--rail-text);
   padding: 0.8rem 0.45rem;
   border-right: 1px solid rgba(255, 255, 255, 0.14);
@@ -136,7 +246,7 @@ body {
 }
 
 .workspace-rail__item:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--rail-item-hover);
 }
 
 .workspace-rail__item:focus-visible {
@@ -144,7 +254,7 @@ body {
 }
 
 .workspace-rail__item--active {
-  background: rgba(255, 255, 255, 0.24);
+  background: var(--rail-item-active);
 }
 
 .workspace-rail__glyph {
@@ -224,31 +334,6 @@ body {
   letter-spacing: -0.015em;
 }
 
-.workspace-nav__preset-row {
-  padding: 0 0.2rem;
-}
-
-.workspace-nav__preset-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.workspace-nav__preset-button {
-  min-width: 0;
-  padding-inline: 0.45rem;
-  color: var(--muted);
-  font-size: 0.66rem;
-}
-
-.workspace-nav__preset-button--active {
-  color: var(--accent) !important;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--accent-soft) 78%, transparent 22%);
-  border-radius: 7px;
-}
-
 .workspace-nav__toolbar .MuiButton-text {
   color: var(--muted);
 }
@@ -302,12 +387,12 @@ body {
 }
 
 .workspace-nav__row:hover {
-  background: color-mix(in srgb, var(--surface-muted) 70%, var(--bg) 30%);
+  background: var(--surface-interaction-hover);
 }
 
 .workspace-nav__row.Mui-selected,
 .workspace-nav__row.Mui-selected:hover {
-  background: color-mix(in srgb, var(--row-selected) 72%, var(--surface) 28%);
+  background: var(--surface-interaction-selected);
 }
 
 .workspace-nav__row:focus-visible {
@@ -546,7 +631,7 @@ body {
 
 .workspace-list__banner {
   background: var(--accent-soft);
-  border: 1px solid rgba(42, 105, 224, 0.2);
+  border: 1px solid var(--list-banner-border);
   border-radius: 10px;
   padding: 0.62rem 0.82rem;
   margin-bottom: 0.85rem;
@@ -573,7 +658,7 @@ body {
 }
 
 .workspace-row:hover {
-  background: var(--surface-soft);
+  background: var(--surface-interaction-hover);
 }
 
 .workspace-row:focus-visible {
@@ -724,7 +809,7 @@ body {
   margin: 0.9rem 0 1rem;
   padding: 0.55rem 0.95rem;
   border-left: 3px solid var(--accent);
-  background: color-mix(in srgb, var(--reader-paper-bg) 84%, #d4c39a 16%);
+  background: var(--reader-callout-bg);
   border-radius: 0 8px 8px 0;
 }
 
@@ -733,7 +818,7 @@ body {
   padding: 0.85rem;
   border-radius: 10px;
   border: 1px solid var(--reader-paper-border);
-  background: color-mix(in srgb, var(--reader-paper-bg) 90%, #e5dbc8 10%);
+  background: var(--reader-code-bg);
   overflow: auto;
   font-size: 0.92rem;
   line-height: 1.45;
@@ -779,6 +864,14 @@ body {
 }
 
 @media (max-width: 760px) {
+  .settings-toggle-group {
+    width: 100%;
+  }
+
+  .settings-toggle-group .MuiToggleButton-root {
+    flex: 1 1 auto;
+  }
+
   .workspace-shell {
     grid-template-columns: 1fr;
   }

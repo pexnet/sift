@@ -1,6 +1,4 @@
-import { NAV_FOLDERS_EXPANDED_KEY, NAV_MONITORING_EXPANDED_KEY, NAV_VISUAL_PRESET_KEY } from "../../../shared/lib/storage";
-
-export type NavVisualPreset = "tight" | "balanced" | "airy";
+import { NAV_FOLDERS_EXPANDED_KEY, NAV_MONITORING_EXPANDED_KEY } from "../../../shared/lib/storage";
 
 function resolveStorage(): Storage | null {
   if (typeof window !== "undefined" && typeof window.localStorage?.getItem === "function") {
@@ -86,32 +84,4 @@ export function saveMonitoringExpanded(value: boolean): void {
     return;
   }
   storage.setItem(NAV_MONITORING_EXPANDED_KEY, value ? "true" : "false");
-}
-
-export function loadNavVisualPreset(): NavVisualPreset | null {
-  try {
-    const storage = resolveStorage();
-    if (!storage) {
-      return null;
-    }
-
-    const raw = storage.getItem(NAV_VISUAL_PRESET_KEY);
-    if (!raw) {
-      return null;
-    }
-    if (raw === "tight" || raw === "balanced" || raw === "airy") {
-      return raw;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveNavVisualPreset(value: NavVisualPreset): void {
-  const storage = resolveStorage();
-  if (!storage) {
-    return;
-  }
-  storage.setItem(NAV_VISUAL_PRESET_KEY, value);
 }

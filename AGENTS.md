@@ -82,8 +82,8 @@ This file stores persistent project context for future Codex sessions.
   - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
   - `SIFT_SCHEDULER_BATCH_SIZE`
 - Dedupe guard:
-  - Scheduler uses stable job IDs for dedupe.
-  - Current issue: RQ rejects `:` in job IDs; update delimiter format before enabling scheduler by default.
+  - Scheduler uses RQ-compatible stable job IDs (`ingest-<feed_id>`) for dedupe.
+  - Legacy `ingest:<feed_id>` IDs are still checked for upgrade-safe dedupe behavior.
 
 ## Current Implementation Status
 
@@ -119,6 +119,13 @@ This file stores persistent project context for future Codex sessions.
   - Compact/comfortable density toggle (compact default)
   - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
   - Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and talks to backend through REST APIs only.
+- Settings hub + unified UI preferences are implemented:
+  - `/account` now hosts appearance and reading/layout controls plus account summary
+  - unified browser-local preferences model for `themeMode`, `themePreset`, `density`, and `navPreset`
+  - workspace navigation preset now reads from app-level settings state
+  - duplicate inline nav preset controls were removed from workspace navigation
+  - settings toggle groups support keyboard arrow/home/end selection and explicit focus-visible states
+  - targeted `/account` route tests cover interaction, accessibility labels, and preference persistence
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -128,14 +135,15 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Stabilize local runtime baseline:
-   - fix scheduler job-id delimiter compatibility with current RQ
-   - keep dev seed idempotent without noisy duplicate-stream DB errors
-2. Add stream-level ranking and prioritization controls.
-3. Add classifier run persistence and model/version tracking.
-4. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-5. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-6. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+1. Add stream-level ranking and prioritization controls.
+2. Add classifier run persistence and model/version tracking.
+3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+
+## Deferred
+
+1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+2. Expand UI beyond settings-hub foundation with additional curated theme presets and final visual consistency polish.
 
 ## Feature Notes
 
