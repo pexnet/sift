@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
@@ -100,6 +101,18 @@ def _sorting_clause(*, sort: SortMode, read_expr: Any) -> tuple[Any, ...]:
 
 
 class ArticleService:
+    @staticmethod
+    def _parse_match_evidence(raw: str | None) -> dict[str, Any] | None:
+        if not raw:
+            return None
+        try:
+            loaded = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(loaded, dict):
+            return None
+        return loaded
+
     def _base_query(
         self,
         *,
@@ -211,7 +224,7 @@ class ArticleService:
             total = len(filtered_rows)
             rows = filtered_rows[offset : offset + limit]
         article_ids = [row[0].id for row in rows]
-        stream_map, stream_reason_map = await self._stream_map(
+        stream_map, stream_reason_map, stream_evidence_map = await self._stream_map(
             session=session,
             user_id=user_id,
             article_ids=article_ids,
@@ -231,6 +244,7 @@ class ArticleService:
                 is_archived=bool(is_archived),
                 stream_ids=stream_map.get(article.id, []),
                 stream_match_reasons=stream_reason_map.get(article.id, {}),
+                stream_match_evidence=stream_evidence_map.get(article.id, {}),
             )
             for article, feed_title, is_read, is_starred, is_archived in rows
         ]
@@ -250,7 +264,11 @@ class ArticleService:
             raise ArticleNotFoundError(f"Article {article_id} not found")
 
         article, feed_title, is_read, is_starred, is_archived = row
-        stream_map, stream_reason_map = await self._stream_map(session=session, user_id=user_id, article_ids=[article.id])
+        stream_map, stream_reason_map, stream_evidence_map = await self._stream_map(
+            session=session,
+            user_id=user_id,
+            article_ids=[article.id],
+        )
         return ArticleDetailOut(
             id=article.id,
             feed_id=article.feed_id,
@@ -267,6 +285,7 @@ class ArticleService:
             is_archived=bool(is_archived),
             stream_ids=stream_map.get(article.id, []),
             stream_match_reasons=stream_reason_map.get(article.id, {}),
+            stream_match_evidence=stream_evidence_map.get(article.id, {}),
         )
 
     async def patch_state(
@@ -359,11 +378,16 @@ class ArticleService:
         session: AsyncSession,
         user_id: UUID,
         article_ids: list[UUID],
-    ) -> tuple[dict[UUID, list[UUID]], dict[UUID, dict[UUID, str]]]:
+    ) -> tuple[dict[UUID, list[UUID]], dict[UUID, dict[UUID, str]], dict[UUID, dict[UUID, dict[str, Any]]]]:
         if not article_ids:
-            return {}, {}
+            return {}, {}, {}
         query = (
-            select(KeywordStreamMatch.article_id, KeywordStreamMatch.stream_id, KeywordStreamMatch.match_reason)
+            select(
+                KeywordStreamMatch.article_id,
+                KeywordStreamMatch.stream_id,
+                KeywordStreamMatch.match_reason,
+                KeywordStreamMatch.match_evidence_json,
+            )
             .join(KeywordStream, KeywordStream.id == KeywordStreamMatch.stream_id)
             .where(
                 KeywordStream.user_id == user_id,
@@ -373,11 +397,15 @@ class ArticleService:
         rows = await session.execute(query)
         mapping: dict[UUID, list[UUID]] = {article_id: [] for article_id in article_ids}
         reason_mapping: dict[UUID, dict[UUID, str]] = {article_id: {} for article_id in article_ids}
-        for article_id, stream_id, match_reason in rows.all():
+        evidence_mapping: dict[UUID, dict[UUID, dict[str, Any]]] = {article_id: {} for article_id in article_ids}
+        for article_id, stream_id, match_reason, match_evidence_json in rows.all():
             mapping.setdefault(article_id, []).append(stream_id)
             if match_reason:
                 reason_mapping.setdefault(article_id, {})[stream_id] = match_reason
-        return mapping, reason_mapping
+            parsed_evidence = self._parse_match_evidence(match_evidence_json)
+            if parsed_evidence:
+                evidence_mapping.setdefault(article_id, {})[stream_id] = parsed_evidence
+        return mapping, reason_mapping, evidence_mapping
 
     async def _assert_article_visible(
         self,

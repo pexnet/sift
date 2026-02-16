@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from uuid import UUID
 
@@ -93,6 +94,9 @@ def test_stream_backfill_api_runs_and_replaces_matches() -> None:
                 assert len(rows) == 1
                 assert rows[0].article_id == matching_article_id
                 assert rows[0].match_reason == "query matched"
+                assert rows[0].match_evidence_json is not None
+                evidence = json.loads(rows[0].match_evidence_json)
+                assert "query" in evidence
 
         asyncio.run(verify())
     finally:

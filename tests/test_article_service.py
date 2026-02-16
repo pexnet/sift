@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 
 import pytest
@@ -94,7 +95,27 @@ async def test_list_articles_scope_stream() -> None:
         stream = KeywordStream(user_id=user.id, name="monitor", include_keywords_json='["stream"]', exclude_keywords_json="[]")
         session.add(stream)
         await session.flush()
-        session.add(KeywordStreamMatch(stream_id=stream.id, article_id=article.id, match_reason="keyword: stream"))
+        session.add(
+            KeywordStreamMatch(
+                stream_id=stream.id,
+                article_id=article.id,
+                match_reason="keyword: stream",
+                match_evidence_json=json.dumps(
+                    {
+                        "matcher_type": "rules",
+                        "keyword_hits": [
+                            {
+                                "field": "title",
+                                "value": "stream",
+                                "start": 0,
+                                "end": 6,
+                                "snippet": "Stream Item",
+                            }
+                        ],
+                    }
+                ),
+            )
+        )
         await session.commit()
 
         scoped = await article_service.list_articles(
@@ -112,6 +133,8 @@ async def test_list_articles_scope_stream() -> None:
         assert scoped.items[0].id == article.id
         assert scoped.items[0].stream_match_reasons is not None
         assert scoped.items[0].stream_match_reasons.get(stream.id) == "keyword: stream"
+        assert scoped.items[0].stream_match_evidence is not None
+        assert scoped.items[0].stream_match_evidence.get(stream.id, {}).get("keyword_hits") is not None
 
         detail = await article_service.get_article_detail(
             session=session,
@@ -120,6 +143,8 @@ async def test_list_articles_scope_stream() -> None:
         )
         assert detail.stream_match_reasons is not None
         assert detail.stream_match_reasons.get(stream.id) == "keyword: stream"
+        assert detail.stream_match_evidence is not None
+        assert detail.stream_match_evidence.get(stream.id, {}).get("keyword_hits") is not None
 
     await engine.dispose()
 

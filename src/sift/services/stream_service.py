@@ -57,6 +57,7 @@ class CompiledKeywordStream:
 class StreamMatchDecision:
     stream_id: UUID
     reason: str | None
+    evidence: dict[str, Any] | None = None
 
 
 def _normalize_keywords(keywords: list[str]) -> list[str]:
@@ -161,6 +162,24 @@ def _normalize_classifier_config(value: dict[str, Any] | None) -> dict[str, Any]
     return value
 
 
+def _match_evidence_to_json(value: dict[str, Any] | None) -> str | None:
+    if value is None:
+        return None
+    return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
+def _match_evidence_from_json(raw: str | None) -> dict[str, Any] | None:
+    if not raw:
+        return None
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    return loaded
+
+
 def _normalize_classifier_mode(value: str) -> Literal["rules_only", "classifier_only", "hybrid"]:
     mode = value.strip().lower()
     if mode in {"rules_only", "classifier_only", "hybrid"}:
@@ -224,6 +243,71 @@ def compile_stream(stream: KeywordStream) -> CompiledKeywordStream:
     )
 
 
+def _build_snippet(text: str, *, start: int, end: int, radius: int = 48) -> str:
+    snippet_start = max(0, start - radius)
+    snippet_end = min(len(text), end + radius)
+    snippet = text[snippet_start:snippet_end].strip()
+    if snippet_start > 0:
+        snippet = f"...{snippet}"
+    if snippet_end < len(text):
+        snippet = f"{snippet}..."
+    return snippet
+
+
+def _find_keyword_hit(title: str, content_text: str, keyword: str) -> dict[str, Any] | None:
+    keyword_lower = keyword.lower()
+
+    title_index = title.lower().find(keyword_lower)
+    if title_index >= 0:
+        end = title_index + len(keyword)
+        return {
+            "field": "title",
+            "value": keyword,
+            "start": title_index,
+            "end": end,
+            "snippet": _build_snippet(title, start=title_index, end=end),
+        }
+
+    content_index = content_text.lower().find(keyword_lower)
+    if content_index >= 0:
+        end = content_index + len(keyword)
+        return {
+            "field": "content_text",
+            "value": keyword,
+            "start": content_index,
+            "end": end,
+            "snippet": _build_snippet(content_text, start=content_index, end=end),
+        }
+
+    return None
+
+
+def _find_regex_hit(title: str, content_text: str, pattern: re.Pattern[str]) -> dict[str, Any] | None:
+    title_match = pattern.search(title)
+    if title_match:
+        return {
+            "field": "title",
+            "pattern": pattern.pattern,
+            "value": title_match.group(0),
+            "start": title_match.start(),
+            "end": title_match.end(),
+            "snippet": _build_snippet(title, start=title_match.start(), end=title_match.end()),
+        }
+
+    content_match = pattern.search(content_text)
+    if content_match:
+        return {
+            "field": "content_text",
+            "pattern": pattern.pattern,
+            "value": content_match.group(0),
+            "start": content_match.start(),
+            "end": content_match.end(),
+            "snippet": _build_snippet(content_text, start=content_match.start(), end=content_match.end()),
+        }
+
+    return None
+
+
 def stream_matches(
     stream: CompiledKeywordStream,
     *,
@@ -232,13 +316,90 @@ def stream_matches(
     source_url: str | None,
     language: str | None,
 ) -> bool:
-    return stream_match_reason(
+    return stream_rule_match_outcome(
         stream,
         title=title,
         content_text=content_text,
         source_url=source_url,
         language=language,
-    ) is not None
+    )[0] is not None
+
+
+def stream_rule_match_outcome(
+    stream: CompiledKeywordStream,
+    *,
+    title: str,
+    content_text: str,
+    source_url: str | None,
+    language: str | None,
+) -> tuple[str | None, dict[str, Any] | None]:
+    payload_raw = f"{title}\n{content_text}"
+    payload = payload_raw.lower()
+    source = (source_url or "").lower()
+    normalized_language = (language or "").lower()
+    reason: str | None = None
+    evidence: dict[str, Any] = {"matcher_type": "rules"}
+    include_keyword_hits: list[dict[str, Any]] = []
+    include_regex_hits: list[dict[str, Any]] = []
+
+    if stream.match_query and not stream.match_query.matches(
+        title=title,
+        content_text=content_text,
+        source_text=source_url,
+    ):
+        return None, None
+    if stream.match_query:
+        reason = "query matched"
+        evidence["query"] = {"expression": True}
+
+    for keyword in stream.include_keywords:
+        if keyword in payload:
+            hit = _find_keyword_hit(title, content_text, keyword)
+            if hit:
+                include_keyword_hits.append(hit)
+    if stream.include_keywords and not include_keyword_hits:
+        return None, None
+    if include_keyword_hits:
+        evidence["keyword_hits"] = include_keyword_hits
+        if reason is None:
+            reason = f"keyword: {include_keyword_hits[0]['value']}"
+
+    for pattern in stream.include_regex:
+        hit = _find_regex_hit(title, content_text, pattern)
+        if hit:
+            include_regex_hits.append(hit)
+    if stream.include_regex and not include_regex_hits:
+        return None, None
+    if include_regex_hits:
+        evidence["regex_hits"] = include_regex_hits
+        if reason is None:
+            reason = f"regex: {include_regex_hits[0]['pattern']}"
+
+    blocked_keyword = next((keyword for keyword in stream.exclude_keywords if keyword in payload), None)
+    if blocked_keyword is not None:
+        return None, None
+
+    blocked_regex = next((pattern for pattern in stream.exclude_regex if pattern.search(payload_raw)), None)
+    if blocked_regex is not None:
+        return None, None
+
+    if stream.source_contains and stream.source_contains not in source:
+        return None, None
+    if stream.source_contains:
+        evidence["source"] = {"contains": stream.source_contains}
+        if reason is None:
+            reason = f"source: {stream.source_contains}"
+
+    if stream.language_equals and stream.language_equals != normalized_language:
+        return None, None
+    if stream.language_equals:
+        evidence["language"] = {"equals": stream.language_equals}
+        if reason is None:
+            reason = f"language: {stream.language_equals}"
+
+    if reason is None:
+        return "rules matched", evidence
+    return reason, evidence
 
 
 def stream_match_reason(
@@ -249,52 +410,13 @@ def stream_match_reason(
     source_url: str | None,
     language: str | None,
 ) -> str | None:
-    payload_raw = f"{title}\n{content_text}"
-    payload = payload_raw.lower()
-    source = (source_url or "").lower()
-    normalized_language = (language or "").lower()
-    reason: str | None = None
-
-    if stream.match_query and not stream.match_query.matches(
+    return stream_rule_match_outcome(
+        stream,
         title=title,
         content_text=content_text,
-        source_text=source_url,
-    ):
-        return None
-    if stream.match_query:
-        reason = "query matched"
-
-    matched_keyword = next((keyword for keyword in stream.include_keywords if keyword in payload), None)
-    if stream.include_keywords and matched_keyword is None:
-        return None
-    if matched_keyword and reason is None:
-        reason = f"keyword: {matched_keyword}"
-
-    matched_regex = next((pattern for pattern in stream.include_regex if pattern.search(payload_raw)), None)
-    if stream.include_regex and matched_regex is None:
-        return None
-    if matched_regex and reason is None:
-        reason = f"regex: {matched_regex.pattern}"
-
-    blocked_keyword = next((keyword for keyword in stream.exclude_keywords if keyword in payload), None)
-    if blocked_keyword is not None:
-        return None
-
-    blocked_regex = next((pattern for pattern in stream.exclude_regex if pattern.search(payload_raw)), None)
-    if blocked_regex is not None:
-        return None
-
-    if stream.source_contains and stream.source_contains not in source:
-        return None
-    if stream.source_contains and reason is None:
-        reason = f"source: {stream.source_contains}"
-
-    if stream.language_equals and stream.language_equals != normalized_language:
-        return None
-    if stream.language_equals and reason is None:
-        reason = f"language: {stream.language_equals}"
-
-    return reason or "rules matched"
+        source_url=source_url,
+        language=language,
+    )[0]
 
 
 class StreamService:
@@ -490,6 +612,7 @@ class StreamService:
                 StreamArticleOut(
                     matched_at=match.matched_at,
                     match_reason=match.match_reason,
+                    match_evidence=_match_evidence_from_json(match.match_evidence_json),
                     article=ArticleOut.model_validate(article),
                 )
             )
@@ -621,7 +744,7 @@ class StreamService:
             metadata={"source_url": source_url or "", "language": language or ""},
         )
         for stream in streams:
-            rules_reason = stream_match_reason(
+            rules_reason, rules_evidence = stream_rule_match_outcome(
                 stream,
                 title=title,
                 content_text=content_text,
@@ -632,6 +755,7 @@ class StreamService:
 
             classifier_match = False
             classifier_reason: str | None = None
+            classifier_evidence: dict[str, Any] | None = None
             if stream.classifier_mode in {"classifier_only", "hybrid"} and stream.classifier_plugin:
                 decision = await plugin_manager.classify_stream(
                     plugin_name=stream.classifier_plugin,
@@ -653,8 +777,15 @@ class StreamService:
                     and decision.confidence >= stream.classifier_min_confidence
                 )
                 if classifier_match and decision:
+                    classifier_evidence = {
+                        "matcher_type": "classifier",
+                        "plugin": stream.classifier_plugin,
+                        "confidence": round(decision.confidence, 4),
+                        "threshold": round(stream.classifier_min_confidence, 4),
+                    }
                     if decision.reason.strip():
                         classifier_reason = f"classifier: {decision.reason.strip()}"
+                        classifier_evidence["reason"] = decision.reason.strip()
                     else:
                         classifier_reason = (
                             f"classifier confidence {decision.confidence:.2f} ({stream.classifier_plugin})"
@@ -662,18 +793,32 @@ class StreamService:
 
             final_match = False
             final_reason: str | None = None
+            final_evidence: dict[str, Any] | None = None
             if stream.classifier_mode == "rules_only":
                 final_match = rules_match
                 final_reason = rules_reason
+                final_evidence = rules_evidence
             elif stream.classifier_mode == "classifier_only":
                 final_match = classifier_match
                 final_reason = classifier_reason
+                final_evidence = classifier_evidence
             elif stream.classifier_mode == "hybrid":
                 final_match = rules_match or classifier_match
                 final_reason = rules_reason or classifier_reason
+                final_evidence = {
+                    "matcher_type": "hybrid",
+                    "rules": rules_evidence if rules_match else None,
+                    "classifier": classifier_evidence if classifier_match else None,
+                }
 
             if final_match:
-                matches.append(StreamMatchDecision(stream_id=stream.id, reason=final_reason or "matched"))
+                matches.append(
+                    StreamMatchDecision(
+                        stream_id=stream.id,
+                        reason=final_reason or "matched",
+                        evidence=final_evidence,
+                    )
+                )
         return matches
 
     def make_match_rows(
@@ -687,15 +832,18 @@ class StreamService:
             if isinstance(item, UUID):
                 stream_id = item
                 reason = None
+                evidence = None
             else:
                 stream_id = item.stream_id
                 reason = item.reason
+                evidence = item.evidence
             rows.append(
                 KeywordStreamMatch(
                     stream_id=stream_id,
                     article_id=article_id,
                     matched_at=now,
                     match_reason=reason,
+                    match_evidence_json=_match_evidence_to_json(evidence),
                 )
             )
         return rows

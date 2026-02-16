@@ -100,6 +100,7 @@ class ArticleListItemOut(BaseModel):
     is_archived: bool
     stream_ids: list[UUID] = Field(default_factory=list)
     stream_match_reasons: dict[UUID, str] | None = None
+    stream_match_evidence: dict[UUID, dict[str, Any]] | None = None
 
 
 class ArticleDetailOut(BaseModel):
@@ -118,6 +119,7 @@ class ArticleDetailOut(BaseModel):
     is_archived: bool
     stream_ids: list[UUID] = Field(default_factory=list)
     stream_match_reasons: dict[UUID, str] | None = None
+    stream_match_evidence: dict[UUID, dict[str, Any]] | None = None
 
 
 class ArticleStatePatch(BaseModel):
@@ -324,6 +326,7 @@ class KeywordStreamOut(BaseModel):
 class StreamArticleOut(BaseModel):
     matched_at: datetime
     match_reason: str | None = None
+    match_evidence: dict[str, Any] | None = None
     article: ArticleOut
 
 

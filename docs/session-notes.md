@@ -1,5 +1,44 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2: Structured Match Evidence + Reader Details)
+
+### Implemented This Session
+
+- Added persisted structured evidence payload for stream matches:
+  - migration: `alembic/versions/20260216_0012_stream_match_evidence.py`
+  - model field: `keyword_stream_matches.match_evidence_json`
+- Extended stream matching to produce structured rule/classifier evidence:
+  - keyword and regex hit records now include field, offsets, and snippets
+  - classifier matches now capture plugin, confidence/threshold, and reason
+  - hybrid mode now stores combined rules/classifier evidence payloads
+- Extended backend API outputs with evidence:
+  - `StreamArticleOut.match_evidence`
+  - `ArticleListItemOut.stream_match_evidence`
+  - `ArticleDetailOut.stream_match_evidence`
+- Extended article service stream mapping to parse and return per-stream evidence payloads.
+- Updated reader explainability rendering:
+  - preserved `Why matched` textual reason summaries
+  - added `Match evidence` summaries with keyword/regex snippet context and classifier details
+- Added/updated tests:
+  - `tests/test_stream_service.py`
+  - `tests/test_stream_backfill_api.py`
+  - `tests/test_article_service.py`
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py tests/test_article_service.py`
+- `python -m ruff check src tests`
+- `python -m mypy src`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ReaderPane.test.tsx`
+
+### Notes
+
+- Monitoring explainability now persists machine-readable evidence suitable for future UI highlight rendering.
+- Remaining monitoring v2 enhancement area is article-content level inline highlighting (actual span markup), not just textual evidence summaries.
+
 ## 2026-02-16 (Monitoring Management v2: Plugin Matcher Config Baseline)
 
 ### Implemented This Session

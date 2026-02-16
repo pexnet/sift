@@ -26,7 +26,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - completed on 2026-02-16: regex matcher rules in monitoring definition management
    - completed on 2026-02-16: richer explainability baseline (captured match reasons surfaced in list/reader)
    - completed on 2026-02-16: plugin matcher config baseline (stream-level classifier config JSON)
-   - next: deeper explainability details (match spans/snippets)
+   - completed on 2026-02-16: structured match evidence payloads (keyword/regex snippets + classifier evidence) surfaced in reader metadata
+   - next: optional inline content highlighting for matched spans in reader body
 
 ## Done (History)
 

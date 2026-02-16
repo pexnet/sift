@@ -429,6 +429,12 @@ export interface components {
             stream_match_reasons?: {
                 [key: string]: string;
             } | null;
+            /** Stream Match Evidence */
+            stream_match_evidence?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
         };
         /** ArticleListItemOut */
         ArticleListItemOut: {
@@ -463,6 +469,12 @@ export interface components {
             /** Stream Match Reasons */
             stream_match_reasons?: {
                 [key: string]: string;
+            } | null;
+            /** Stream Match Evidence */
+            stream_match_evidence?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
             } | null;
         };
         /** ArticleListResponse */
@@ -1100,6 +1112,10 @@ export interface components {
             matched_at: string;
             /** Match Reason */
             match_reason?: string | null;
+            /** Match Evidence */
+            match_evidence?: {
+                [key: string]: unknown;
+            } | null;
             article: components["schemas"]["ArticleOut"];
         };
         /** UserOut */
