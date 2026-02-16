@@ -233,17 +233,82 @@
 3. Perform visual consistency pass across workspace panes using shared design tokens.
 4. Validate responsiveness and keyboard/accessibility for settings controls.
 
-### CI Reliability Investigation (GitHub Actions)
+### Long-Term Backlog Capture (Not Prioritized Yet)
 
-- Investigated the CI workflow (`.github/workflows/ci.yml`) after reproducing dependency-sync instability in this environment.
-- Observed transient package-download failure during `uv sync --extra dev` (network tunnel/connect issue) and treated install-phase flakiness as the primary risk area for action failures.
-- Hardened CI jobs by:
-  - enabling `setup-uv` cache for both backend and frontend jobs
-  - enabling `setup-node` pnpm cache for frontend lockfile
-  - adding bounded retry loops (3 attempts) for `uv sync` and frontend `pnpm install`
-  - adding job-level timeouts for clearer failure behavior (`backend` 20m, `frontend` 25m)
+The following ideas were captured for future sprints and are intentionally **deferred** until current core priorities
+are complete.
 
-### Verification (CI Reliability Slice)
+#### 1) Feed Health + Edit Surface
 
-- `uv sync --extra dev` *(failed in this container due network tunnel/connectivity to Python package index; used as evidence for install-stage retry hardening)*
-- `python -m compileall -q src`
+- Add a dedicated feed status/edit page showing per-feed health and operational metadata.
+- Include feed freshness and cadence metrics, such as:
+  - last successful ingest time
+  - recent ingest failures and error reason
+  - estimated article frequency (for example: articles/day and 7-day rolling cadence)
+- Add feed lifecycle actions from the same surface:
+  - pause/resume scheduled ingestion
+  - archive/unarchive feed
+
+#### 2) Monitoring Feed Search Management
+
+- Add a management page for monitoring feed definitions.
+- Support multiple matcher types:
+  - keyword rules
+  - regex rules
+  - plugin-provided matchers for advanced semantic/domain-specific discovery
+- When creating/updating a monitoring feed, add an optional full historical search pass over existing stored articles.
+- In monitoring feed article views, visually annotate why an article matched:
+  - highlight matched keywords/regex spans
+  - render plugin finding snippets/reasons where available
+
+#### 3) Dashboard as Daily Command Center
+
+- Introduce a dashboard route focused on first-read triage and daily priorities.
+- Add prioritization controls to weight content sources (regular feeds vs monitoring feeds vs other scopes).
+- Candidate dashboard widgets:
+  - latest unread by priority
+  - high-signal monitoring matches
+  - feed health summary (errors/stale feeds)
+  - saved/flagged follow-up queue
+
+#### 4) Duplicate Detection Visibility (Iteration 1)
+
+- Provide an initial duplicate-candidate screen accessible from Settings.
+- Keep first iteration read-focused:
+  - list suspected duplicate groups
+  - show confidence/source metadata
+  - link out to canonical article + variants
+
+#### 5) Plugin Backlog Ideas
+
+- LLM summarization plugin:
+  - generate concise article summaries
+  - first provider target: Ollama Cloud
+- Vector-similarity plugin:
+  - embeddings-backed article/topic similarity
+  - supports related-content surfacing and future semantic monitoring workflows
+
+
+#### 6) Trends Detection for Selected Feed Folders
+
+- Add a deferred trends feature that detects emerging topics across selected feed folders.
+- Intended use cases:
+  - dashboard briefing cards ("what is trending today")
+  - editor/research triage for fast signal detection
+- Candidate approach for future iteration:
+  - rolling-window term/keyphrase extraction and scoring
+  - compare short-term lift vs longer baseline to estimate trend momentum
+  - allow user-selected folder scope as trend input
+- Output should include explainability:
+  - representative keywords/keyphrases
+  - supporting article count and source spread
+  - links into matching article lists for drill-down
+
+#### Suggested Deferred Delivery Sequence (After Current Priorities)
+
+1. Feed health/edit page (operability baseline).
+2. Monitoring feed management v2 (keyword/regex + historical backfill + match highlighting).
+3. Dashboard v1 (priority inbox and command-center widgets).
+4. Duplicate-candidate settings view.
+5. Trends detection for selected feed folders (dashboard-oriented).
+6. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
