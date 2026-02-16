@@ -353,6 +353,10 @@ Design goals:
    - recomputes stream matches across existing user articles
    - replaces stale stream-match rows with recomputed results
    - returns execution counts (`scanned_count`, `previous_match_count`, `matched_count`)
+13. Monitoring regex matcher baseline:
+   - stream model persists include/exclude regex patterns
+   - stream create/update validates regex syntax and returns explicit validation errors
+   - ingest and backfill matching enforce include/exclude regex rules
 
 ## Frontend Delivery Standard
 
@@ -387,8 +391,9 @@ Design goals:
 2. Monitoring search language v1 was completed on 2026-02-16.
 3. Monitoring feed management v2 is in progress:
    - backfill execution baseline is completed
+   - regex matcher expansion baseline is completed
    - remaining v2 scope:
-   - regex/plugin matcher expansion
+   - plugin matcher expansion
    - richer match explainability
 
 ## Deferred
@@ -440,7 +445,8 @@ Design goals:
    - list/reader explainability labels for matched monitoring streams
 3. Monitoring feed management v2 remains in progress:
    - completed: historical backfill execution baseline
-   - remaining: regex/plugin matcher expansion and richer match-evidence rendering
+   - completed: regex matcher expansion baseline
+   - remaining: plugin matcher expansion and richer match-evidence rendering
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
@@ -471,6 +477,7 @@ Status:
 - v1 implementation is complete (CRUD route + baseline explainability).
 - query language v1 for stream matching is complete (`AND`/`OR`/`NOT`, phrases/grouping, wildcard, fuzzy).
 - historical backfill execution baseline is complete (`POST /api/v1/streams/{stream_id}/backfill`).
+- regex matcher baseline is complete (stream include/exclude regex rules + validation + matching).
 - this section now captures remaining v2 expansion scope.
 
 Planned capability:
@@ -478,7 +485,7 @@ Planned capability:
 - A management UI/API for monitoring feed definitions and rule evolution.
 - Matching primitives:
   - keyword matcher
-  - regex matcher
+  - regex matcher (baseline include/exclude regex support implemented)
   - plugin-provided matcher hooks for advanced discovery logic
 - Baseline manual backfill execution is implemented; optional create/update-triggered backfill remains deferred.
 - Explainability in monitoring article lists/reader:

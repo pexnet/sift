@@ -43,6 +43,8 @@ function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
     match_query: null,
     include_keywords: ["threat", "alert"],
     exclude_keywords: [],
+    include_regex: [],
+    exclude_regex: [],
     source_contains: "example.com",
     language_equals: "en",
     classifier_mode: "rules_only",
@@ -123,6 +125,9 @@ describe("MonitoringFeedsPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Include keywords/i }), {
       target: { value: "corelight, microsoft" },
     });
+    fireEvent.change(screen.getByRole("textbox", { name: /Include regex/i }), {
+      target: { value: "cve-\\d{4}-\\d+" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Create monitoring feed" }));
 
     await waitFor(() => {
@@ -131,6 +136,7 @@ describe("MonitoringFeedsPage", () => {
           name: "corelight feed",
           match_query: "corelight AND microsoft",
           include_keywords: ["corelight", "microsoft"],
+          include_regex: ["cve-\\d{4}-\\d+"],
           classifier_mode: "rules_only",
         })
       );

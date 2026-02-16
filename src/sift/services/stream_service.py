@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal, cast
@@ -42,6 +43,8 @@ class CompiledKeywordStream:
     match_query: ParsedSearchQuery | None
     include_keywords: list[str]
     exclude_keywords: list[str]
+    include_regex: list[re.Pattern[str]]
+    exclude_regex: list[re.Pattern[str]]
     source_contains: str | None
     language_equals: str | None
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"]
@@ -74,6 +77,41 @@ def _keywords_from_json(raw: str) -> list[str]:
     return _normalize_keywords([str(item) for item in loaded])
 
 
+def _normalize_regex_patterns(patterns: list[str]) -> list[str]:
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for pattern in patterns:
+        item = pattern.strip()
+        if item and item not in seen:
+            normalized.append(item)
+            seen.add(item)
+    return normalized
+
+
+def _regex_to_json(patterns: list[str]) -> str:
+    return json.dumps(_normalize_regex_patterns(patterns))
+
+
+def _regex_from_json(raw: str) -> list[str]:
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(loaded, list):
+        return []
+    return _normalize_regex_patterns([str(item) for item in loaded])
+
+
+def _compile_regex_patterns(patterns: list[str], *, field_label: str) -> list[re.Pattern[str]]:
+    compiled: list[re.Pattern[str]] = []
+    for pattern in patterns:
+        try:
+            compiled.append(re.compile(pattern, flags=re.IGNORECASE))
+        except re.error as exc:
+            raise StreamValidationError(f"Invalid {field_label} regex '{pattern}': {exc}") from exc
+    return compiled
+
+
 def _normalize_optional_text(value: str | None) -> str | None:
     if value is None:
         return None
@@ -95,6 +133,7 @@ def _normalize_classifier_mode(value: str) -> Literal["rules_only", "classifier_
 
 def _validate_criteria(
     include_keywords: list[str],
+    include_regex: list[str],
     match_query: str | None,
     source_contains: str | None,
     language_equals: str | None,
@@ -109,6 +148,8 @@ def _validate_criteria(
 
     if include_keywords:
         return
+    if include_regex:
+        return
     if match_query:
         return
     if source_contains:
@@ -118,7 +159,7 @@ def _validate_criteria(
     if normalized_mode in {"classifier_only", "hybrid"} and classifier_plugin:
         return
     raise StreamValidationError(
-        "A stream needs at least one positive criterion (query, include keyword, source, or language)"
+        "A stream needs at least one positive criterion (query, include keyword, include regex, source, or language)"
     )
 
 
@@ -126,6 +167,8 @@ def compile_stream(stream: KeywordStream) -> CompiledKeywordStream:
     compiled_query: ParsedSearchQuery | None = None
     if stream.match_query:
         compiled_query = parse_search_query(stream.match_query)
+    include_regex = _compile_regex_patterns(_regex_from_json(stream.include_regex_json), field_label="include")
+    exclude_regex = _compile_regex_patterns(_regex_from_json(stream.exclude_regex_json), field_label="exclude")
     return CompiledKeywordStream(
         id=stream.id,
         name=stream.name,
@@ -133,6 +176,8 @@ def compile_stream(stream: KeywordStream) -> CompiledKeywordStream:
         match_query=compiled_query,
         include_keywords=_keywords_from_json(stream.include_keywords_json),
         exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
+        include_regex=include_regex,
+        exclude_regex=exclude_regex,
         source_contains=_normalize_optional_lower(stream.source_contains),
         language_equals=_normalize_optional_lower(stream.language_equals),
         classifier_mode=_normalize_classifier_mode(stream.classifier_mode),
@@ -149,7 +194,8 @@ def stream_matches(
     source_url: str | None,
     language: str | None,
 ) -> bool:
-    payload = f"{title}\n{content_text}".lower()
+    payload_raw = f"{title}\n{content_text}"
+    payload = payload_raw.lower()
     source = (source_url or "").lower()
     normalized_language = (language or "").lower()
 
@@ -161,7 +207,11 @@ def stream_matches(
         return False
     if stream.include_keywords and not any(keyword in payload for keyword in stream.include_keywords):
         return False
+    if stream.include_regex and not any(pattern.search(payload_raw) for pattern in stream.include_regex):
+        return False
     if stream.exclude_keywords and any(keyword in payload for keyword in stream.exclude_keywords):
+        return False
+    if stream.exclude_regex and any(pattern.search(payload_raw) for pattern in stream.exclude_regex):
         return False
     if stream.source_contains and stream.source_contains not in source:
         return False
@@ -192,9 +242,14 @@ class StreamService:
     async def create_stream(self, session: AsyncSession, user_id: UUID, payload: KeywordStreamCreate) -> KeywordStream:
         include_keywords = _normalize_keywords(payload.include_keywords)
         exclude_keywords = _normalize_keywords(payload.exclude_keywords)
+        include_regex = _normalize_regex_patterns(payload.include_regex)
+        exclude_regex = _normalize_regex_patterns(payload.exclude_regex)
         match_query = _normalize_optional_text(payload.match_query)
         source_contains = _normalize_optional_text(payload.source_contains)
         language_equals = _normalize_optional_lower(payload.language_equals)
+
+        _compile_regex_patterns(include_regex, field_label="include")
+        _compile_regex_patterns(exclude_regex, field_label="exclude")
 
         if match_query:
             try:
@@ -205,6 +260,7 @@ class StreamService:
         classifier_plugin = _normalize_optional_text(payload.classifier_plugin)
         _validate_criteria(
             include_keywords,
+            include_regex,
             match_query,
             source_contains,
             language_equals,
@@ -221,6 +277,8 @@ class StreamService:
             match_query=match_query,
             include_keywords_json=_keywords_to_json(include_keywords),
             exclude_keywords_json=_keywords_to_json(exclude_keywords),
+            include_regex_json=_regex_to_json(include_regex),
+            exclude_regex_json=_regex_to_json(exclude_regex),
             source_contains=source_contains,
             language_equals=language_equals,
             classifier_mode=_normalize_classifier_mode(payload.classifier_mode),
@@ -262,6 +320,10 @@ class StreamService:
             stream.include_keywords_json = _keywords_to_json(payload.include_keywords)
         if payload.exclude_keywords is not None:
             stream.exclude_keywords_json = _keywords_to_json(payload.exclude_keywords)
+        if payload.include_regex is not None:
+            stream.include_regex_json = _regex_to_json(payload.include_regex)
+        if payload.exclude_regex is not None:
+            stream.exclude_regex_json = _regex_to_json(payload.exclude_regex)
         if payload.source_contains is not None:
             stream.source_contains = _normalize_optional_text(payload.source_contains)
         if payload.language_equals is not None:
@@ -280,11 +342,16 @@ class StreamService:
                 raise StreamValidationError(str(exc)) from exc
 
         include_keywords = _keywords_from_json(stream.include_keywords_json)
+        include_regex = _regex_from_json(stream.include_regex_json)
+        exclude_regex = _regex_from_json(stream.exclude_regex_json)
+        _compile_regex_patterns(include_regex, field_label="include")
+        _compile_regex_patterns(exclude_regex, field_label="exclude")
         match_query = _normalize_optional_text(stream.match_query)
         source_contains = _normalize_optional_text(stream.source_contains)
         language_equals = _normalize_optional_lower(stream.language_equals)
         _validate_criteria(
             include_keywords,
+            include_regex,
             match_query,
             source_contains,
             language_equals,
@@ -421,6 +488,8 @@ class StreamService:
             match_query=stream.match_query,
             include_keywords=_keywords_from_json(stream.include_keywords_json),
             exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
+            include_regex=_regex_from_json(stream.include_regex_json),
+            exclude_regex=_regex_from_json(stream.exclude_regex_json),
             source_contains=stream.source_contains,
             language_equals=stream.language_equals,
             classifier_mode=_normalize_classifier_mode(stream.classifier_mode),

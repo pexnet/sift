@@ -42,6 +42,8 @@ type StreamFormState = {
   matchQuery: string;
   includeKeywords: string;
   excludeKeywords: string;
+  includeRegex: string;
+  excludeRegex: string;
   sourceContains: string;
   languageEquals: string;
   classifierMode: ClassifierMode;
@@ -57,6 +59,8 @@ const DEFAULT_FORM_STATE: StreamFormState = {
   matchQuery: "",
   includeKeywords: "",
   excludeKeywords: "",
+  includeRegex: "",
+  excludeRegex: "",
   sourceContains: "",
   languageEquals: "",
   classifierMode: "rules_only",
@@ -86,6 +90,27 @@ function keywordsToInput(value: string[]): string {
   return value.join(", ");
 }
 
+function parseRegexInput(value: string): string[] {
+  const tokens = value
+    .split(/\n/g)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+  for (const token of tokens) {
+    if (!seen.has(token)) {
+      deduped.push(token);
+      seen.add(token);
+    }
+  }
+  return deduped;
+}
+
+function regexToInput(value: string[]): string {
+  return value.join("\n");
+}
+
 function toFormState(stream: KeywordStream): StreamFormState {
   return {
     name: stream.name,
@@ -95,6 +120,8 @@ function toFormState(stream: KeywordStream): StreamFormState {
     matchQuery: stream.match_query ?? "",
     includeKeywords: keywordsToInput(stream.include_keywords),
     excludeKeywords: keywordsToInput(stream.exclude_keywords),
+    includeRegex: regexToInput(stream.include_regex),
+    excludeRegex: regexToInput(stream.exclude_regex),
     sourceContains: stream.source_contains ?? "",
     languageEquals: stream.language_equals ?? "",
     classifierMode: stream.classifier_mode,
@@ -170,6 +197,8 @@ export function MonitoringFeedsPage() {
     const classifierPlugin = form.classifierPlugin.trim();
     const includeKeywords = parseKeywordsInput(form.includeKeywords);
     const excludeKeywords = parseKeywordsInput(form.excludeKeywords);
+    const includeRegex = parseRegexInput(form.includeRegex);
+    const excludeRegex = parseRegexInput(form.excludeRegex);
 
     if (name.length === 0) {
       setSubmitError("Name is required.");
@@ -180,10 +209,11 @@ export function MonitoringFeedsPage() {
     const hasPositiveCriteria =
       matchQuery.length > 0 ||
       includeKeywords.length > 0 ||
+      includeRegex.length > 0 ||
       sourceContains.length > 0 ||
       languageEquals.length > 0;
     if (!hasPositiveCriteria && !classifierEnabled) {
-      setSubmitError("Provide at least one positive rule (query, keyword, source, or language).");
+      setSubmitError("Provide at least one positive rule (query, keyword, regex, source, or language).");
       return;
     }
     if (classifierEnabled && classifierPlugin.length === 0) {
@@ -207,6 +237,8 @@ export function MonitoringFeedsPage() {
           match_query: matchQuery.length > 0 ? matchQuery : null,
           include_keywords: includeKeywords,
           exclude_keywords: excludeKeywords,
+          include_regex: includeRegex,
+          exclude_regex: excludeRegex,
           source_contains: sourceContains.length > 0 ? sourceContains : null,
           language_equals: languageEquals.length > 0 ? languageEquals : null,
           classifier_mode: form.classifierMode,
@@ -224,6 +256,8 @@ export function MonitoringFeedsPage() {
           match_query: matchQuery.length > 0 ? matchQuery : null,
           include_keywords: includeKeywords,
           exclude_keywords: excludeKeywords,
+          include_regex: includeRegex,
+          exclude_regex: excludeRegex,
           source_contains: sourceContains.length > 0 ? sourceContains : null,
           language_equals: languageEquals.length > 0 ? languageEquals : null,
           classifier_mode: form.classifierMode,
@@ -397,6 +431,28 @@ export function MonitoringFeedsPage() {
                   helperText="Comma or newline separated"
                 />
                 <TextField
+                  label="Include regex"
+                  size="small"
+                  multiline
+                  minRows={2}
+                  value={form.includeRegex}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, includeRegex: event.target.value }))
+                  }
+                  helperText="One regex pattern per line"
+                />
+                <TextField
+                  label="Exclude regex"
+                  size="small"
+                  multiline
+                  minRows={2}
+                  value={form.excludeRegex}
+                  onChange={(event) =>
+                    setForm((previous) => ({ ...previous, excludeRegex: event.target.value }))
+                  }
+                  helperText="One regex pattern per line"
+                />
+                <TextField
                   label="Source contains"
                   size="small"
                   value={form.sourceContains}
@@ -532,6 +588,12 @@ export function MonitoringFeedsPage() {
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Exclude: {stream.exclude_keywords.length > 0 ? stream.exclude_keywords.join(", ") : "none"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Include regex: {stream.include_regex.length > 0 ? stream.include_regex.join(" | ") : "none"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Exclude regex: {stream.exclude_regex.length > 0 ? stream.exclude_regex.join(" | ") : "none"}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Source: {stream.source_contains || "any"}

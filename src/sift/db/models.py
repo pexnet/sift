@@ -176,6 +176,8 @@ class KeywordStream(TimestampMixin, Base):
     match_query: Mapped[str | None] = mapped_column(Text)
     include_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
     exclude_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    include_regex_json: Mapped[str] = mapped_column(Text, default="[]")
+    exclude_regex_json: Mapped[str] = mapped_column(Text, default="[]")
     source_contains: Mapped[str | None] = mapped_column(String(1000))
     language_equals: Mapped[str | None] = mapped_column(String(32), index=True)
     classifier_mode: Mapped[str] = mapped_column(String(32), default="rules_only", index=True)

@@ -269,6 +269,8 @@ class KeywordStreamCreate(BaseModel):
     match_query: str | None = Field(default=None, max_length=5000)
     include_keywords: list[str] = Field(default_factory=list)
     exclude_keywords: list[str] = Field(default_factory=list)
+    include_regex: list[str] = Field(default_factory=list, max_length=50)
+    exclude_regex: list[str] = Field(default_factory=list, max_length=50)
     source_contains: str | None = Field(default=None, max_length=1000)
     language_equals: str | None = Field(default=None, max_length=32)
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"] = "rules_only"
@@ -284,6 +286,8 @@ class KeywordStreamUpdate(BaseModel):
     match_query: str | None = Field(default=None, max_length=5000)
     include_keywords: list[str] | None = None
     exclude_keywords: list[str] | None = None
+    include_regex: list[str] | None = None
+    exclude_regex: list[str] | None = None
     source_contains: str | None = Field(default=None, max_length=1000)
     language_equals: str | None = Field(default=None, max_length=32)
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"] | None = None
@@ -301,6 +305,8 @@ class KeywordStreamOut(BaseModel):
     match_query: str | None
     include_keywords: list[str]
     exclude_keywords: list[str]
+    include_regex: list[str]
+    exclude_regex: list[str]
     source_contains: str | None
     language_equals: str | None
     classifier_mode: Literal["rules_only", "classifier_only", "hybrid"]

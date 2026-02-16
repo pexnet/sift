@@ -1,3 +1,4 @@
+import re
 from uuid import uuid4
 
 import pytest
@@ -95,6 +96,8 @@ def test_stream_matches_include_exclude_source_language() -> None:
         match_query=None,
         include_keywords=["ai"],
         exclude_keywords=["sports"],
+        include_regex=[],
+        exclude_regex=[],
         source_contains="example.com",
         language_equals="en",
         classifier_mode="rules_only",
@@ -132,6 +135,8 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             match_query=None,
             include_keywords=["ai"],
             exclude_keywords=[],
+            include_regex=[],
+            exclude_regex=[],
             source_contains=None,
             language_equals=None,
             classifier_mode="rules_only",
@@ -145,6 +150,8 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             match_query=None,
             include_keywords=[],
             exclude_keywords=[],
+            include_regex=[],
+            exclude_regex=[],
             source_contains=None,
             language_equals=None,
             classifier_mode="classifier_only",
@@ -158,6 +165,8 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
             match_query=None,
             include_keywords=[],
             exclude_keywords=[],
+            include_regex=[],
+            exclude_regex=[],
             source_contains=None,
             language_equals=None,
             classifier_mode="classifier_only",
@@ -249,6 +258,8 @@ def test_stream_matches_respects_match_query() -> None:
         match_query=parse_search_query("microsoft AND NOT sports"),
         include_keywords=[],
         exclude_keywords=[],
+        include_regex=[],
+        exclude_regex=[],
         source_contains=None,
         language_equals=None,
         classifier_mode="rules_only",
@@ -276,6 +287,89 @@ def test_stream_matches_respects_match_query() -> None:
         )
         is False
     )
+
+
+def test_stream_matches_supports_regex_include_exclude() -> None:
+    compiled_stream = CompiledKeywordStream(
+        id=uuid4(),
+        name="regex",
+        priority=100,
+        match_query=None,
+        include_keywords=[],
+        exclude_keywords=[],
+        include_regex=[re.compile(r"cve-\d{4}-\d+", flags=re.IGNORECASE)],
+        exclude_regex=[re.compile(r"mitigated", flags=re.IGNORECASE)],
+        source_contains=None,
+        language_equals=None,
+        classifier_mode="rules_only",
+        classifier_plugin=None,
+        classifier_min_confidence=0.7,
+    )
+
+    assert (
+        stream_matches(
+            stream=compiled_stream,
+            title="New CVE-2026-1234 exploit",
+            content_text="active threat",
+            source_url="https://example.com/feed",
+            language="en",
+        )
+        is True
+    )
+    assert (
+        stream_matches(
+            stream=compiled_stream,
+            title="New CVE-2026-1234 exploit mitigated",
+            content_text="active threat",
+            source_url="https://example.com/feed",
+            language="en",
+        )
+        is False
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_stream_supports_include_regex_without_keywords() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-regex@example.com")
+        session.add(user)
+        await session.commit()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="regex-only", include_regex=[r"cve-\d{4}-\d+"]),
+        )
+        assert stream.include_regex_json == '["cve-\\\\d{4}-\\\\d+"]'
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_create_stream_rejects_invalid_include_regex() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-regex-invalid@example.com")
+        session.add(user)
+        await session.commit()
+
+        with pytest.raises(StreamValidationError):
+            await stream_service.create_stream(
+                session=session,
+                user_id=user.id,
+                payload=KeywordStreamCreate(name="invalid-regex", include_regex=[r"([a-z"]),
+            )
+
+    await engine.dispose()
 
 
 @pytest.mark.asyncio

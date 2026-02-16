@@ -134,6 +134,7 @@ This file stores persistent project context for future Codex sessions.
   - settings entry point (`Manage monitoring feeds`) from `/account`
   - backfill action executes historical stream match recalculation (`POST /api/v1/streams/{stream_id}/backfill`)
   - backfill response includes scanned/matched counts and UI success feedback
+  - stream matcher config supports include/exclude regex rules with backend validation
   - workspace explainability labels for matched monitoring streams in article list and reader
 - Monitoring search language v1 is implemented:
   - backend parser/evaluator for `AND`/`OR`/`NOT`, parentheses, quoted phrases, suffix wildcard, and fuzzy tokens
@@ -161,8 +162,9 @@ This file stores persistent project context for future Codex sessions.
 2. Monitoring search language v1 was completed on 2026-02-16.
 3. Monitoring feed management v2 is in progress:
    - historical backfill execution path is completed
+   - regex matcher expansion baseline is completed
    - remaining v2 scope:
-   - regex/plugin matcher expansion
+   - plugin matcher expansion
    - richer match explainability
 
 ## Deferred

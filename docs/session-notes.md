@@ -1,5 +1,39 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2: Regex Matcher Baseline)
+
+### Implemented This Session
+
+- Added regex matcher fields for monitoring streams:
+  - migration: `alembic/versions/20260216_0009_stream_regex_fields.py`
+  - persisted columns: `keyword_streams.include_regex_json`, `keyword_streams.exclude_regex_json`
+- Extended stream schemas and stream CRUD payloads with regex rule lists (`include_regex`, `exclude_regex`).
+- Extended stream matching engine:
+  - include regex rules require at least one regex hit in article title/content
+  - exclude regex rules reject article matches when regex patterns hit title/content
+  - regex patterns are validated on stream create/update with explicit validation errors for invalid patterns
+- Updated monitoring UI editor to support include/exclude regex rules and persist them via stream APIs.
+- Updated monitoring stream cards to display configured regex rules.
+- Added/updated tests:
+  - `tests/test_stream_service.py` (regex matching and regex validation coverage)
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx` (regex payload wiring)
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py`
+- `pnpm --dir frontend run test -- src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+- `python -m ruff check src tests`
+- `python -m mypy src`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+
+### Notes
+
+- Monitoring management v2 now has:
+  - historical backfill execution baseline
+  - regex matcher expansion baseline
+- Remaining v2 scope is plugin matcher expansion and richer explainability rendering.
+
 ## 2026-02-16 (Monitoring Management v2 Baseline: Backfill Execution)
 
 ### Implemented This Session

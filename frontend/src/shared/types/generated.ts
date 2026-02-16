@@ -852,6 +852,10 @@ export interface components {
             include_keywords?: string[];
             /** Exclude Keywords */
             exclude_keywords?: string[];
+            /** Include Regex */
+            include_regex?: string[];
+            /** Exclude Regex */
+            exclude_regex?: string[];
             /** Source Contains */
             source_contains?: string | null;
             /** Language Equals */
@@ -896,6 +900,10 @@ export interface components {
             include_keywords: string[];
             /** Exclude Keywords */
             exclude_keywords: string[];
+            /** Include Regex */
+            include_regex: string[];
+            /** Exclude Regex */
+            exclude_regex: string[];
             /** Source Contains */
             source_contains: string | null;
             /** Language Equals */
@@ -936,6 +944,10 @@ export interface components {
             include_keywords?: string[] | null;
             /** Exclude Keywords */
             exclude_keywords?: string[] | null;
+            /** Include Regex */
+            include_regex?: string[] | null;
+            /** Exclude Regex */
+            exclude_regex?: string[] | null;
             /** Source Contains */
             source_contains?: string | null;
             /** Language Equals */

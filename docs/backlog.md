@@ -23,7 +23,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
 2. Monitoring search language v1 completed on 2026-02-16.
 3. Monitoring feed management v2 is now in progress:
    - completed on 2026-02-16: historical backfill execution endpoint and UI success feedback
-   - next: regex/plugin matcher expansion and richer explainability details
+   - completed on 2026-02-16: regex matcher rules in monitoring definition management
+   - next: plugin matcher expansion and richer explainability details
 
 ## Done (History)
 
@@ -107,6 +108,11 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - endpoint recalculates stream matches across existing user articles
    - stale stream-match rows are replaced with recomputed results
    - monitoring UI now reports concrete backfill completion counts
+10. Monitoring feed management v2 (regex matcher expansion baseline):
+   - stream definitions now support include/exclude regex pattern lists
+   - backend validates regex patterns on stream create/update and returns clear validation errors
+   - ingest matching and backfill matching now enforce regex include/exclude rules
+   - monitoring UI supports editing regex rules with persistence through stream CRUD APIs
 
 ### Completed Session Index (Chronological)
 
@@ -125,6 +131,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - Monitoring search language v1 delivered (parser + stream persistence + matching + monitoring UI field + tests).
 5. 2026-02-16:
    - Monitoring feed management v2 baseline delivered (historical backfill execution path).
+6. 2026-02-16:
+   - Monitoring feed management v2 regex baseline delivered (include/exclude regex matching rules).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.
 
@@ -146,7 +154,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 - Add expanded management capabilities for monitoring feed definitions.
 - Support multiple matcher types:
   - query language composition beyond v1 boolean/phrase/wildcard/fuzzy operators
-  - regex rules
+  - regex rules (baseline include/exclude regex support is implemented)
   - plugin-provided matchers for advanced semantic/domain-specific discovery
 - Baseline manual backfill execution is implemented; optional create/update-triggered historical pass remains deferred.
 - Add article-view explainability:
