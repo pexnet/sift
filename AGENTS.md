@@ -136,6 +136,7 @@ This file stores persistent project context for future Codex sessions.
   - backfill response includes scanned/matched counts and UI success feedback
   - stream matcher config supports include/exclude regex rules with backend validation
   - workspace explainability labels for matched monitoring streams in article list and reader
+  - match reason evidence is persisted and surfaced in article list/reader (`Why matched`)
 - Monitoring search language v1 is implemented:
   - backend parser/evaluator for `AND`/`OR`/`NOT`, parentheses, quoted phrases, suffix wildcard, and fuzzy tokens
   - stream expression persistence via `keyword_streams.match_query`
@@ -163,9 +164,10 @@ This file stores persistent project context for future Codex sessions.
 3. Monitoring feed management v2 is in progress:
    - historical backfill execution path is completed
    - regex matcher expansion baseline is completed
+   - match-reason explainability baseline is completed
    - remaining v2 scope:
    - plugin matcher expansion
-   - richer match explainability
+   - deeper match explainability (matched spans/snippets)
 
 ## Deferred
 

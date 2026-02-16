@@ -1,5 +1,43 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2: Explainability Baseline)
+
+### Implemented This Session
+
+- Added persisted match-reason evidence for monitoring stream matches:
+  - migration: `alembic/versions/20260216_0010_stream_match_reason.py`
+  - model field: `keyword_stream_matches.match_reason`
+- Extended stream matching flow to produce reason summaries for matches:
+  - query/keyword/regex/source/language/classifier reasons
+  - ingestion and backfill now persist match reasons per stream/article match row
+- Extended article APIs to return stream match reason mappings:
+  - `ArticleListItemOut.stream_match_reasons`
+  - `ArticleDetailOut.stream_match_reasons`
+- Extended stream article payloads with `match_reason` in `StreamArticleOut`.
+- Updated workspace explainability rendering:
+  - article rows render `Why matched` summaries when reason evidence exists
+  - reader pane renders per-stream reason summaries
+- Added/updated tests:
+  - `tests/test_stream_service.py`
+  - `tests/test_stream_backfill_api.py`
+  - `tests/test_article_service.py`
+  - `frontend/src/features/workspace/components/ArticlesPane.test.tsx`
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py tests/test_article_service.py`
+- `python -m ruff check src tests`
+- `python -m mypy src`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ArticlesPane.test.tsx src/features/workspace/components/ReaderPane.test.tsx src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
+### Notes
+
+- This completes a textual explainability baseline for monitoring matches.
+- Remaining v2 explainability scope is keyword/regex span highlighting and plugin snippet rendering.
+
 ## 2026-02-16 (Monitoring Management v2: Regex Matcher Baseline)
 
 ### Implemented This Session

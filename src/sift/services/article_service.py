@@ -211,7 +211,11 @@ class ArticleService:
             total = len(filtered_rows)
             rows = filtered_rows[offset : offset + limit]
         article_ids = [row[0].id for row in rows]
-        stream_map = await self._stream_map(session=session, user_id=user_id, article_ids=article_ids)
+        stream_map, stream_reason_map = await self._stream_map(
+            session=session,
+            user_id=user_id,
+            article_ids=article_ids,
+        )
 
         items = [
             ArticleListItemOut(
@@ -226,6 +230,7 @@ class ArticleService:
                 is_starred=bool(is_starred),
                 is_archived=bool(is_archived),
                 stream_ids=stream_map.get(article.id, []),
+                stream_match_reasons=stream_reason_map.get(article.id, {}),
             )
             for article, feed_title, is_read, is_starred, is_archived in rows
         ]
@@ -245,7 +250,7 @@ class ArticleService:
             raise ArticleNotFoundError(f"Article {article_id} not found")
 
         article, feed_title, is_read, is_starred, is_archived = row
-        stream_map = await self._stream_map(session=session, user_id=user_id, article_ids=[article.id])
+        stream_map, stream_reason_map = await self._stream_map(session=session, user_id=user_id, article_ids=[article.id])
         return ArticleDetailOut(
             id=article.id,
             feed_id=article.feed_id,
@@ -261,6 +266,7 @@ class ArticleService:
             is_starred=bool(is_starred),
             is_archived=bool(is_archived),
             stream_ids=stream_map.get(article.id, []),
+            stream_match_reasons=stream_reason_map.get(article.id, {}),
         )
 
     async def patch_state(
@@ -353,11 +359,11 @@ class ArticleService:
         session: AsyncSession,
         user_id: UUID,
         article_ids: list[UUID],
-    ) -> dict[UUID, list[UUID]]:
+    ) -> tuple[dict[UUID, list[UUID]], dict[UUID, dict[UUID, str]]]:
         if not article_ids:
-            return {}
+            return {}, {}
         query = (
-            select(KeywordStreamMatch.article_id, KeywordStreamMatch.stream_id)
+            select(KeywordStreamMatch.article_id, KeywordStreamMatch.stream_id, KeywordStreamMatch.match_reason)
             .join(KeywordStream, KeywordStream.id == KeywordStreamMatch.stream_id)
             .where(
                 KeywordStream.user_id == user_id,
@@ -366,9 +372,12 @@ class ArticleService:
         )
         rows = await session.execute(query)
         mapping: dict[UUID, list[UUID]] = {article_id: [] for article_id in article_ids}
-        for article_id, stream_id in rows.all():
+        reason_mapping: dict[UUID, dict[UUID, str]] = {article_id: {} for article_id in article_ids}
+        for article_id, stream_id, match_reason in rows.all():
             mapping.setdefault(article_id, []).append(stream_id)
-        return mapping
+            if match_reason:
+                reason_mapping.setdefault(article_id, {})[stream_id] = match_reason
+        return mapping, reason_mapping
 
     async def _assert_article_visible(
         self,

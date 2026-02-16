@@ -45,6 +45,23 @@ export function ArticlesPane({
     return `${names[0]}, ${names[1]} +${names.length - 2}`;
   };
 
+  const primaryMatchReason = (
+    streamIds: string[],
+    streamMatchReasons: Record<string, string> | null | undefined
+  ): string | null => {
+    if (!streamMatchReasons) {
+      return null;
+    }
+    for (const streamId of streamIds) {
+      const reason = streamMatchReasons[streamId];
+      if (reason) {
+        const streamName = streamNameById[streamId] || "monitoring stream";
+        return `${streamName}: ${reason}`;
+      }
+    }
+    return null;
+  };
+
   return (
     <Paper className="workspace-list" component="section" elevation={0}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }} className="workspace-list__header">
@@ -99,6 +116,7 @@ export function ArticlesPane({
             const saved = article.is_starred;
             const relativePublished = article.published_at ? formatRelativeTime(article.published_at) : "";
             const matchedStreams = formatMatchedStreams(article.stream_ids ?? []);
+            const matchedReason = primaryMatchReason(article.stream_ids ?? [], article.stream_match_reasons);
             const rowClassName = [
               "workspace-row",
               selected ? "workspace-row--selected" : "",
@@ -124,6 +142,9 @@ export function ArticlesPane({
                   <span className="workspace-row__meta">{article.feed_title ?? "Unknown source"}</span>
                   {matchedStreams ? (
                     <span className="workspace-row__match">Matched: {matchedStreams}</span>
+                  ) : null}
+                  {matchedReason ? (
+                    <span className="workspace-row__match">Why matched: {matchedReason}</span>
                   ) : null}
                 </span>
                 <span className="workspace-row__time">{relativePublished}</span>

@@ -12,6 +12,7 @@ from sift.search.query_language import parse_search_query
 from sift.services.stream_service import (
     CompiledKeywordStream,
     StreamConflictError,
+    StreamMatchDecision,
     StreamValidationError,
     stream_matches,
     stream_service,
@@ -187,6 +188,18 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
     assert streams[1].id in matched
     assert streams[2].id not in matched
 
+    decisions = await stream_service.collect_matching_stream_decisions(
+        streams,
+        title="AI update",
+        content_text="new model launch",
+        source_url="https://example.com/feed",
+        language="en",
+        plugin_manager=plugin_manager,  # type: ignore[arg-type]
+    )
+    decision_reasons = {decision.stream_id: decision.reason for decision in decisions}
+    assert "keyword: ai" in (decision_reasons.get(streams[0].id) or "")
+    assert "classifier:" in (decision_reasons.get(streams[1].id) or "")
+
 
 @pytest.mark.asyncio
 async def test_list_stream_articles_returns_matches() -> None:
@@ -213,7 +226,12 @@ async def test_list_stream_articles_returns_matches() -> None:
             user_id=user.id,
             payload=KeywordStreamCreate(name="ai", include_keywords=["ai"]),
         )
-        session.add_all(stream_service.make_match_rows([stream.id], article.id))
+        session.add_all(
+            stream_service.make_match_rows(
+                [StreamMatchDecision(stream_id=stream.id, reason="keyword: ai")],
+                article.id,
+            )
+        )
         await session.commit()
 
         matches = await stream_service.list_stream_articles(
@@ -224,6 +242,7 @@ async def test_list_stream_articles_returns_matches() -> None:
         )
         assert len(matches) == 1
         assert matches[0].article.id == article.id
+        assert matches[0].match_reason == "keyword: ai"
 
     await engine.dispose()
 
@@ -437,5 +456,6 @@ async def test_run_stream_backfill_replaces_existing_matches() -> None:
         )
         assert len(matches) == 1
         assert matches[0].article.id == matching_article.id
+        assert matches[0].match_reason == "query matched"
 
     await engine.dispose()

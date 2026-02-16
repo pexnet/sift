@@ -52,6 +52,12 @@ class CompiledKeywordStream:
     classifier_min_confidence: float
 
 
+@dataclass(slots=True)
+class StreamMatchDecision:
+    stream_id: UUID
+    reason: str | None
+
+
 def _normalize_keywords(keywords: list[str]) -> list[str]:
     seen: set[str] = set()
     normalized: list[str] = []
@@ -194,31 +200,69 @@ def stream_matches(
     source_url: str | None,
     language: str | None,
 ) -> bool:
+    return stream_match_reason(
+        stream,
+        title=title,
+        content_text=content_text,
+        source_url=source_url,
+        language=language,
+    ) is not None
+
+
+def stream_match_reason(
+    stream: CompiledKeywordStream,
+    *,
+    title: str,
+    content_text: str,
+    source_url: str | None,
+    language: str | None,
+) -> str | None:
     payload_raw = f"{title}\n{content_text}"
     payload = payload_raw.lower()
     source = (source_url or "").lower()
     normalized_language = (language or "").lower()
+    reason: str | None = None
 
     if stream.match_query and not stream.match_query.matches(
         title=title,
         content_text=content_text,
         source_text=source_url,
     ):
-        return False
-    if stream.include_keywords and not any(keyword in payload for keyword in stream.include_keywords):
-        return False
-    if stream.include_regex and not any(pattern.search(payload_raw) for pattern in stream.include_regex):
-        return False
-    if stream.exclude_keywords and any(keyword in payload for keyword in stream.exclude_keywords):
-        return False
-    if stream.exclude_regex and any(pattern.search(payload_raw) for pattern in stream.exclude_regex):
-        return False
-    if stream.source_contains and stream.source_contains not in source:
-        return False
-    if stream.language_equals and stream.language_equals != normalized_language:
-        return False
+        return None
+    if stream.match_query:
+        reason = "query matched"
 
-    return True
+    matched_keyword = next((keyword for keyword in stream.include_keywords if keyword in payload), None)
+    if stream.include_keywords and matched_keyword is None:
+        return None
+    if matched_keyword and reason is None:
+        reason = f"keyword: {matched_keyword}"
+
+    matched_regex = next((pattern for pattern in stream.include_regex if pattern.search(payload_raw)), None)
+    if stream.include_regex and matched_regex is None:
+        return None
+    if matched_regex and reason is None:
+        reason = f"regex: {matched_regex.pattern}"
+
+    blocked_keyword = next((keyword for keyword in stream.exclude_keywords if keyword in payload), None)
+    if blocked_keyword is not None:
+        return None
+
+    blocked_regex = next((pattern for pattern in stream.exclude_regex if pattern.search(payload_raw)), None)
+    if blocked_regex is not None:
+        return None
+
+    if stream.source_contains and stream.source_contains not in source:
+        return None
+    if stream.source_contains and reason is None:
+        reason = f"source: {stream.source_contains}"
+
+    if stream.language_equals and stream.language_equals != normalized_language:
+        return None
+    if stream.language_equals and reason is None:
+        reason = f"language: {stream.language_equals}"
+
+    return reason or "rules matched"
 
 
 class StreamService:
@@ -403,7 +447,13 @@ class StreamService:
 
         matches: list[StreamArticleOut] = []
         for match, article in result.all():
-            matches.append(StreamArticleOut(matched_at=match.matched_at, article=ArticleOut.model_validate(article)))
+            matches.append(
+                StreamArticleOut(
+                    matched_at=match.matched_at,
+                    match_reason=match.match_reason,
+                    article=ArticleOut.model_validate(article),
+                )
+            )
         return matches
 
     async def run_stream_backfill(
@@ -440,9 +490,9 @@ class StreamService:
         )
         article_rows = article_rows_result.all()
 
-        matched_article_ids: list[UUID] = []
+        matched_rows: list[KeywordStreamMatch] = []
         for article_id, title, content_text, language, source_url in article_rows:
-            matching_stream_ids = await self.collect_matching_stream_ids(
+            matching_decisions = await self.collect_matching_stream_decisions(
                 [compiled_stream],
                 title=title,
                 content_text=content_text,
@@ -450,8 +500,8 @@ class StreamService:
                 language=language,
                 plugin_manager=plugin_manager,
             )
-            if matching_stream_ids:
-                matched_article_ids.append(article_id)
+            if matching_decisions:
+                matched_rows.extend(self.make_match_rows(matching_decisions, article_id))
 
         previous_count_result = await session.execute(
             select(func.count())
@@ -461,20 +511,14 @@ class StreamService:
         previous_match_count = int(previous_count_result.scalar_one() or 0)
 
         await session.execute(delete(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id))
-        now = datetime.now(UTC)
-        session.add_all(
-            [
-                KeywordStreamMatch(stream_id=stream_id, article_id=article_id, matched_at=now)
-                for article_id in matched_article_ids
-            ]
-        )
+        session.add_all(matched_rows)
         await session.commit()
 
         return StreamBackfillResultOut(
             stream_id=stream_id,
             scanned_count=len(article_rows),
             previous_match_count=previous_match_count,
-            matched_count=len(matched_article_ids),
+            matched_count=len(matched_rows),
         )
 
     def to_out(self, stream: KeywordStream) -> KeywordStreamOut:
@@ -509,7 +553,27 @@ class StreamService:
         language: str | None,
         plugin_manager: PluginManager,
     ) -> list[UUID]:
-        matching_ids: list[UUID] = []
+        decisions = await self.collect_matching_stream_decisions(
+            streams,
+            title=title,
+            content_text=content_text,
+            source_url=source_url,
+            language=language,
+            plugin_manager=plugin_manager,
+        )
+        return [decision.stream_id for decision in decisions]
+
+    async def collect_matching_stream_decisions(
+        self,
+        streams: list[CompiledKeywordStream],
+        *,
+        title: str,
+        content_text: str,
+        source_url: str | None,
+        language: str | None,
+        plugin_manager: PluginManager,
+    ) -> list[StreamMatchDecision]:
+        matches: list[StreamMatchDecision] = []
         article_context = ArticleContext(
             article_id="",
             title=title,
@@ -517,15 +581,17 @@ class StreamService:
             metadata={"source_url": source_url or "", "language": language or ""},
         )
         for stream in streams:
-            rules_match = stream_matches(
+            rules_reason = stream_match_reason(
                 stream,
                 title=title,
                 content_text=content_text,
                 source_url=source_url,
                 language=language,
             )
+            rules_match = rules_reason is not None
 
             classifier_match = False
+            classifier_reason: str | None = None
             if stream.classifier_mode in {"classifier_only", "hybrid"} and stream.classifier_plugin:
                 decision = await plugin_manager.classify_stream(
                     plugin_name=stream.classifier_plugin,
@@ -545,25 +611,53 @@ class StreamService:
                     and decision.matched
                     and decision.confidence >= stream.classifier_min_confidence
                 )
+                if classifier_match and decision:
+                    if decision.reason.strip():
+                        classifier_reason = f"classifier: {decision.reason.strip()}"
+                    else:
+                        classifier_reason = (
+                            f"classifier confidence {decision.confidence:.2f} ({stream.classifier_plugin})"
+                        )
 
             final_match = False
+            final_reason: str | None = None
             if stream.classifier_mode == "rules_only":
                 final_match = rules_match
+                final_reason = rules_reason
             elif stream.classifier_mode == "classifier_only":
                 final_match = classifier_match
+                final_reason = classifier_reason
             elif stream.classifier_mode == "hybrid":
                 final_match = rules_match or classifier_match
+                final_reason = rules_reason or classifier_reason
 
             if final_match:
-                matching_ids.append(stream.id)
-        return matching_ids
+                matches.append(StreamMatchDecision(stream_id=stream.id, reason=final_reason or "matched"))
+        return matches
 
-    def make_match_rows(self, stream_ids: list[UUID], article_id: UUID) -> list[KeywordStreamMatch]:
+    def make_match_rows(
+        self,
+        stream_matches: list[UUID] | list[StreamMatchDecision],
+        article_id: UUID,
+    ) -> list[KeywordStreamMatch]:
         now = datetime.now(UTC)
-        return [
-            KeywordStreamMatch(stream_id=stream_id, article_id=article_id, matched_at=now)
-            for stream_id in stream_ids
-        ]
+        rows: list[KeywordStreamMatch] = []
+        for item in stream_matches:
+            if isinstance(item, UUID):
+                stream_id = item
+                reason = None
+            else:
+                stream_id = item.stream_id
+                reason = item.reason
+            rows.append(
+                KeywordStreamMatch(
+                    stream_id=stream_id,
+                    article_id=article_id,
+                    matched_at=now,
+                    match_reason=reason,
+                )
+            )
+        return rows
 
 
 stream_service = StreamService()

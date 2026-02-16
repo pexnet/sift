@@ -92,6 +92,7 @@ def test_stream_backfill_api_runs_and_replaces_matches() -> None:
                 rows = result.scalars().all()
                 assert len(rows) == 1
                 assert rows[0].article_id == matching_article_id
+                assert rows[0].match_reason == "query matched"
 
         asyncio.run(verify())
     finally:

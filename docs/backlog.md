@@ -24,7 +24,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
 3. Monitoring feed management v2 is now in progress:
    - completed on 2026-02-16: historical backfill execution endpoint and UI success feedback
    - completed on 2026-02-16: regex matcher rules in monitoring definition management
-   - next: plugin matcher expansion and richer explainability details
+   - completed on 2026-02-16: richer explainability baseline (captured match reasons surfaced in list/reader)
+   - next: plugin matcher expansion and deeper explainability details (match spans/snippets)
 
 ## Done (History)
 
@@ -113,6 +114,11 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - backend validates regex patterns on stream create/update and returns clear validation errors
    - ingest matching and backfill matching now enforce regex include/exclude rules
    - monitoring UI supports editing regex rules with persistence through stream CRUD APIs
+11. Monitoring feed explainability baseline:
+   - match reason is persisted per stream/article match (`keyword_stream_matches.match_reason`)
+   - reasons are generated from query/keyword/regex/source/language/classifier match decisions
+   - article list/detail APIs now expose per-stream match reasons
+   - workspace list/reader now render `Why matched` summaries for monitoring stream matches
 
 ### Completed Session Index (Chronological)
 
@@ -133,6 +139,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - Monitoring feed management v2 baseline delivered (historical backfill execution path).
 6. 2026-02-16:
    - Monitoring feed management v2 regex baseline delivered (include/exclude regex matching rules).
+7. 2026-02-16:
+   - Monitoring explainability baseline delivered (persisted match reasons + workspace rendering).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.
 
@@ -159,7 +167,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 - Baseline manual backfill execution is implemented; optional create/update-triggered historical pass remains deferred.
 - Add article-view explainability:
   - highlight matched keyword/regex spans
-  - render plugin finding snippets/reasons
+  - render plugin finding snippets/reasons (baseline textual reason summaries are implemented)
 
 ### 3) Dashboard as Daily Command Center
 

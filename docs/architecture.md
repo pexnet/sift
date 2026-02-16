@@ -357,6 +357,10 @@ Design goals:
    - stream model persists include/exclude regex patterns
    - stream create/update validates regex syntax and returns explicit validation errors
    - ingest and backfill matching enforce include/exclude regex rules
+14. Monitoring explainability baseline:
+   - stream/article matches persist `match_reason` evidence
+   - match reasons are generated for query/keyword/regex/source/language/classifier decisions
+   - article list/detail API payloads include per-stream reason mappings
 
 ## Frontend Delivery Standard
 
@@ -392,9 +396,10 @@ Design goals:
 3. Monitoring feed management v2 is in progress:
    - backfill execution baseline is completed
    - regex matcher expansion baseline is completed
+   - match-reason explainability baseline is completed
    - remaining v2 scope:
    - plugin matcher expansion
-   - richer match explainability
+   - deeper match explainability (matched spans/snippets)
 
 ## Deferred
 
@@ -446,7 +451,8 @@ Design goals:
 3. Monitoring feed management v2 remains in progress:
    - completed: historical backfill execution baseline
    - completed: regex matcher expansion baseline
-   - remaining: plugin matcher expansion and richer match-evidence rendering
+   - completed: match-reason explainability baseline
+   - remaining: plugin matcher expansion and deeper match-evidence rendering (spans/snippets)
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
@@ -478,6 +484,7 @@ Status:
 - query language v1 for stream matching is complete (`AND`/`OR`/`NOT`, phrases/grouping, wildcard, fuzzy).
 - historical backfill execution baseline is complete (`POST /api/v1/streams/{stream_id}/backfill`).
 - regex matcher baseline is complete (stream include/exclude regex rules + validation + matching).
+- textual explainability baseline is complete (persisted match reasons surfaced in article list/reader).
 - this section now captures remaining v2 expansion scope.
 
 Planned capability:
@@ -489,8 +496,9 @@ Planned capability:
   - plugin-provided matcher hooks for advanced discovery logic
 - Baseline manual backfill execution is implemented; optional create/update-triggered backfill remains deferred.
 - Explainability in monitoring article lists/reader:
-  - highlight matched keyword/regex spans
-  - show plugin-provided match reasons/snippets
+  - baseline textual `Why matched` summaries are implemented
+  - remaining: highlight matched keyword/regex spans
+  - remaining: show plugin-provided match snippets
 
 Architecture implications:
 

@@ -39,6 +39,17 @@ export function ReaderPane({
   const matchedStreamNames = (detail?.stream_ids ?? selectedArticle?.stream_ids ?? [])
     .map((streamId) => streamNameById[streamId])
     .filter((name): name is string => Boolean(name));
+  const streamMatchReasons = detail?.stream_match_reasons ?? selectedArticle?.stream_match_reasons ?? null;
+  const matchedReasonSummaries = (detail?.stream_ids ?? selectedArticle?.stream_ids ?? [])
+    .map((streamId) => {
+      const streamName = streamNameById[streamId];
+      const reason = streamMatchReasons?.[streamId];
+      if (!streamName || !reason) {
+        return null;
+      }
+      return `${streamName}: ${reason}`;
+    })
+    .filter((value): value is string => Boolean(value));
 
   return (
     <Paper className="workspace-reader" component="section" elevation={0}>
@@ -74,6 +85,11 @@ export function ReaderPane({
               {matchedStreamNames.length > 0 ? (
                 <Typography variant="body2" className="workspace-reader__match">
                   Matched by monitoring feeds: {matchedStreamNames.join(", ")}
+                </Typography>
+              ) : null}
+              {matchedReasonSummaries.length > 0 ? (
+                <Typography variant="body2" className="workspace-reader__match">
+                  Why matched: {matchedReasonSummaries.join(" · ")}
                 </Typography>
               ) : null}
             </Box>

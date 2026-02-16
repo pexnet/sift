@@ -220,7 +220,7 @@ class IngestionService:
             if dedup_decision.duplicate_of_id:
                 result.canonical_duplicate_count += 1
 
-            matching_stream_ids = await stream_service.collect_matching_stream_ids(
+            matching_stream_decisions = await stream_service.collect_matching_stream_decisions(
                 active_streams,
                 title=article.title,
                 content_text=article.content_text,
@@ -228,9 +228,9 @@ class IngestionService:
                 language=article.language,
                 plugin_manager=plugin_manager,
             )
-            if matching_stream_ids:
-                session.add_all(stream_service.make_match_rows(matching_stream_ids, article.id))
-                result.stream_match_count += len(matching_stream_ids)
+            if matching_stream_decisions:
+                session.add_all(stream_service.make_match_rows(matching_stream_decisions, article.id))
+                result.stream_match_count += len(matching_stream_decisions)
 
             result.inserted_count += 1
 

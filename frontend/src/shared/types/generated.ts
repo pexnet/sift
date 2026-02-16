@@ -425,6 +425,10 @@ export interface components {
             is_archived: boolean;
             /** Stream Ids */
             stream_ids?: string[];
+            /** Stream Match Reasons */
+            stream_match_reasons?: {
+                [key: string]: string;
+            } | null;
         };
         /** ArticleListItemOut */
         ArticleListItemOut: {
@@ -456,6 +460,10 @@ export interface components {
             is_archived: boolean;
             /** Stream Ids */
             stream_ids?: string[];
+            /** Stream Match Reasons */
+            stream_match_reasons?: {
+                [key: string]: string;
+            } | null;
         };
         /** ArticleListResponse */
         ArticleListResponse: {
@@ -1078,6 +1086,8 @@ export interface components {
              * Format: date-time
              */
             matched_at: string;
+            /** Match Reason */
+            match_reason?: string | null;
             article: components["schemas"]["ArticleOut"];
         };
         /** UserOut */

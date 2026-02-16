@@ -236,6 +236,9 @@ describe("ReaderPane", () => {
           is_starred: false,
           is_archived: false,
           stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+          stream_match_reasons: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": "keyword: darktrace",
+          },
         }}
         selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
         streamNameById={{
@@ -256,6 +259,9 @@ describe("ReaderPane", () => {
           is_starred: false,
           is_archived: false,
           stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+          stream_match_reasons: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": "keyword: darktrace",
+          },
         }}
         contentHtml="<p>Body</p>"
         isLoading={false}
@@ -270,5 +276,6 @@ describe("ReaderPane", () => {
     );
 
     expect(screen.getByText("Matched by monitoring feeds: darktrace")).toBeVisible();
+    expect(screen.getByText("Why matched: darktrace: keyword: darktrace")).toBeVisible();
   });
 });

@@ -193,3 +193,4 @@ class KeywordStreamMatch(Base):
     stream_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("keyword_streams.id", ondelete="CASCADE"), index=True)
     article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
     matched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    match_reason: Mapped[str | None] = mapped_column(String(500))

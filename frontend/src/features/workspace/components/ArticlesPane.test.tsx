@@ -153,6 +153,9 @@ describe("ArticlesPane", () => {
             is_starred: false,
             is_archived: false,
             stream_ids: ["fd6dd555-1902-4f29-b5ba-3f5a7246e9f1"],
+            stream_match_reasons: {
+              "fd6dd555-1902-4f29-b5ba-3f5a7246e9f1": "regex: cve-\\d{4}-\\d+",
+            },
           },
         ]}
         selectedArticleId=""
@@ -166,5 +169,6 @@ describe("ArticlesPane", () => {
     );
 
     expect(screen.getByText("Matched: darktrace")).toBeVisible();
+    expect(screen.getByText("Why matched: darktrace: regex: cve-\\d{4}-\\d+")).toBeVisible();
   });
 });

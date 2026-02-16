@@ -94,7 +94,7 @@ async def test_list_articles_scope_stream() -> None:
         stream = KeywordStream(user_id=user.id, name="monitor", include_keywords_json='["stream"]', exclude_keywords_json="[]")
         session.add(stream)
         await session.flush()
-        session.add(KeywordStreamMatch(stream_id=stream.id, article_id=article.id))
+        session.add(KeywordStreamMatch(stream_id=stream.id, article_id=article.id, match_reason="keyword: stream"))
         await session.commit()
 
         scoped = await article_service.list_articles(
@@ -110,6 +110,16 @@ async def test_list_articles_scope_stream() -> None:
         )
         assert len(scoped.items) == 1
         assert scoped.items[0].id == article.id
+        assert scoped.items[0].stream_match_reasons is not None
+        assert scoped.items[0].stream_match_reasons.get(stream.id) == "keyword: stream"
+
+        detail = await article_service.get_article_detail(
+            session=session,
+            user_id=user.id,
+            article_id=article.id,
+        )
+        assert detail.stream_match_reasons is not None
+        assert detail.stream_match_reasons.get(stream.id) == "keyword: stream"
 
     await engine.dispose()
 
