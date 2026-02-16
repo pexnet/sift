@@ -10,6 +10,7 @@ type ArticlesPaneProps = {
   scopeLabel: string;
   streamNameById: Record<string, string>;
   articleItems: ArticleListItem[];
+  articleTotal: number;
   selectedArticleId: string;
   isLoading: boolean;
   isError: boolean;
@@ -18,7 +19,7 @@ type ArticlesPaneProps = {
   onSearchChange: (value: string) => void;
   onStateChange: (state: WorkspaceSearch["state"]) => void;
   onArticleSelect: (articleId: string) => void;
-  onMarkAllRead: (articleIds: string[]) => void;
+  onMarkScopeRead: () => void;
 };
 
 export function ArticlesPane({
@@ -26,6 +27,7 @@ export function ArticlesPane({
   scopeLabel,
   streamNameById,
   articleItems,
+  articleTotal,
   selectedArticleId,
   isLoading,
   isError,
@@ -34,10 +36,8 @@ export function ArticlesPane({
   onSearchChange,
   onStateChange,
   onArticleSelect,
-  onMarkAllRead,
+  onMarkScopeRead,
 }: ArticlesPaneProps) {
-  const unreadArticleIds = articleItems.filter((article) => !article.is_read).map((article) => article.id);
-
   const formatMatchedStreams = (streamIds: string[]): string | null => {
     const names = streamIds
       .map((streamId) => streamNameById[streamId])
@@ -105,10 +105,10 @@ export function ArticlesPane({
         <Button
           size="small"
           variant="outlined"
-          onClick={() => onMarkAllRead(unreadArticleIds)}
-          disabled={isLoading || isMarkAllReadPending || unreadArticleIds.length === 0}
+          onClick={onMarkScopeRead}
+          disabled={isLoading || isMarkAllReadPending || articleTotal === 0}
         >
-          {isMarkAllReadPending ? "Marking..." : "Mark all as read"}
+          {isMarkAllReadPending ? "Marking..." : "Mark all in scope as read"}
         </Button>
       </Stack>
 

@@ -372,6 +372,84 @@ class ArticleService:
         await session.commit()
         return len(visible_ids)
 
+    async def mark_scope_as_read(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        scope_type: ScopeType,
+        scope_id: UUID | None,
+        state: StateFilter,
+        q: str | None,
+    ) -> int:
+        base_query, context = self._base_query(user_id=user_id)
+
+        filters: list[Any] = []
+        scope_condition = _scope_filter(user_id=user_id, scope_type=scope_type, scope_id=scope_id)
+        if scope_condition is not None:
+            filters.append(scope_condition)
+
+        state_condition = _state_filter(
+            state=state,
+            read_expr=context.read_expr,
+            starred_expr=context.starred_expr,
+            archived_expr=context.archived_expr,
+            state_updated_at_expr=func.coalesce(ArticleState.updated_at, Article.created_at),
+        )
+        filters.append(state_condition)
+
+        parsed_query = None
+        normalized_query = (q or "").strip()
+        if normalized_query and requires_advanced_search(normalized_query):
+            try:
+                parsed_query = parse_search_query(normalized_query)
+            except SearchQuerySyntaxError as exc:
+                raise ArticleStateValidationError(str(exc)) from exc
+
+        if parsed_query is None and normalized_query:
+            like = f"%{normalized_query.lower()}%"
+            if like != "%%":
+                filters.append(
+                    or_(
+                        func.lower(Article.title).like(like),
+                        func.lower(Article.content_text).like(like),
+                        func.lower(Feed.title).like(like),
+                    )
+                )
+
+        article_ids: list[UUID] = []
+        if parsed_query is None:
+            ids_result = await session.execute(
+                select(Article.id)
+                .join(Feed, Feed.id == Article.feed_id)
+                .outerjoin(
+                    ArticleState,
+                    and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
+                )
+                .where(Feed.owner_id == user_id, *filters)
+            )
+            article_ids = list(ids_result.scalars().all())
+        else:
+            rows_result = await session.execute(base_query.where(*filters))
+            article_ids = [
+                row[0].id
+                for row in rows_result.all()
+                if parsed_query.matches(
+                    title=row[0].title,
+                    content_text=row[0].content_text,
+                    source_text=row[1],
+                )
+            ]
+
+        return await self.bulk_patch_state(
+            session=session,
+            user_id=user_id,
+            article_ids=article_ids,
+            is_read=True,
+            is_starred=None,
+            is_archived=None,
+        )
+
     async def _stream_map(
         self,
         *,

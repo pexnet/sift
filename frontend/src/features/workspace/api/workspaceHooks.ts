@@ -11,10 +11,12 @@ import {
   getFeeds,
   getFolders,
   getNavigation,
+  markScopeAsRead,
   patchArticleState,
   updateFolder,
 } from "../../../shared/api/workspaceApi";
 import type {
+  ArticleScopeMarkReadRequest,
   ArticleStateBulkPatchRequest,
   ArticleListResponse,
   FeedFolderAssignmentRequest,
@@ -129,6 +131,21 @@ export function useBulkPatchArticleStateMutation() {
 
   return useMutation({
     mutationFn: (payload: ArticleStateBulkPatchRequest) => bulkPatchArticleState(payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
+        queryClient.invalidateQueries({ queryKey: ["articles"] }),
+        queryClient.invalidateQueries({ queryKey: ["article"] }),
+      ]);
+    },
+  });
+}
+
+export function useMarkScopeAsReadMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: ArticleScopeMarkReadRequest) => markScopeAsRead(payload),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),

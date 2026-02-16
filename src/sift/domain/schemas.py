@@ -135,6 +135,13 @@ class ArticleStateBulkPatch(BaseModel):
     is_archived: bool | None = None
 
 
+class ArticleScopeReadPatch(BaseModel):
+    scope_type: Literal["system", "folder", "feed", "stream"] = "system"
+    scope_id: UUID | None = None
+    state: Literal["all", "unread", "saved", "archived", "fresh", "recent"] = "all"
+    q: str | None = Field(default=None, max_length=5000)
+
+
 class ArticleStateOut(BaseModel):
     article_id: UUID
     is_read: bool

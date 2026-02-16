@@ -132,6 +132,10 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - authenticated `/help` route implemented
    - focused help content added for monitoring feed configuration and search syntax reference
    - settings and monitoring pages now include help entry links
+14. Workspace UX follow-up:
+   - left rail now includes a direct Help action (`/help`)
+   - article list action now supports scope-aware mark-read execution with confirmation
+   - action copy clarified to `Mark all in scope as read`
 
 ### Completed Session Index (Chronological)
 

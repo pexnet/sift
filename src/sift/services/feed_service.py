@@ -81,4 +81,3 @@ class FeedAlreadyExistsError(Exception):
 
 class FeedFolderNotFoundError(Exception):
     pass
-

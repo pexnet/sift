@@ -11,6 +11,7 @@ from sift.domain.schemas import (
     ArticleDetailOut,
     ArticleListResponse,
     ArticleOut,
+    ArticleScopeReadPatch,
     ArticleStateBulkPatch,
     ArticleStateOut,
     ArticleStatePatch,
@@ -84,6 +85,26 @@ async def bulk_patch_article_state(
             is_read=payload.is_read,
             is_starred=payload.is_starred,
             is_archived=payload.is_archived,
+        )
+    except ArticleStateValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return {"updated_count": updated_count}
+
+
+@router.post("/state/mark-scope-read", status_code=status.HTTP_200_OK)
+async def mark_scope_as_read(
+    payload: ArticleScopeReadPatch,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, int]:
+    try:
+        updated_count = await article_service.mark_scope_as_read(
+            session=session,
+            user_id=current_user.id,
+            scope_type=payload.scope_type,
+            scope_id=payload.scope_id,
+            state=payload.state,
+            q=payload.q,
         )
     except ArticleStateValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

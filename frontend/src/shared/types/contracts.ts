@@ -28,6 +28,15 @@ export type StreamBackfillResult = {
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
 export type ArticleStateFilter = "all" | "unread" | "saved" | "archived" | "fresh" | "recent";
 export type ArticleSort = "newest" | "oldest" | "unread_first";
+export type ArticleScopeMarkReadRequest = {
+  scope_type: ArticleScopeType;
+  scope_id?: string;
+  state: ArticleStateFilter;
+  q?: string;
+};
+export type ArticleScopeMarkReadResponse = {
+  updated_count: number;
+};
 
 export type WorkspaceSearch = {
   scope_type: ArticleScopeType;

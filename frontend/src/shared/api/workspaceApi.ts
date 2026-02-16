@@ -8,6 +8,8 @@ import { parseNavigationResponse } from "../../entities/navigation/model";
 import type {
   ArticleDetail,
   ArticleListResponse,
+  ArticleScopeMarkReadRequest,
+  ArticleScopeMarkReadResponse,
   ArticleStateBulkPatchRequest,
   Feed,
   FeedFolder,
@@ -68,6 +70,14 @@ export async function bulkPatchArticleState(payload: ArticleStateBulkPatchReques
   const response = await apiClient.post<ArticleStateBulkPatchRequest, { updated_count: number }>(
     `${ARTICLES_ENDPOINT}/state/bulk`,
     request
+  );
+  return response.updated_count;
+}
+
+export async function markScopeAsRead(payload: ArticleScopeMarkReadRequest): Promise<number> {
+  const response = await apiClient.post<ArticleScopeMarkReadRequest, ArticleScopeMarkReadResponse>(
+    `${ARTICLES_ENDPOINT}/state/mark-scope-read`,
+    payload
   );
   return response.updated_count;
 }

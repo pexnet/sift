@@ -25,6 +25,22 @@ export function useWorkspaceShortcuts({
   toggleSaved,
 }: UseWorkspaceShortcutsProps) {
   useEffect(() => {
+    const getReaderScrollElement = (): HTMLElement | null =>
+      document.querySelector<HTMLElement>(".workspace-reader");
+
+    const scrollReaderByViewport = (delta: number) => {
+      if (!selectedArticle) {
+        return false;
+      }
+      const reader = getReaderScrollElement();
+      if (!reader) {
+        return false;
+      }
+      const step = Math.max(Math.floor(reader.clientHeight * 0.88), 240);
+      reader.scrollBy({ top: step * delta, behavior: "auto" });
+      return true;
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
       const isEditable =
@@ -72,6 +88,27 @@ export function useWorkspaceShortcuts({
       if (event.key === "/") {
         event.preventDefault();
         searchInputRef.current?.focus();
+        return;
+      }
+
+      if (event.key === "PageDown") {
+        if (scrollReaderByViewport(1)) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (event.key === "PageUp") {
+        if (scrollReaderByViewport(-1)) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (event.key === " ") {
+        if (scrollReaderByViewport(event.shiftKey ? -1 : 1)) {
+          event.preventDefault();
+        }
       }
     };
 

@@ -1,5 +1,6 @@
 import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
+import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
@@ -20,11 +21,11 @@ import {
   useArticleDetailQuery,
   useArticlesQuery,
   useAssignFeedFolderMutation,
-  useBulkPatchArticleStateMutation,
   useCreateFolderMutation,
   useDeleteFolderMutation,
   useFeedsQuery,
   useFoldersQuery,
+  useMarkScopeAsReadMutation,
   useNavigationQuery,
   usePatchArticleStateMutation,
   useUpdateFolderMutation,
@@ -100,7 +101,7 @@ export function WorkspacePage({
     [articleDetailQuery.data?.content_text]
   );
   const patchArticleStateMutation = usePatchArticleStateMutation(selectedArticleId);
-  const bulkPatchArticleStateMutation = useBulkPatchArticleStateMutation();
+  const markScopeAsReadMutation = useMarkScopeAsReadMutation();
   const createFolderMutation = useCreateFolderMutation();
   const updateFolderMutation = useUpdateFolderMutation();
   const deleteFolderMutation = useDeleteFolderMutation();
@@ -289,6 +290,12 @@ export function WorkspacePage({
             icon: <SearchRoundedIcon fontSize="small" />,
             onClick: () => searchInputRef.current?.focus(),
           },
+          {
+            id: "help",
+            label: "Help",
+            icon: <HelpOutlineRoundedIcon fontSize="small" />,
+            onClick: () => void navigate({ to: "/help" }),
+          },
         ]}
       />
 
@@ -334,21 +341,28 @@ export function WorkspacePage({
             scopeLabel={selectedScopeLabel}
             streamNameById={streamNameById}
             articleItems={articles}
+            articleTotal={articlesQuery.data?.total ?? 0}
             selectedArticleId={selectedArticleId}
             isLoading={articlesQuery.isLoading}
             isError={articlesQuery.isError}
             searchInputRef={searchInputRef}
-            isMarkAllReadPending={bulkPatchArticleStateMutation.isPending}
+            isMarkAllReadPending={markScopeAsReadMutation.isPending}
             onSearchChange={(value) => setSearch({ q: value, article_id: "" })}
             onStateChange={(value) => setSearch({ state: value, article_id: "" })}
             onArticleSelect={(articleId) => setSearch({ article_id: articleId })}
-            onMarkAllRead={(articleIds) => {
-              if (articleIds.length === 0) {
+            onMarkScopeRead={() => {
+              if (
+                !window.confirm(
+                  "Mark all articles in the current scope and filters as read?"
+                )
+              ) {
                 return;
               }
-              bulkPatchArticleStateMutation.mutate({
-                article_ids: articleIds,
-                is_read: true,
+              markScopeAsReadMutation.mutate({
+                scope_type: search.scope_type,
+                ...(search.scope_id ? { scope_id: search.scope_id } : {}),
+                state: search.state,
+                ...(search.q ? { q: search.q } : {}),
               });
             }}
           />

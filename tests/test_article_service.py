@@ -2,6 +2,7 @@ import json
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
@@ -289,5 +290,70 @@ async def test_list_articles_rejects_invalid_advanced_query() -> None:
                 offset=0,
                 sort="newest",
             )
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_mark_scope_as_read_applies_to_current_scope_and_query() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with session_maker() as session:
+        user = User(email="article-scope-mark-read@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed_a = Feed(owner_id=user.id, title="Feed A", url=f"https://scope-mark-{uuid4()}.example.com/rss")
+        feed_b = Feed(owner_id=user.id, title="Feed B", url=f"https://scope-mark-{uuid4()}.example.net/rss")
+        session.add_all([feed_a, feed_b])
+        await session.flush()
+
+        matching_feed_article = Article(
+            feed_id=feed_a.id,
+            source_id="s1",
+            title="Microsoft Sentinel report",
+            content_text="security update",
+        )
+        non_matching_query_article = Article(
+            feed_id=feed_a.id,
+            source_id="s2",
+            title="Football digest",
+            content_text="sports",
+        )
+        other_feed_article = Article(
+            feed_id=feed_b.id,
+            source_id="s3",
+            title="Microsoft Sentinel report",
+            content_text="security update",
+        )
+        session.add_all([matching_feed_article, non_matching_query_article, other_feed_article])
+        await session.commit()
+
+        updated_count = await article_service.mark_scope_as_read(
+            session=session,
+            user_id=user.id,
+            scope_type="feed",
+            scope_id=feed_a.id,
+            state="all",
+            q="microsoft AND sentinel",
+        )
+        assert updated_count == 1
+
+        rows = await session.execute(
+            select(ArticleState).where(
+                ArticleState.user_id == str(user.id),
+                ArticleState.article_id.in_(
+                    [matching_feed_article.id, non_matching_query_article.id, other_feed_article.id]
+                ),
+            )
+        )
+        state_by_id = {row.article_id: row for row in rows.scalars().all()}
+        assert state_by_id.get(matching_feed_article.id) is not None
+        assert state_by_id[matching_feed_article.id].is_read is True
+        assert state_by_id.get(non_matching_query_article.id) is None
+        assert state_by_id.get(other_feed_article.id) is None
 
     await engine.dispose()

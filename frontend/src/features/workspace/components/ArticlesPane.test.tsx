@@ -35,6 +35,7 @@ describe("ArticlesPane", () => {
             stream_ids: [],
           },
         ]}
+        articleTotal={1}
         selectedArticleId=""
         isLoading={false}
         isError={false}
@@ -43,7 +44,7 @@ describe("ArticlesPane", () => {
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={onSelect}
-        onMarkAllRead={vi.fn()}
+        onMarkScopeRead={vi.fn()}
       />
     );
 
@@ -82,6 +83,7 @@ describe("ArticlesPane", () => {
             stream_ids: [],
           },
         ]}
+        articleTotal={1}
         selectedArticleId=""
         isLoading={false}
         isError={false}
@@ -90,7 +92,7 @@ describe("ArticlesPane", () => {
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={vi.fn()}
-        onMarkAllRead={vi.fn()}
+        onMarkScopeRead={vi.fn()}
       />
     );
 
@@ -114,6 +116,7 @@ describe("ArticlesPane", () => {
         scopeLabel="All articles"
         streamNameById={{}}
         articleItems={[]}
+        articleTotal={0}
         selectedArticleId=""
         isLoading={false}
         isError={false}
@@ -122,7 +125,7 @@ describe("ArticlesPane", () => {
         onSearchChange={vi.fn()}
         onStateChange={onStateChange}
         onArticleSelect={vi.fn()}
-        onMarkAllRead={vi.fn()}
+        onMarkScopeRead={vi.fn()}
       />
     );
 
@@ -164,6 +167,7 @@ describe("ArticlesPane", () => {
             },
           },
         ]}
+        articleTotal={1}
         selectedArticleId=""
         isLoading={false}
         isError={false}
@@ -172,7 +176,7 @@ describe("ArticlesPane", () => {
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={vi.fn()}
-        onMarkAllRead={vi.fn()}
+        onMarkScopeRead={vi.fn()}
       />
     );
 
@@ -180,8 +184,8 @@ describe("ArticlesPane", () => {
     expect(screen.getByText("Why matched: darktrace: regex: cve-\\d{4}-\\d+")).toBeVisible();
   });
 
-  it("marks unread items as read from list action", () => {
-    const onMarkAllRead = vi.fn();
+  it("runs scope read action from list control", () => {
+    const onMarkScopeRead = vi.fn();
     render(
       <ArticlesPane
         density="compact"
@@ -223,6 +227,7 @@ describe("ArticlesPane", () => {
             stream_ids: [],
           },
         ]}
+        articleTotal={2}
         selectedArticleId=""
         isLoading={false}
         isError={false}
@@ -231,12 +236,11 @@ describe("ArticlesPane", () => {
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={vi.fn()}
-        onMarkAllRead={onMarkAllRead}
+        onMarkScopeRead={onMarkScopeRead}
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Mark all as read/i }));
-    expect(onMarkAllRead).toHaveBeenCalledTimes(1);
-    expect(onMarkAllRead).toHaveBeenCalledWith(["e75df5eb-a748-42df-bf46-9cdde7cd5f6c"]);
+    fireEvent.click(screen.getByRole("button", { name: /Mark all in scope as read/i }));
+    expect(onMarkScopeRead).toHaveBeenCalledTimes(1);
   });
 });

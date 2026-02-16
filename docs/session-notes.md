@@ -1,5 +1,32 @@
 # Session Notes
 
+## 2026-02-16 (Workspace UX: Help in Rail + Scope-Aware Mark Read)
+
+### Implemented This Session
+
+- Added Help entry directly in the left workspace rail (`/app`) for fast discoverability.
+- Added backend scope-aware read action endpoint:
+  - `POST /api/v1/articles/state/mark-scope-read`
+  - marks all matching articles as read based on current scope/state/query filters
+- Added service method `mark_scope_as_read(...)` in article service to evaluate full scope filters (including advanced query syntax) before bulk state update.
+- Updated workspace list action copy and behavior:
+  - button now reads `Mark all in scope as read`
+  - action prompts user confirmation before execution
+  - no longer limited to currently visible rows
+- Added/updated tests:
+  - `tests/test_article_service.py`
+  - `frontend/src/features/workspace/components/ArticlesPane.test.tsx`
+  - `frontend/src/features/workspace/hooks/useWorkspaceShortcuts.test.tsx`
+
+### Verification
+
+- `python -m pytest tests/test_article_service.py`
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ArticlesPane.test.tsx src/features/workspace/hooks/useWorkspaceShortcuts.test.tsx`
+
 ## 2026-02-16 (Help Page: Monitoring Setup + Search Syntax Reference)
 
 ### Implemented This Session

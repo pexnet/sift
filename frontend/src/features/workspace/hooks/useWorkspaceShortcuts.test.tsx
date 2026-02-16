@@ -66,4 +66,44 @@ describe("useWorkspaceShortcuts", () => {
     expect(toggleRead).toHaveBeenCalledTimes(1);
     expect(toggleSaved).toHaveBeenCalledTimes(1);
   });
+
+  it("routes PageDown/PageUp to reader pane scrolling when an article is open", () => {
+    const moveSelection = vi.fn();
+    const openSelection = vi.fn();
+    const toggleRead = vi.fn();
+    const toggleSaved = vi.fn();
+    const readerElement = document.createElement("div");
+    readerElement.className = "workspace-reader";
+    Object.defineProperty(readerElement, "clientHeight", { value: 1000, configurable: true });
+    const scrollBy = vi.fn();
+    Object.defineProperty(readerElement, "scrollBy", { value: scrollBy, configurable: true });
+    document.body.appendChild(readerElement);
+
+    function TestHarness() {
+      const ref = useRef<HTMLInputElement | null>(null);
+
+      useWorkspaceShortcuts({
+        articleItems: [sampleArticle],
+        search: baseSearch,
+        searchInputRef: ref,
+        selectedArticle: sampleArticle,
+        moveSelection,
+        openSelection,
+        toggleRead,
+        toggleSaved,
+      });
+
+      return <input ref={ref} />;
+    }
+
+    render(<TestHarness />);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageDown" }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageUp" }));
+
+    expect(scrollBy).toHaveBeenNthCalledWith(1, { top: 880, behavior: "auto" });
+    expect(scrollBy).toHaveBeenNthCalledWith(2, { top: -880, behavior: "auto" });
+
+    readerElement.remove();
+  });
 });
