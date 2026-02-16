@@ -406,6 +406,8 @@ Design goals:
 - Settings controls use semantic grouped forms (`fieldset` + `legend`) for screen-reader clarity.
 - Keyboard navigation in settings toggle groups supports arrow keys and home/end movement.
 - Focus-visible and selected-state styles are explicit and token-driven to maintain contrast per preset.
+- Settings surface includes a first-class `Reset to defaults` action for UI preference recovery.
+- Settings controls are responsive-first on mobile (full-width toggle groups and reset action sizing).
 
 ### Next UI Extensions (Deferred)
 

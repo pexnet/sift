@@ -1,5 +1,33 @@
 # Session Notes
 
+## 2026-02-16 (UI Extensions Completed: Preset Consistency + Contrast + Settings UX)
+
+### Implemented This Session
+
+- Completed the planned UI extension pass across workspace and settings:
+  1. Visual consistency per preset
+     - expanded preset-aware visual tokens across workspace panes (rail/nav/list/reader)
+     - unified topbar/nav/list/reader surface tints using accent-aware tokenized gradients
+  2. Contrast/interaction tuning per preset
+     - improved preset-sensitive hover/selected interaction states and rail action states
+     - moved focus ring to accent-derived token so each preset has coherent focus color behavior
+     - tuned interaction/background tokens for both light and dark preset variants
+  3. Settings UX accessibility/responsive polish
+     - added `Reset to defaults` action for UI preferences
+     - strengthened grouped settings semantics and keyboard operation support (arrows + home/end)
+     - improved mobile behavior for settings controls (full-width reset and toggle layout)
+
+- Added/expanded settings route tests:
+  - `frontend/src/features/auth/routes/AccountPage.test.tsx`
+  - validates accessible settings structure, persistence, reset behavior, and keyboard navigation
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test`
+- `pnpm --dir frontend run build`
+
 ## 2026-02-16 (UI Polish + Settings Accessibility + Route Tests)
 
 ### Implemented This Session

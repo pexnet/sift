@@ -75,6 +75,31 @@ describe("AccountPage", () => {
     expect(window.localStorage.getItem(NAV_VISUAL_PRESET_KEY)).toBe("airy");
   });
 
+  it("resets preferences back to defaults", async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    fireEvent.click(screen.getByRole("button", { name: "Graphite Violet" }));
+    fireEvent.click(screen.getByRole("button", { name: "Comfortable" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tight" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset to defaults" }));
+
+    await waitFor(() => {
+      expect(getStoredPreferences()).toEqual({
+        themeMode: "light",
+        themePreset: "classic",
+        density: "compact",
+        navPreset: "balanced",
+      });
+    });
+
+    expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Sift Classic" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Compact" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Balanced" })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("supports arrow-key selection movement in theme mode options", async () => {
     renderPage();
 
@@ -90,6 +115,28 @@ describe("AccountPage", () => {
 
     await waitFor(() => {
       expect(getStoredPreferences()).toMatchObject({ themeMode: "dark" });
+    });
+  });
+
+  it("supports home/end keyboard movement for multi-option groups", async () => {
+    renderPage();
+
+    const oceanPreset = screen.getByRole("button", { name: "Ocean Slate" });
+    oceanPreset.focus();
+    expect(oceanPreset).toHaveFocus();
+
+    fireEvent.keyDown(oceanPreset, { key: "End" });
+
+    const sandPreset = screen.getByRole("button", { name: "Warm Sand" });
+    expect(sandPreset).toHaveFocus();
+    expect(sandPreset).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.keyDown(sandPreset, { key: "Home" });
+    const classicPreset = screen.getByRole("button", { name: "Sift Classic" });
+    expect(classicPreset).toHaveFocus();
+
+    await waitFor(() => {
+      expect(getStoredPreferences()).toMatchObject({ themePreset: "classic" });
     });
   });
 });

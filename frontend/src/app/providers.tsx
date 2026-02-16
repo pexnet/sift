@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { createAppTheme } from "./theme";
 import {
+  DEFAULT_UI_PREFERENCES,
   loadUiPreferences,
   saveUiPreferences,
   type DensityMode,
@@ -18,6 +19,7 @@ export type AppUiState = {
   setDensity: (density: DensityMode) => void;
   navPreset: NavVisualPreset;
   setNavPreset: (navPreset: NavVisualPreset) => void;
+  resetUiPreferences: () => void;
   themeMode: ThemeMode;
   setThemeMode: (themeMode: ThemeMode) => void;
   themePreset: ThemePreset;
@@ -60,6 +62,7 @@ export function AppProviders({ children }: AppProvidersProps) {
       setDensity: (density) => setUiPreferences((previous) => ({ ...previous, density })),
       navPreset: uiPreferences.navPreset,
       setNavPreset: (navPreset) => setUiPreferences((previous) => ({ ...previous, navPreset })),
+      resetUiPreferences: () => setUiPreferences({ ...DEFAULT_UI_PREFERENCES }),
       themeMode: uiPreferences.themeMode,
       setThemeMode: (themeMode) => setUiPreferences((previous) => ({ ...previous, themeMode })),
       themePreset: uiPreferences.themePreset,

@@ -125,6 +125,8 @@ This file stores persistent project context for future Codex sessions.
   - workspace navigation preset now reads from app-level settings state
   - duplicate inline nav preset controls were removed from workspace navigation
   - settings toggle groups support keyboard arrow/home/end selection and explicit focus-visible states
+  - settings include reset-to-defaults for UI preferences
+  - preset-aware interaction tokens are tuned across rail/nav/list/reader surfaces
   - targeted `/account` route tests cover interaction, accessibility labels, and preference persistence
 - Development seed bootstrap is implemented:
   - creates default local user when enabled

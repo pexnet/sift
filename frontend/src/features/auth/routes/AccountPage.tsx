@@ -1,4 +1,5 @@
 import {
+  Button,
   CircularProgress,
   Divider,
   FormControl,
@@ -78,16 +79,34 @@ function handleToggleGroupArrowKeys<T extends string>(
 }
 
 export function AccountPage() {
-  const { density, navPreset, setDensity, setNavPreset, setThemeMode, setThemePreset, themeMode, themePreset } = useAppUiState();
+  const {
+    density,
+    navPreset,
+    resetUiPreferences,
+    setDensity,
+    setNavPreset,
+    setThemeMode,
+    setThemePreset,
+    themeMode,
+    themePreset,
+  } = useAppUiState();
   const currentUserQuery = useCurrentUser();
 
   return (
     <Paper component="section" className="panel settings-panel" sx={{ maxWidth: 860, mx: "auto" }} aria-labelledby="settings-heading">
-      <Typography id="settings-heading" variant="h4" component="h1" sx={{ mb: 1 }}>
-        Settings
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
+        <Typography id="settings-heading" variant="h4" component="h1" sx={{ mb: { xs: 0, sm: 1 } }}>
+          Settings
+        </Typography>
+        <Button className="settings-reset-button" size="small" variant="outlined" onClick={resetUiPreferences}>
+          Reset to defaults
+        </Button>
+      </Stack>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
         Appearance and layout preferences, plus account identity summary.
+      </Typography>
+      <Typography className="settings-status-note" role="status" aria-live="polite">
+        Changes are saved automatically.
       </Typography>
 
       <Stack spacing={3}>
@@ -118,11 +137,12 @@ export function AccountPage() {
                 }
               }}
               aria-labelledby="settings-theme-mode-label"
+              aria-describedby="settings-theme-mode-help"
             >
               <ToggleButton value="light">Light</ToggleButton>
               <ToggleButton value="dark">Dark</ToggleButton>
             </ToggleButtonGroup>
-            <FormHelperText>Use arrow keys to move options and Enter or Space to select.</FormHelperText>
+            <FormHelperText id="settings-theme-mode-help">Use arrow keys to move options and Enter or Space to select.</FormHelperText>
           </FormControl>
           <FormControl component="fieldset" className="settings-control-row">
             <FormLabel id="settings-theme-preset-label" component="legend">

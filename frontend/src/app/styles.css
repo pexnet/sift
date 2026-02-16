@@ -13,20 +13,43 @@
   --accent: #3fbf73;
   --accent-soft: #dff2e4;
   --row-selected: #deecde;
-  --focus-ring: 0 0 0 2px rgba(63, 191, 115, 0.28);
+  --focus-ring-color: color-mix(in srgb, var(--accent) 42%, transparent 58%);
+  --focus-ring: 0 0 0 2px var(--focus-ring-color);
   --shadow-soft: 0 10px 30px rgba(20, 34, 59, 0.05);
   --rail-gradient-top: #74ab8c;
   --rail-bg: #3a7859;
   --rail-text: #e8f0ff;
+  --rail-border: rgba(255, 255, 255, 0.14);
+  --rail-logo-bg: rgba(255, 255, 255, 0.93);
+  --rail-logo-text: color-mix(in srgb, var(--rail-bg) 56%, #113a6b 44%);
   --rail-item-hover: rgba(255, 255, 255, 0.14);
   --rail-item-active: rgba(255, 255, 255, 0.24);
-  --surface-interaction-hover: color-mix(in srgb, var(--surface-muted) 70%, var(--bg) 30%);
-  --surface-interaction-selected: color-mix(in srgb, var(--row-selected) 72%, var(--surface) 28%);
+  --surface-interaction-hover: color-mix(in srgb, var(--surface-soft) 82%, var(--accent-soft) 18%);
+  --surface-interaction-selected: color-mix(in srgb, var(--row-selected) 76%, var(--accent-soft) 24%);
   --list-banner-border: color-mix(in srgb, var(--accent) 30%, var(--border) 70%);
+  --workspace-nav-toolbar-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-nav) 88%, var(--accent-soft) 12%) 72%,
+    transparent 100%
+  );
+  --workspace-list-header-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 84%, var(--accent-soft) 16%) 82%,
+    transparent 100%
+  );
+  --workspace-topbar-bg: color-mix(in srgb, var(--surface) 86%, var(--accent-soft) 14%);
+  --workspace-reader-top-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--reader-paper-bg) 87%, var(--accent-soft) 13%) 83%,
+    transparent 100%
+  );
   --reader-callout-bg: color-mix(in srgb, var(--reader-paper-bg) 84%, var(--accent-soft) 16%);
   --reader-code-bg: color-mix(in srgb, var(--reader-paper-bg) 90%, var(--surface-muted) 10%);
   --settings-chip-border: color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
   --settings-chip-selected: color-mix(in srgb, var(--accent-soft) 68%, var(--surface) 32%);
+  --row-read-muted: color-mix(in srgb, var(--muted) 88%, #ffffff 12%);
+  --saved-icon: color-mix(in srgb, var(--muted) 72%, #8ea3be 28%);
+  --saved-icon-active: color-mix(in srgb, var(--accent) 52%, #f4b640 48%);
   --reader-paper-bg: #f7f3ea;
   --reader-paper-text: #1a1a16;
   --reader-paper-muted: #594f42;
@@ -39,6 +62,9 @@
   --row-selected: #dcecf8;
   --rail-gradient-top: #66b4df;
   --rail-bg: #1f5f86;
+  --rail-item-hover: rgba(230, 246, 255, 0.2);
+  --rail-item-active: rgba(230, 246, 255, 0.31);
+  --rail-logo-text: color-mix(in srgb, var(--rail-bg) 58%, #0e3f64 42%);
 }
 
 :root[data-theme-preset="graphite"] {
@@ -47,6 +73,10 @@
   --row-selected: #e5e0ff;
   --rail-gradient-top: #9587db;
   --rail-bg: #413a73;
+  --rail-item-hover: rgba(245, 239, 255, 0.2);
+  --rail-item-active: rgba(245, 239, 255, 0.31);
+  --rail-logo-text: color-mix(in srgb, var(--rail-bg) 58%, #2a2f7a 42%);
+  --saved-icon-active: color-mix(in srgb, var(--accent) 58%, #e5ca72 42%);
 }
 
 :root[data-theme-preset="sand"] {
@@ -55,6 +85,10 @@
   --row-selected: #f5e6da;
   --rail-gradient-top: #d8b289;
   --rail-bg: #8d5727;
+  --rail-item-hover: rgba(255, 245, 230, 0.24);
+  --rail-item-active: rgba(255, 245, 230, 0.34);
+  --rail-logo-text: color-mix(in srgb, var(--rail-bg) 58%, #5d3f1f 42%);
+  --saved-icon-active: color-mix(in srgb, var(--accent) 65%, #d7903b 35%);
 }
 
 [data-theme="dark"] {
@@ -70,18 +104,41 @@
   --accent: #63d191;
   --accent-soft: #1f3b2d;
   --row-selected: #243a5a;
-  --focus-ring: 0 0 0 2px rgba(99, 209, 145, 0.35);
+  --focus-ring-color: color-mix(in srgb, var(--accent) 54%, transparent 46%);
+  --focus-ring: 0 0 0 2px var(--focus-ring-color);
   --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.35);
   --rail-gradient-top: #2a5d48;
   --rail-bg: #183f31;
   --rail-text: #dbe8ff;
+  --rail-border: color-mix(in srgb, var(--border) 52%, rgba(255, 255, 255, 0.12) 48%);
+  --rail-logo-bg: color-mix(in srgb, var(--surface) 74%, #ffffff 26%);
+  --rail-logo-text: color-mix(in srgb, var(--accent) 48%, var(--text) 52%);
   --rail-item-hover: rgba(255, 255, 255, 0.18);
   --rail-item-active: rgba(255, 255, 255, 0.3);
-  --surface-interaction-hover: color-mix(in srgb, var(--surface-soft) 64%, #203145 36%);
-  --surface-interaction-selected: color-mix(in srgb, var(--row-selected) 74%, var(--surface) 26%);
+  --surface-interaction-hover: color-mix(in srgb, var(--surface-soft) 78%, var(--accent-soft) 22%);
+  --surface-interaction-selected: color-mix(in srgb, var(--row-selected) 72%, var(--accent-soft) 28%);
   --list-banner-border: color-mix(in srgb, var(--accent) 35%, var(--border) 65%);
+  --workspace-nav-toolbar-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-nav) 84%, var(--accent-soft) 16%) 72%,
+    transparent 100%
+  );
+  --workspace-list-header-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 82%, var(--accent-soft) 18%) 82%,
+    transparent 100%
+  );
+  --workspace-topbar-bg: color-mix(in srgb, var(--surface) 82%, var(--accent-soft) 18%);
+  --workspace-reader-top-bg: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--reader-paper-bg) 84%, var(--accent-soft) 16%) 83%,
+    transparent 100%
+  );
   --settings-chip-border: color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
   --settings-chip-selected: color-mix(in srgb, var(--accent-soft) 76%, var(--surface) 24%);
+  --row-read-muted: color-mix(in srgb, var(--muted) 92%, #d6e3f8 8%);
+  --saved-icon: color-mix(in srgb, var(--muted) 75%, #b3c5df 25%);
+  --saved-icon-active: color-mix(in srgb, var(--accent) 58%, #f5c969 42%);
   --reader-paper-bg: var(--surface);
   --reader-paper-text: var(--text);
   --reader-paper-muted: var(--muted);
@@ -94,6 +151,9 @@
   --row-selected: #203750;
   --rail-gradient-top: #2a556c;
   --rail-bg: #1c3f52;
+  --rail-item-hover: rgba(221, 242, 255, 0.2);
+  --rail-item-active: rgba(221, 242, 255, 0.32);
+  --rail-logo-text: color-mix(in srgb, var(--accent) 56%, var(--text) 44%);
 }
 
 [data-theme="dark"][data-theme-preset="graphite"] {
@@ -102,6 +162,10 @@
   --row-selected: #2c2952;
   --rail-gradient-top: #4f4a76;
   --rail-bg: #2e2c4d;
+  --rail-item-hover: rgba(237, 232, 255, 0.2);
+  --rail-item-active: rgba(237, 232, 255, 0.33);
+  --rail-logo-text: color-mix(in srgb, var(--accent) 54%, var(--text) 46%);
+  --saved-icon-active: color-mix(in srgb, var(--accent) 64%, #e4cc7b 36%);
 }
 
 [data-theme="dark"][data-theme-preset="sand"] {
@@ -110,6 +174,10 @@
   --row-selected: #3b312b;
   --rail-gradient-top: #6d5a45;
   --rail-bg: #4d3d2f;
+  --rail-item-hover: rgba(255, 236, 211, 0.2);
+  --rail-item-active: rgba(255, 236, 211, 0.33);
+  --rail-logo-text: color-mix(in srgb, var(--accent) 58%, var(--text) 42%);
+  --saved-icon-active: color-mix(in srgb, var(--accent) 68%, #deb06c 32%);
 }
 
 body {
@@ -156,6 +224,10 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
+.settings-panel {
+  padding: clamp(1.1rem, 2vw, 2rem);
+}
+
 .settings-panel .MuiDivider-root {
   border-color: color-mix(in srgb, var(--border) 82%, transparent 18%);
 }
@@ -170,6 +242,23 @@ body {
   font-weight: 540;
 }
 
+.settings-status-note {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.settings-reset-button {
+  width: fit-content;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border) 58%);
+  color: var(--text);
+}
+
+.settings-reset-button:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 56%, transparent 44%);
+}
+
 .settings-toggle-group {
   width: fit-content;
 }
@@ -181,6 +270,12 @@ body {
 
 .settings-toggle-group .MuiToggleButton-root {
   border-color: var(--settings-chip-border);
+  min-height: 34px;
+  padding-inline: 0.78rem;
+}
+
+.settings-toggle-group .MuiToggleButton-root:hover {
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent 58%);
 }
 
 .settings-toggle-group .MuiToggleButton-root.Mui-selected,
@@ -217,15 +312,15 @@ body {
   background: linear-gradient(180deg, var(--rail-gradient-top) 0%, var(--rail-bg) 100%);
   color: var(--rail-text);
   padding: 0.8rem 0.45rem;
-  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  border-right: 1px solid var(--rail-border);
 }
 
 .workspace-rail__logo {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.93);
-  color: #21508a;
+  background: var(--rail-logo-bg);
+  color: var(--rail-logo-text);
   font-weight: 700;
   margin: 0 auto 1rem;
   display: flex;
@@ -325,7 +420,7 @@ body {
   z-index: 2;
   padding-bottom: 0.6rem;
   margin-bottom: 0.45rem;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-nav) 92%, transparent 8%) 72%, transparent 100%);
+  background: var(--workspace-nav-toolbar-bg);
 }
 
 .workspace-nav__toolbar .MuiTypography-h6 {
@@ -430,6 +525,12 @@ body {
 .workspace-nav__folder-toggle:hover {
   background: color-mix(in srgb, var(--surface-muted) 64%, var(--bg) 36%);
   opacity: 1;
+}
+
+.workspace-nav__folder-toggle:focus-visible,
+.workspace-nav__section-action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .workspace-nav__folder-icon {
@@ -594,8 +695,12 @@ body {
   gap: 0.25rem;
   min-height: 34px;
   padding: 0.2rem 0.55rem;
-  background: color-mix(in srgb, var(--surface) 82%, transparent 18%);
+  background: var(--workspace-topbar-bg);
   border-bottom: 1px solid var(--border);
+}
+
+.workspace-topbar .MuiIconButton-root:hover {
+  background: color-mix(in srgb, var(--accent-soft) 58%, transparent 42%);
 }
 
 .workspace-list {
@@ -611,7 +716,7 @@ body {
   top: 0;
   z-index: 2;
   padding: 0.15rem 0 0.25rem;
-  background: linear-gradient(180deg, var(--surface) 80%, transparent 100%);
+  background: var(--workspace-list-header-bg);
 }
 
 .workspace-list__title {
@@ -626,7 +731,7 @@ body {
   top: 3.45rem;
   z-index: 2;
   padding: 0.25rem 0 0.45rem;
-  background: linear-gradient(180deg, var(--surface) 80%, transparent 100%);
+  background: var(--workspace-list-header-bg);
 }
 
 .workspace-list__banner {
@@ -680,7 +785,7 @@ body {
 
 .workspace-row--read .workspace-row__meta,
 .workspace-row--read .workspace-row__time {
-  color: color-mix(in srgb, var(--muted) 88%, #ffffff 12%);
+  color: var(--row-read-muted);
 }
 
 .workspace-row--read.workspace-row--selected {
@@ -699,12 +804,12 @@ body {
 }
 
 .workspace-row__saved {
-  color: #97a4b6;
+  color: var(--saved-icon);
   font-size: 0.92rem;
 }
 
 .workspace-row__saved--active {
-  color: #f6a500;
+  color: var(--saved-icon-active);
 }
 
 .workspace-row__content {
@@ -752,7 +857,7 @@ body {
   z-index: 2;
   padding-top: 0.15rem;
   padding-bottom: 0.78rem;
-  background: linear-gradient(180deg, var(--reader-paper-bg) 83%, transparent 100%);
+  background: var(--workspace-reader-top-bg);
 }
 
 .workspace-reader__title {
@@ -864,6 +969,14 @@ body {
 }
 
 @media (max-width: 760px) {
+  .settings-panel {
+    padding: 0.95rem;
+  }
+
+  .settings-reset-button {
+    width: 100%;
+  }
+
   .settings-toggle-group {
     width: 100%;
   }
