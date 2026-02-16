@@ -31,6 +31,12 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - completed on 2026-02-16: offset-aware reader highlighting with jump-to-highlight evidence panel
    - next: extend plugin contracts to emit richer multi-finding evidence blocks (provider-native snippets/scores)
 
+### Linked Specifications
+
+- Feed recommendations v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
+- Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
+- Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
+
 ## Done (History)
 
 ### Core and Platform Foundations
@@ -240,6 +246,19 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 - Goal:
   - avoid full in-memory scan for advanced expressions on large article sets
   - preserve current query-language behavior and error model
+
+### 8) Plugin UI Areas + Centralized Plugin Configuration
+
+- Add a dedicated plugin section in workspace navigation where each enabled plugin owns its own folder/area.
+- Initial target examples:
+  - `Recommended feeds` plugin area
+  - `Bluesky` plugin area (when plugin is implemented)
+- Introduce centralized plugin registry configuration (single file) for:
+  - plugin metadata and route/UI area configuration
+  - enable/disable toggles per plugin
+  - plugin-specific settings payloads
+- Keep secrets in environment variables and reference them from config.
+- Plan compatibility mode to migrate from legacy `plugin_paths` to registry-based plugin activation.
 
 ### Suggested Deferred Delivery Sequence
 
