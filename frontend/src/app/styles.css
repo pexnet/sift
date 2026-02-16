@@ -1026,6 +1026,13 @@ body {
   text-underline-offset: 0.14em;
 }
 
+.workspace-reader__highlight {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: inherit;
+  border-radius: 0.2rem;
+  padding: 0 0.08rem;
+}
+
 .workspace-reader__empty {
   color: var(--muted);
   max-width: 68ch;

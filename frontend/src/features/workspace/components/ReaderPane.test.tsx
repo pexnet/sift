@@ -311,4 +311,65 @@ describe("ReaderPane", () => {
       )
     ).toBeVisible();
   });
+
+  it("highlights matched terms in reader body and allows toggling highlights", () => {
+    const { container } = render(
+      <ReaderPane
+        selectedArticle={undefined}
+        selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{
+          "d76760f1-ba73-416b-8b4c-a70f1734720f": "darktrace",
+        }}
+        detail={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          source_id: "source",
+          canonical_url: "https://example.com/article",
+          title: "Reader title",
+          content_text: "Darktrace details.",
+          language: null,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+          stream_match_reasons: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": "keyword: darktrace",
+          },
+          stream_match_evidence: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": {
+              matcher_type: "rules",
+              keyword_hits: [
+                {
+                  field: "content_text",
+                  value: "darktrace",
+                  start: 0,
+                  end: 9,
+                  snippet: "Darktrace details",
+                },
+              ],
+            },
+          },
+        }}
+        contentHtml="<p>Darktrace details from stream match.</p>"
+        isLoading={false}
+        isError={false}
+        isMutating={false}
+        hasMutationError={false}
+        onToggleRead={vi.fn()}
+        onToggleSaved={vi.fn()}
+        onOpenOriginal={vi.fn()}
+        onMoveSelection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /Hide highlights/i })).toBeVisible();
+    expect(container.querySelectorAll("mark.workspace-reader__highlight").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /Hide highlights/i }));
+    expect(screen.getByRole("button", { name: /Show highlights/i })).toBeVisible();
+    expect(container.querySelectorAll("mark.workspace-reader__highlight").length).toBe(0);
+  });
 });

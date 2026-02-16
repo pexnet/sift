@@ -1,5 +1,30 @@
 # Session Notes
 
+## 2026-02-16 (Monitoring Management v2: Reader Inline Match Highlighting)
+
+### Implemented This Session
+
+- Added inline reader-body highlighting for monitoring match evidence terms.
+- Highlight extraction now uses structured match evidence values (keyword and regex matched values).
+- Added reader action toggle:
+  - `Hide highlights` / `Show highlights`
+  - toggle is shown when match evidence terms are available for the selected article
+- Added highlight styling token/class:
+  - `.workspace-reader__highlight`
+- Added frontend coverage for highlight rendering and toggle behavior:
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ReaderPane.test.tsx`
+
+### Notes
+
+- Highlighting is DOM-based and preserves existing sanitized reader markup.
+- This is an iteration-1 implementation focused on evidence values; future refinement can add precise offset-aware highlighting.
+
 ## 2026-02-16 (Monitoring Management v2: Structured Match Evidence + Reader Details)
 
 ### Implemented This Session
