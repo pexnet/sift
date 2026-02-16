@@ -20,6 +20,7 @@ import {
   useArticleDetailQuery,
   useArticlesQuery,
   useAssignFeedFolderMutation,
+  useBulkPatchArticleStateMutation,
   useCreateFolderMutation,
   useDeleteFolderMutation,
   useFeedsQuery,
@@ -99,6 +100,7 @@ export function WorkspacePage({
     [articleDetailQuery.data?.content_text]
   );
   const patchArticleStateMutation = usePatchArticleStateMutation(selectedArticleId);
+  const bulkPatchArticleStateMutation = useBulkPatchArticleStateMutation();
   const createFolderMutation = useCreateFolderMutation();
   const updateFolderMutation = useUpdateFolderMutation();
   const deleteFolderMutation = useDeleteFolderMutation();
@@ -336,9 +338,19 @@ export function WorkspacePage({
             isLoading={articlesQuery.isLoading}
             isError={articlesQuery.isError}
             searchInputRef={searchInputRef}
+            isMarkAllReadPending={bulkPatchArticleStateMutation.isPending}
             onSearchChange={(value) => setSearch({ q: value, article_id: "" })}
             onStateChange={(value) => setSearch({ state: value, article_id: "" })}
             onArticleSelect={(articleId) => setSearch({ article_id: articleId })}
+            onMarkAllRead={(articleIds) => {
+              if (articleIds.length === 0) {
+                return;
+              }
+              bulkPatchArticleStateMutation.mutate({
+                article_ids: articleIds,
+                is_read: true,
+              });
+            }}
           />
         ) : null}
 

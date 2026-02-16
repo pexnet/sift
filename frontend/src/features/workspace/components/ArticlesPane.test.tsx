@@ -39,9 +39,11 @@ describe("ArticlesPane", () => {
         isLoading={false}
         isError={false}
         searchInputRef={{ current: null }}
+        isMarkAllReadPending={false}
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={onSelect}
+        onMarkAllRead={vi.fn()}
       />
     );
 
@@ -84,9 +86,11 @@ describe("ArticlesPane", () => {
         isLoading={false}
         isError={false}
         searchInputRef={{ current: null }}
+        isMarkAllReadPending={false}
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={vi.fn()}
+        onMarkAllRead={vi.fn()}
       />
     );
 
@@ -114,9 +118,11 @@ describe("ArticlesPane", () => {
         isLoading={false}
         isError={false}
         searchInputRef={{ current: null }}
+        isMarkAllReadPending={false}
         onSearchChange={vi.fn()}
         onStateChange={onStateChange}
         onArticleSelect={vi.fn()}
+        onMarkAllRead={vi.fn()}
       />
     );
 
@@ -162,13 +168,75 @@ describe("ArticlesPane", () => {
         isLoading={false}
         isError={false}
         searchInputRef={{ current: null }}
+        isMarkAllReadPending={false}
         onSearchChange={vi.fn()}
         onStateChange={vi.fn()}
         onArticleSelect={vi.fn()}
+        onMarkAllRead={vi.fn()}
       />
     );
 
     expect(screen.getByText("Matched: darktrace")).toBeVisible();
     expect(screen.getByText("Why matched: darktrace: regex: cve-\\d{4}-\\d+")).toBeVisible();
+  });
+
+  it("marks unread items as read from list action", () => {
+    const onMarkAllRead = vi.fn();
+    render(
+      <ArticlesPane
+        density="compact"
+        search={{
+          scope_type: "system",
+          scope_id: "",
+          state: "all",
+          sort: "newest",
+          q: "",
+          article_id: "",
+        }}
+        scopeLabel="All articles"
+        streamNameById={{}}
+        articleItems={[
+          {
+            id: "e75df5eb-a748-42df-bf46-9cdde7cd5f6c",
+            feed_id: null,
+            feed_title: "CyberChef",
+            title: "Unread one",
+            canonical_url: null,
+            published_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            is_read: false,
+            is_starred: false,
+            is_archived: false,
+            stream_ids: [],
+          },
+          {
+            id: "56d7f9e0-4aef-4748-a62b-dd9f49e43779",
+            feed_id: null,
+            feed_title: "CyberChef",
+            title: "Already read",
+            canonical_url: null,
+            published_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            is_read: true,
+            is_starred: false,
+            is_archived: false,
+            stream_ids: [],
+          },
+        ]}
+        selectedArticleId=""
+        isLoading={false}
+        isError={false}
+        searchInputRef={{ current: null }}
+        isMarkAllReadPending={false}
+        onSearchChange={vi.fn()}
+        onStateChange={vi.fn()}
+        onArticleSelect={vi.fn()}
+        onMarkAllRead={onMarkAllRead}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Mark all as read/i }));
+    expect(onMarkAllRead).toHaveBeenCalledTimes(1);
+    expect(onMarkAllRead).toHaveBeenCalledWith(["e75df5eb-a748-42df-bf46-9cdde7cd5f6c"]);
   });
 });

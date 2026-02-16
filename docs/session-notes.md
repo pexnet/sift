@@ -1,5 +1,28 @@
 # Session Notes
 
+## 2026-02-16 (Workspace UI Touch-Up: Mark All Read + Remove Stale Magic Copy)
+
+### Implemented This Session
+
+- Added bulk article state wiring in frontend API/hooks:
+  - `bulkPatchArticleState` client call to `POST /api/v1/articles/state/bulk`
+  - `useBulkPatchArticleStateMutation` for workspace usage
+- Added `Mark all as read` action in article list pane:
+  - action targets unread articles currently loaded in the list
+  - disabled when there are no unread items or mutation is in progress
+- Removed stale “Magic sorting” banner copy from article list pane because that feature text was not aligned with current UI behavior.
+- Updated article list pane tests for the new bulk action behavior.
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ArticlesPane.test.tsx`
+
+### Notes
+
+- Current list fetch is capped to the active list window (default 50), so `Mark all as read` applies to unread articles currently loaded in the pane.
+
 ## 2026-02-16 (Monitoring Management v2: Offset-Aware Highlighting + Evidence Panel)
 
 ### Implemented This Session

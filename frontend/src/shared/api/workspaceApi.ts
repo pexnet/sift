@@ -1,4 +1,5 @@
 import {
+  parseBulkPatchArticleStateRequest,
   parseArticleDetail,
   parseArticleList,
   parsePatchArticleStateRequest,
@@ -7,6 +8,7 @@ import { parseNavigationResponse } from "../../entities/navigation/model";
 import type {
   ArticleDetail,
   ArticleListResponse,
+  ArticleStateBulkPatchRequest,
   Feed,
   FeedFolder,
   FeedFolderAssignmentRequest,
@@ -59,6 +61,15 @@ export async function getArticleDetail(articleId: string): Promise<ArticleDetail
 export async function patchArticleState(articleId: string, payload: PatchArticleStateRequest) {
   const request = parsePatchArticleStateRequest(payload);
   await apiClient.patch<PatchArticleStateRequest, unknown>(`${ARTICLES_ENDPOINT}/${articleId}/state`, request);
+}
+
+export async function bulkPatchArticleState(payload: ArticleStateBulkPatchRequest): Promise<number> {
+  const request = parseBulkPatchArticleStateRequest(payload);
+  const response = await apiClient.post<ArticleStateBulkPatchRequest, { updated_count: number }>(
+    `${ARTICLES_ENDPOINT}/state/bulk`,
+    request
+  );
+  return response.updated_count;
 }
 
 export async function getFolders(): Promise<FeedFolder[]> {

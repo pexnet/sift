@@ -9,6 +9,7 @@ export type ArticleListResponse = components["schemas"]["ArticleListResponse"];
 export type ArticleListItem = components["schemas"]["ArticleListItemOut"];
 export type ArticleDetail = components["schemas"]["ArticleDetailOut"];
 export type PatchArticleStateRequest = components["schemas"]["ArticleStatePatch"];
+export type ArticleStateBulkPatchRequest = components["schemas"]["ArticleStateBulkPatch"];
 export type Feed = components["schemas"]["FeedOut"];
 export type FeedFolder = components["schemas"]["FeedFolderOut"];
 export type FeedFolderCreateRequest = components["schemas"]["FeedFolderCreate"];

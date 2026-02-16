@@ -4,6 +4,7 @@ import type {
   ArticleDetail,
   ArticleListItem,
   ArticleListResponse,
+  ArticleStateBulkPatchRequest,
   PatchArticleStateRequest,
   WorkspaceSearch,
 } from "../../shared/types/contracts";
@@ -78,6 +79,21 @@ const patchArticleStateSchema = z
     }
   );
 
+const bulkPatchArticleStateSchema = z
+  .object({
+    article_ids: z.array(z.string().uuid()).min(1).max(500),
+    is_read: z.boolean().nullable().optional(),
+    is_starred: z.boolean().nullable().optional(),
+    is_archived: z.boolean().nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      value.is_read !== undefined || value.is_starred !== undefined || value.is_archived !== undefined,
+    {
+      message: "At least one field must be set.",
+    }
+  );
+
 export function parseWorkspaceSearch(value: unknown): WorkspaceSearch {
   return workspaceSearchSchema.parse(value) as WorkspaceSearch;
 }
@@ -93,6 +109,27 @@ export function parseArticleDetail(payload: unknown): ArticleDetail {
 export function parsePatchArticleStateRequest(payload: PatchArticleStateRequest): PatchArticleStateRequest {
   const parsed = patchArticleStateSchema.parse(payload);
   const normalized: PatchArticleStateRequest = {};
+
+  if (parsed.is_read !== undefined) {
+    normalized.is_read = parsed.is_read;
+  }
+  if (parsed.is_starred !== undefined) {
+    normalized.is_starred = parsed.is_starred;
+  }
+  if (parsed.is_archived !== undefined) {
+    normalized.is_archived = parsed.is_archived;
+  }
+
+  return normalized;
+}
+
+export function parseBulkPatchArticleStateRequest(
+  payload: ArticleStateBulkPatchRequest
+): ArticleStateBulkPatchRequest {
+  const parsed = bulkPatchArticleStateSchema.parse(payload);
+  const normalized: ArticleStateBulkPatchRequest = {
+    article_ids: parsed.article_ids,
+  };
 
   if (parsed.is_read !== undefined) {
     normalized.is_read = parsed.is_read;

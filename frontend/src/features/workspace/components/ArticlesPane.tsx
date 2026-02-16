@@ -1,4 +1,4 @@
-import { Alert, Box, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import type { RefObject } from "react";
 
 import { formatRelativeTime } from "../lib/time";
@@ -14,9 +14,11 @@ type ArticlesPaneProps = {
   isLoading: boolean;
   isError: boolean;
   searchInputRef: RefObject<HTMLInputElement | null>;
+  isMarkAllReadPending: boolean;
   onSearchChange: (value: string) => void;
   onStateChange: (state: WorkspaceSearch["state"]) => void;
   onArticleSelect: (articleId: string) => void;
+  onMarkAllRead: (articleIds: string[]) => void;
 };
 
 export function ArticlesPane({
@@ -28,10 +30,14 @@ export function ArticlesPane({
   isLoading,
   isError,
   searchInputRef,
+  isMarkAllReadPending,
   onSearchChange,
   onStateChange,
   onArticleSelect,
+  onMarkAllRead,
 }: ArticlesPaneProps) {
+  const unreadArticleIds = articleItems.filter((article) => !article.is_read).map((article) => article.id);
+
   const formatMatchedStreams = (streamIds: string[]): string | null => {
     const names = streamIds
       .map((streamId) => streamNameById[streamId])
@@ -68,24 +74,26 @@ export function ArticlesPane({
         <Typography variant="h4" className="workspace-list__title">
           {scopeLabel}
         </Typography>
+        <Stack direction="row" spacing={1}>
+          <TextField
+            size="small"
+            select
+            label="State"
+            value={search.state}
+            onChange={(event) => onStateChange(event.target.value as WorkspaceSearch["state"])}
+            sx={{ minWidth: 160 }}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="unread">Unread</MenuItem>
+            <MenuItem value="saved">Saved</MenuItem>
+            <MenuItem value="archived">Archived</MenuItem>
+            <MenuItem value="fresh">Fresh</MenuItem>
+            <MenuItem value="recent">Recent</MenuItem>
+          </TextField>
+        </Stack>
       </Stack>
 
       <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} className="workspace-list__controls">
-        <TextField
-          size="small"
-          select
-          label="State"
-          value={search.state}
-          onChange={(event) => onStateChange(event.target.value as WorkspaceSearch["state"])}
-          sx={{ minWidth: 160 }}
-        >
-          <MenuItem value="all">All</MenuItem>
-          <MenuItem value="unread">Unread</MenuItem>
-          <MenuItem value="saved">Saved</MenuItem>
-          <MenuItem value="archived">Archived</MenuItem>
-          <MenuItem value="fresh">Fresh</MenuItem>
-          <MenuItem value="recent">Recent</MenuItem>
-        </TextField>
         <TextField
           size="small"
           label="Search"
@@ -94,13 +102,15 @@ export function ArticlesPane({
           onChange={(event) => onSearchChange(event.target.value)}
           sx={{ flex: 1 }}
         />
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => onMarkAllRead(unreadArticleIds)}
+          disabled={isLoading || isMarkAllReadPending || unreadArticleIds.length === 0}
+        >
+          {isMarkAllReadPending ? "Marking..." : "Mark all as read"}
+        </Button>
       </Stack>
-
-      <Box className="workspace-list__banner" role="note">
-        <Typography variant="body2">
-          When using the "Magic" sorting option, only articles from the past 30 days are displayed.
-        </Typography>
-      </Box>
 
       {isLoading ? <Typography color="text.secondary">Loading articles...</Typography> : null}
       {isError ? <Alert severity="error">Failed to load articles.</Alert> : null}

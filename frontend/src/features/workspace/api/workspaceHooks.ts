@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../../shared/api/queryKeys";
 import {
   assignFeedFolder,
+  bulkPatchArticleState,
   createFolder,
   deleteFolder,
   getArticleDetail,
@@ -13,7 +14,15 @@ import {
   patchArticleState,
   updateFolder,
 } from "../../../shared/api/workspaceApi";
-import type { ArticleListResponse, FeedFolderAssignmentRequest, FeedFolderCreateRequest, FeedFolderUpdateRequest, PatchArticleStateRequest, WorkspaceSearch } from "../../../shared/types/contracts";
+import type {
+  ArticleStateBulkPatchRequest,
+  ArticleListResponse,
+  FeedFolderAssignmentRequest,
+  FeedFolderCreateRequest,
+  FeedFolderUpdateRequest,
+  PatchArticleStateRequest,
+  WorkspaceSearch,
+} from "../../../shared/types/contracts";
 
 export function useNavigationQuery() {
   return useQuery({
@@ -110,6 +119,21 @@ export function usePatchArticleStateMutation(articleId: string) {
         queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
         queryClient.invalidateQueries({ queryKey: ["articles"] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.articleDetail(articleId) }),
+      ]);
+    },
+  });
+}
+
+export function useBulkPatchArticleStateMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: ArticleStateBulkPatchRequest) => bulkPatchArticleState(payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
+        queryClient.invalidateQueries({ queryKey: ["articles"] }),
+        queryClient.invalidateQueries({ queryKey: ["article"] }),
       ]);
     },
   });
