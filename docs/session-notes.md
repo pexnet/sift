@@ -1,5 +1,28 @@
 # Session Notes
 
+## 2026-02-16 (Help Page: Monitoring Setup + Search Syntax Reference)
+
+### Implemented This Session
+
+- Added authenticated help route: `/help`.
+- Added new help page UI focused on:
+  - configuring monitoring feeds step-by-step
+  - search query syntax (`AND`, `OR`, `NOT`, grouping, quotes, wildcard, fuzzy)
+  - regex/include/exclude behavior guidance
+- Added help entry links:
+  - from settings (`/account`)
+  - from monitoring feed management (`/account/monitoring`)
+- Added frontend tests:
+  - `frontend/src/features/help/routes/HelpPage.test.tsx`
+  - updated `frontend/src/features/auth/routes/AccountPage.test.tsx`
+  - updated `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
+### Verification
+
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/help/routes/HelpPage.test.tsx src/features/auth/routes/AccountPage.test.tsx src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
 ## 2026-02-16 (Workspace UI Touch-Up: Mark All Read + Remove Stale Magic Copy)
 
 ### Implemented This Session

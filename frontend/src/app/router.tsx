@@ -5,6 +5,7 @@ import { DEFAULT_WORKSPACE_SEARCH, parseWorkspaceSearch } from "../entities/arti
 import { getCurrentUser } from "../shared/api/authApi";
 import type { WorkspaceSearch } from "../shared/types/contracts";
 import { AccountPage } from "../features/auth/routes/AccountPage";
+import { HelpPage } from "../features/help/routes/HelpPage";
 import { LoginPage } from "../features/auth/routes/LoginPage";
 import { RegisterPage } from "../features/auth/routes/RegisterPage";
 import { MonitoringFeedsPage } from "../features/monitoring/routes/MonitoringFeedsPage";
@@ -110,6 +111,13 @@ const monitoringFeedsRoute = createRoute({
   component: MonitoringFeedsPage,
 });
 
+const helpRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/help",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: HelpPage,
+});
+
 function WorkspaceRouteComponent() {
   const navigate = useNavigate({ from: "/app" });
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
@@ -148,6 +156,7 @@ const routeTree = rootRoute.addChildren([
   registerRoute,
   accountRoute,
   monitoringFeedsRoute,
+  helpRoute,
   workspaceRoute,
 ]);
 

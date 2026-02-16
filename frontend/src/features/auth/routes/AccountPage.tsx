@@ -102,6 +102,9 @@ export function AccountPage() {
           <Button component="a" href="/account/monitoring" size="small" variant="outlined">
             Manage monitoring feeds
           </Button>
+          <Button component="a" href="/help" size="small" variant="outlined">
+            Help
+          </Button>
           <Button className="settings-reset-button" size="small" variant="outlined" onClick={resetUiPreferences}>
             Reset to defaults
           </Button>

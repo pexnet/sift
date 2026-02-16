@@ -373,9 +373,14 @@ export function MonitoringFeedsPage() {
               Manage monitoring definitions, matching configuration, and backfill execution.
             </Typography>
           </Box>
-          <Button component="a" href="/account" size="small" variant="outlined">
-            Back to settings
-          </Button>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <Button component="a" href="/help" size="small" variant="outlined">
+              Help
+            </Button>
+            <Button component="a" href="/account" size="small" variant="outlined">
+              Back to settings
+            </Button>
+          </Stack>
         </Stack>
 
         {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}

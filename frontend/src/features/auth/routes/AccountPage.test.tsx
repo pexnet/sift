@@ -52,6 +52,7 @@ describe("AccountPage", () => {
       "href",
       "/account/monitoring"
     );
+    expect(screen.getByRole("link", { name: "Help" })).toHaveAttribute("href", "/help");
 
     expect(screen.getByText("settings@example.com")).toBeVisible();
     expect(screen.getByText("Settings User")).toBeVisible();

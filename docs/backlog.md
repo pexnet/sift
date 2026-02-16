@@ -128,6 +128,10 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - backend validates classifier config payload shape/size/JSON-serializability
    - classifier plugins receive per-stream config in classifier execution context
    - monitoring UI supports editing classifier config JSON and validates JSON format before submit
+13. Help documentation surface:
+   - authenticated `/help` route implemented
+   - focused help content added for monitoring feed configuration and search syntax reference
+   - settings and monitoring pages now include help entry links
 
 ### Completed Session Index (Chronological)
 

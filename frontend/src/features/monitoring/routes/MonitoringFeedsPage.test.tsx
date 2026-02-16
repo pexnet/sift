@@ -104,6 +104,7 @@ describe("MonitoringFeedsPage", () => {
     expect(screen.getByRole("heading", { name: "Monitoring feeds" })).toBeVisible();
     expect(screen.getByText("Threat watch")).toBeVisible();
     expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Help" })).toHaveAttribute("href", "/help");
     expect(screen.getByRole("link", { name: "Back to settings" })).toHaveAttribute("href", "/account");
   });
 
