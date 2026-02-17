@@ -1,5 +1,27 @@
 # Session Notes
 
+## 2026-02-17 (Planning Update: Monitoring Span Explainability + Action Iconification)
+
+### Implemented This Session
+
+- Added detailed planning spec for monitoring match visual explainability:
+  - `docs/specs/monitoring-match-visual-explainability-v1.md`
+  - scopes title/content span-level visibility for query/rule/classifier evidence
+  - defines proposed `query_hits` evidence contract extension and phased implementation plan
+- Added detailed planning spec for workspace action iconification:
+  - `docs/specs/workspace-action-iconification-v1.md`
+  - scopes icon-first list/reader action controls with tooltips and explicit accessibility labels
+- Updated backlog next-iteration actions:
+  - added both slices under `Next UI Slice` planned actions in `docs/backlog.md`
+  - linked both new specs in backlog linked-spec references
+  - clarified deferred monitoring v2 note to reference new next-iteration span explainability scope
+
+### Verification
+
+- Documentation-only planning update.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No code test suite execution was required for this docs-only update.
+
 ## 2026-02-17 (Monitoring Explainability: Rich Classifier Findings)
 
 ### Implemented This Session

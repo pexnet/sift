@@ -30,6 +30,11 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - completed on 2026-02-16: offset-aware reader highlighting with jump-to-highlight evidence panel
    - completed on 2026-02-17: plugin contracts now emit richer multi-finding classifier evidence blocks
      (provider-native snippets/scores, optional offsets)
+4. Next iteration actions (planned):
+   - implement monitoring match visual explainability v1:
+     title/content span-level highlighting for query/rule/classifier evidence and compact matched-term summaries
+   - implement workspace action iconification v1:
+     icon-first controls with tooltips and explicit accessibility labels for list/reader actions
 
 ### Linked Specifications
 
@@ -37,6 +42,10 @@ This is the source of truth for product backlog status and long-term roadmap ite
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
+- Monitoring match visual explainability v1:
+  [docs/specs/monitoring-match-visual-explainability-v1.md](specs/monitoring-match-visual-explainability-v1.md)
+- Workspace action iconification v1:
+  [docs/specs/workspace-action-iconification-v1.md](specs/workspace-action-iconification-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
   use saved/starred article seeds in v1.
 - Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
@@ -200,7 +209,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
   - plugin-provided matchers for advanced semantic/domain-specific discovery (config baseline is implemented)
 - Baseline manual backfill execution is implemented; optional create/update-triggered historical pass remains deferred.
 - Add article-view explainability:
-  - highlight matched keyword/regex spans
+  - query/token-level title/content span explainability is now planned as next iteration v1 scope
   - render plugin finding snippets/reasons (baseline textual reason summaries are implemented)
 
 ### 3) Dashboard as Daily Command Center
