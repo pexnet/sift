@@ -13,9 +13,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
 ### Core Platform Priorities
 
 1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures).
+2. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+3. Add scheduler and ingestion observability (metrics, latency, failures).
 
 ### Next UI Slice
 
@@ -88,6 +87,10 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - persisted stream expression field (`keyword_streams.match_query`) with create/update validation
    - stream matching now evaluates saved query expressions
    - article search now supports advanced query syntax with clear syntax errors
+13. Classifier run persistence and model/version tracking:
+   - persisted `stream_classifier_runs` records for classifier executions during ingest/backfill
+   - captured plugin/provider/model/version metadata, confidence/threshold, and run status
+   - added diagnostics API endpoint: `GET /api/v1/streams/{stream_id}/classifier-runs`
 
 ### Frontend Workspace and UX History
 

@@ -35,6 +35,9 @@ class StreamClassificationDecision:
     matched: bool
     confidence: float
     reason: str = ""
+    provider: str | None = None
+    model_name: str | None = None
+    model_version: str | None = None
 
 
 class StreamClassifierPlugin(Protocol):

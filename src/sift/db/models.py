@@ -196,3 +196,26 @@ class KeywordStreamMatch(Base):
     matched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     match_reason: Mapped[str | None] = mapped_column(String(500))
     match_evidence_json: Mapped[str | None] = mapped_column(Text)
+
+
+class StreamClassifierRun(Base):
+    __tablename__ = "stream_classifier_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    stream_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("keyword_streams.id", ondelete="CASCADE"), index=True)
+    article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
+    feed_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("feeds.id", ondelete="SET NULL"), index=True)
+    classifier_mode: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    plugin_name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    provider: Mapped[str | None] = mapped_column(String(128), index=True)
+    model_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    model_version: Mapped[str | None] = mapped_column(String(128), index=True)
+    matched: Mapped[bool] = mapped_column(Boolean, nullable=False, index=True)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    threshold: Mapped[float] = mapped_column(Float, nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(1000))
+    run_status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    error_message: Mapped[str | None] = mapped_column(String(1000))
+    duration_ms: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

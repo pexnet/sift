@@ -2,6 +2,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from time import perf_counter
 from typing import Any, Literal, cast
 from uuid import UUID
 
@@ -9,7 +10,7 @@ from sqlalchemy import and_, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Article, Feed, KeywordStream, KeywordStreamMatch, RawEntry
+from sift.db.models import Article, Feed, KeywordStream, KeywordStreamMatch, RawEntry, StreamClassifierRun
 from sift.domain.schemas import (
     ArticleOut,
     KeywordStreamCreate,
@@ -17,6 +18,7 @@ from sift.domain.schemas import (
     KeywordStreamUpdate,
     StreamArticleOut,
     StreamBackfillResultOut,
+    StreamClassifierRunOut,
 )
 from sift.plugins.base import ArticleContext, StreamClassifierContext
 from sift.plugins.manager import PluginManager
@@ -58,6 +60,23 @@ class StreamMatchDecision:
     stream_id: UUID
     reason: str | None
     evidence: dict[str, Any] | None = None
+
+
+@dataclass(slots=True)
+class StreamClassifierRunDecision:
+    stream_id: UUID
+    classifier_mode: Literal["classifier_only", "hybrid"]
+    plugin_name: str
+    provider: str | None
+    model_name: str | None
+    model_version: str | None
+    matched: bool
+    confidence: float | None
+    threshold: float
+    reason: str | None
+    run_status: Literal["ok", "no_decision"]
+    error_message: str | None
+    duration_ms: int | None
 
 
 def _normalize_keywords(keywords: list[str]) -> list[str]:
@@ -622,6 +641,50 @@ class StreamService:
             )
         return matches
 
+    async def list_stream_classifier_runs(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        stream_id: UUID,
+        limit: int = 100,
+    ) -> list[StreamClassifierRunOut]:
+        stream = await self.get_stream(session=session, user_id=user_id, stream_id=stream_id)
+        if stream is None:
+            raise StreamNotFoundError(f"Stream {stream_id} not found")
+
+        query = (
+            select(StreamClassifierRun)
+            .where(
+                StreamClassifierRun.user_id == user_id,
+                StreamClassifierRun.stream_id == stream_id,
+            )
+            .order_by(StreamClassifierRun.created_at.desc())
+            .limit(limit)
+        )
+        result = await session.execute(query)
+        return [self.to_classifier_run_out(row) for row in result.scalars().all()]
+
+    def to_classifier_run_out(self, run: StreamClassifierRun) -> StreamClassifierRunOut:
+        return StreamClassifierRunOut(
+            id=run.id,
+            stream_id=run.stream_id,
+            article_id=run.article_id,
+            feed_id=run.feed_id,
+            classifier_mode=cast(Literal["classifier_only", "hybrid"], run.classifier_mode),
+            plugin_name=run.plugin_name,
+            provider=run.provider,
+            model_name=run.model_name,
+            model_version=run.model_version,
+            matched=run.matched,
+            confidence=run.confidence,
+            threshold=run.threshold,
+            reason=run.reason,
+            run_status=cast(Literal["ok", "no_decision"], run.run_status),
+            error_message=run.error_message,
+            duration_ms=run.duration_ms,
+            created_at=run.created_at,
+        )
+
     async def run_stream_backfill(
         self,
         session: AsyncSession,
@@ -642,6 +705,7 @@ class StreamService:
         article_rows_result = await session.execute(
             select(
                 Article.id,
+                Article.feed_id,
                 Article.title,
                 Article.content_text,
                 Article.language,
@@ -657,8 +721,9 @@ class StreamService:
         article_rows = article_rows_result.all()
 
         matched_rows: list[KeywordStreamMatch] = []
-        for article_id, title, content_text, language, source_url in article_rows:
-            matching_decisions = await self.collect_matching_stream_decisions(
+        classifier_run_rows: list[StreamClassifierRun] = []
+        for article_id, feed_id, title, content_text, language, source_url in article_rows:
+            matching_decisions, classifier_runs = await self.collect_matching_stream_decisions_with_classifier_runs(
                 [compiled_stream],
                 title=title,
                 content_text=content_text,
@@ -668,6 +733,15 @@ class StreamService:
             )
             if matching_decisions:
                 matched_rows.extend(self.make_match_rows(matching_decisions, article_id))
+            if classifier_runs:
+                classifier_run_rows.extend(
+                    self.make_classifier_run_rows(
+                        classifier_runs,
+                        user_id=user_id,
+                        article_id=article_id,
+                        feed_id=feed_id,
+                    )
+                )
 
         previous_count_result = await session.execute(
             select(func.count())
@@ -678,6 +752,7 @@ class StreamService:
 
         await session.execute(delete(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id))
         session.add_all(matched_rows)
+        session.add_all(classifier_run_rows)
         await session.commit()
 
         return StreamBackfillResultOut(
@@ -720,7 +795,7 @@ class StreamService:
         language: str | None,
         plugin_manager: PluginManager,
     ) -> list[UUID]:
-        decisions = await self.collect_matching_stream_decisions(
+        decisions, _ = await self.collect_matching_stream_decisions_with_classifier_runs(
             streams,
             title=title,
             content_text=content_text,
@@ -730,7 +805,7 @@ class StreamService:
         )
         return [decision.stream_id for decision in decisions]
 
-    async def collect_matching_stream_decisions(
+    async def collect_matching_stream_decisions_with_classifier_runs(
         self,
         streams: list[CompiledKeywordStream],
         *,
@@ -739,8 +814,9 @@ class StreamService:
         source_url: str | None,
         language: str | None,
         plugin_manager: PluginManager,
-    ) -> list[StreamMatchDecision]:
+    ) -> tuple[list[StreamMatchDecision], list[StreamClassifierRunDecision]]:
         matches: list[StreamMatchDecision] = []
+        classifier_runs: list[StreamClassifierRunDecision] = []
         article_context = ArticleContext(
             article_id="",
             title=title,
@@ -761,6 +837,7 @@ class StreamService:
             classifier_reason: str | None = None
             classifier_evidence: dict[str, Any] | None = None
             if stream.classifier_mode in {"classifier_only", "hybrid"} and stream.classifier_plugin:
+                start_time = perf_counter()
                 decision = await plugin_manager.classify_stream(
                     plugin_name=stream.classifier_plugin,
                     article=article_context,
@@ -775,15 +852,37 @@ class StreamService:
                         metadata={"source_url": source_url or "", "language": language or ""},
                     ),
                 )
+                duration_ms = int((perf_counter() - start_time) * 1000)
+                confidence = decision.confidence if decision else None
                 classifier_match = bool(
                     decision
                     and decision.matched
                     and decision.confidence >= stream.classifier_min_confidence
                 )
+                classifier_runs.append(
+                    StreamClassifierRunDecision(
+                        stream_id=stream.id,
+                        classifier_mode=cast(Literal["classifier_only", "hybrid"], stream.classifier_mode),
+                        plugin_name=stream.classifier_plugin,
+                        provider=decision.provider if decision else None,
+                        model_name=decision.model_name if decision else None,
+                        model_version=decision.model_version if decision else None,
+                        matched=classifier_match,
+                        confidence=round(confidence, 4) if confidence is not None else None,
+                        threshold=round(stream.classifier_min_confidence, 4),
+                        reason=decision.reason.strip() if decision and decision.reason.strip() else None,
+                        run_status="ok" if decision else "no_decision",
+                        error_message=None,
+                        duration_ms=duration_ms,
+                    )
+                )
                 if classifier_match and decision:
                     classifier_evidence = {
                         "matcher_type": "classifier",
                         "plugin": stream.classifier_plugin,
+                        "provider": decision.provider,
+                        "model_name": decision.model_name,
+                        "model_version": decision.model_version,
                         "confidence": round(decision.confidence, 4),
                         "threshold": round(stream.classifier_min_confidence, 4),
                     }
@@ -824,6 +923,26 @@ class StreamService:
                         evidence=final_evidence,
                     )
                 )
+        return matches, classifier_runs
+
+    async def collect_matching_stream_decisions(
+        self,
+        streams: list[CompiledKeywordStream],
+        *,
+        title: str,
+        content_text: str,
+        source_url: str | None,
+        language: str | None,
+        plugin_manager: PluginManager,
+    ) -> list[StreamMatchDecision]:
+        matches, _ = await self.collect_matching_stream_decisions_with_classifier_runs(
+            streams,
+            title=title,
+            content_text=content_text,
+            source_url=source_url,
+            language=language,
+            plugin_manager=plugin_manager,
+        )
         return matches
 
     def make_match_rows(
@@ -852,6 +971,36 @@ class StreamService:
                 )
             )
         return rows
+
+    def make_classifier_run_rows(
+        self,
+        classifier_runs: list[StreamClassifierRunDecision],
+        *,
+        user_id: UUID,
+        article_id: UUID,
+        feed_id: UUID | None,
+    ) -> list[StreamClassifierRun]:
+        return [
+            StreamClassifierRun(
+                user_id=user_id,
+                stream_id=run.stream_id,
+                article_id=article_id,
+                feed_id=feed_id,
+                classifier_mode=run.classifier_mode,
+                plugin_name=run.plugin_name,
+                provider=run.provider,
+                model_name=run.model_name,
+                model_version=run.model_version,
+                matched=run.matched,
+                confidence=run.confidence,
+                threshold=run.threshold,
+                reason=run.reason,
+                run_status=run.run_status,
+                error_message=run.error_message,
+                duration_ms=run.duration_ms,
+            )
+            for run in classifier_runs
+        ]
 
 
 stream_service = StreamService()

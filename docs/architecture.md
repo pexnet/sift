@@ -367,6 +367,11 @@ Design goals:
    - stream create/update validates classifier config shape and size
    - classifier execution context includes per-stream plugin config
    - monitoring UI supports editing classifier config JSON with pre-submit JSON validation
+16. Classifier run persistence and model/version tracking baseline:
+   - classifier execution now persists run records in `stream_classifier_runs`
+   - persisted fields include plugin/provider/model/version, confidence/threshold, match result, and run status
+   - ingest and stream backfill flows both record classifier runs
+   - stream API provides classifier run diagnostics endpoint (`GET /api/v1/streams/{stream_id}/classifier-runs`)
 
 ## Frontend Delivery Standard
 
@@ -391,9 +396,8 @@ Design goals:
 ## Planned Next Moves (Current Core Priority Plan)
 
 1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+2. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Next UI Slice (Prioritized)
 

@@ -1,5 +1,32 @@
 # Session Notes
 
+## 2026-02-17 (Classifier Run Persistence + Model/Version Tracking Baseline)
+
+### Implemented This Session
+
+- Added classifier run persistence model and migration:
+  - migration: `alembic/versions/20260217_0013_stream_classifier_runs.py`
+  - model: `stream_classifier_runs` in `src/sift/db/models.py`
+- Extended classifier plugin decision contract with tracking metadata:
+  - `provider`, `model_name`, `model_version` in `StreamClassificationDecision`
+  - built-in keyword heuristic classifier now emits baseline model metadata
+- Extended stream matching execution path:
+  - stream service now captures classifier run decisions (match status, confidence, threshold, duration, metadata)
+  - ingest flow persists classifier runs for classifier-enabled streams
+  - stream backfill flow persists classifier runs for classifier-enabled streams
+- Added stream diagnostics API endpoint:
+  - `GET /api/v1/streams/{stream_id}/classifier-runs`
+  - returns recent classifier runs for the user-owned stream
+- Added/updated tests:
+  - `tests/test_stream_service.py` (classifier run capture + persistence coverage)
+  - `tests/test_stream_classifier_runs_api.py` (new endpoint coverage)
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py tests/test_stream_classifier_runs_api.py`
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+
 ## 2026-02-17 (Planning Update: Silent Feeds for Monitoring-Only Population)
 
 ### Implemented This Session

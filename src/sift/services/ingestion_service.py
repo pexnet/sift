@@ -220,7 +220,7 @@ class IngestionService:
             if dedup_decision.duplicate_of_id:
                 result.canonical_duplicate_count += 1
 
-            matching_stream_decisions = await stream_service.collect_matching_stream_decisions(
+            matching_stream_decisions, classifier_runs = await stream_service.collect_matching_stream_decisions_with_classifier_runs(
                 active_streams,
                 title=article.title,
                 content_text=article.content_text,
@@ -231,6 +231,15 @@ class IngestionService:
             if matching_stream_decisions:
                 session.add_all(stream_service.make_match_rows(matching_stream_decisions, article.id))
                 result.stream_match_count += len(matching_stream_decisions)
+            if classifier_runs and feed.owner_id:
+                session.add_all(
+                    stream_service.make_classifier_run_rows(
+                        classifier_runs,
+                        user_id=feed.owner_id,
+                        article_id=article.id,
+                        feed_id=feed.id,
+                    )
+                )
 
             result.inserted_count += 1
 

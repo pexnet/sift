@@ -343,3 +343,23 @@ class StreamBackfillResultOut(BaseModel):
     previous_match_count: int
     matched_count: int
 
+
+class StreamClassifierRunOut(BaseModel):
+    id: UUID
+    stream_id: UUID
+    article_id: UUID
+    feed_id: UUID | None
+    classifier_mode: Literal["classifier_only", "hybrid"]
+    plugin_name: str
+    provider: str | None
+    model_name: str | None
+    model_version: str | None
+    matched: bool
+    confidence: float | None
+    threshold: float
+    reason: str | None
+    run_status: Literal["ok", "no_decision"]
+    error_message: str | None
+    duration_ms: int | None
+    created_at: datetime
+

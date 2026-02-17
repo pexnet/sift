@@ -2,10 +2,11 @@ import re
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
-from sift.db.models import Article, Feed, KeywordStreamMatch, User
+from sift.db.models import Article, Feed, KeywordStreamMatch, StreamClassifierRun, User
 from sift.domain.schemas import KeywordStreamCreate, KeywordStreamUpdate
 from sift.plugins.base import StreamClassificationDecision
 from sift.search.query_language import parse_search_query
@@ -25,7 +26,14 @@ class FakePluginManager:
         stream_ctx = kwargs["stream"]
         article_ctx = kwargs["article"]
         if plugin_name == "always_match":
-            return StreamClassificationDecision(matched=True, confidence=0.95, reason="test")
+            return StreamClassificationDecision(
+                matched=True,
+                confidence=0.95,
+                reason="test",
+                provider="test_provider",
+                model_name="test_model",
+                model_version="v1.2.3",
+            )
         if plugin_name == "low_conf":
             return StreamClassificationDecision(matched=True, confidence=0.25, reason="low")
         if plugin_name == "config_match":
@@ -36,6 +44,9 @@ class FakePluginManager:
                 matched=matched,
                 confidence=0.9 if matched else 0.0,
                 reason=f"expected_token={expected}" if expected else "expected_token missing",
+                provider="test_provider",
+                model_name="test_model",
+                model_version="v1.2.3",
             )
         return None
 
@@ -242,6 +253,27 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
     assert decision_evidence.get(streams[0].id) is not None
     assert "keyword_hits" in (decision_evidence.get(streams[0].id) or {})
     assert (decision_evidence.get(streams[1].id) or {}).get("plugin") == "always_match"
+    assert (decision_evidence.get(streams[1].id) or {}).get("provider") == "test_provider"
+    assert (decision_evidence.get(streams[1].id) or {}).get("model_name") == "test_model"
+    assert (decision_evidence.get(streams[1].id) or {}).get("model_version") == "v1.2.3"
+
+    _, classifier_runs = await stream_service.collect_matching_stream_decisions_with_classifier_runs(
+        streams,
+        title="AI update",
+        content_text="new model launch",
+        source_url="https://example.com/feed",
+        language="en",
+        plugin_manager=plugin_manager,  # type: ignore[arg-type]
+    )
+    assert len(classifier_runs) == 3
+    always_match_run = next(run for run in classifier_runs if run.plugin_name == "always_match")
+    assert always_match_run.matched is True
+    assert always_match_run.provider == "test_provider"
+    assert always_match_run.model_name == "test_model"
+    assert always_match_run.model_version == "v1.2.3"
+    low_conf_run = next(run for run in classifier_runs if run.plugin_name == "low_conf")
+    assert low_conf_run.matched is False
+    assert low_conf_run.run_status == "ok"
 
 
 @pytest.mark.asyncio
@@ -539,5 +571,68 @@ async def test_run_stream_backfill_replaces_existing_matches() -> None:
         assert matches[0].match_reason == "query matched"
         assert matches[0].match_evidence is not None
         assert matches[0].match_evidence.get("query") is not None
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_run_stream_backfill_persists_classifier_runs() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-backfill-classifier@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Owned feed", url="https://owned-backfill-classifier.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        article = Article(
+            feed_id=feed.id,
+            source_id="m1",
+            title="Microsoft Sentinel update",
+            content_text="security operations",
+        )
+        session.add(article)
+        await session.flush()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(
+                name="classifier-security",
+                classifier_mode="classifier_only",
+                classifier_plugin="always_match",
+            ),
+        )
+        await session.commit()
+
+        result = await stream_service.run_stream_backfill(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            plugin_manager=FakePluginManager(),  # type: ignore[arg-type]
+        )
+        assert result.scanned_count == 1
+        assert result.matched_count == 1
+
+        classifier_runs_result = await session.execute(
+            select(StreamClassifierRun).where(StreamClassifierRun.stream_id == stream.id)
+        )
+        classifier_runs = classifier_runs_result.scalars().all()
+        assert len(classifier_runs) == 1
+        classifier_run = classifier_runs[0]
+        assert classifier_run.plugin_name == "always_match"
+        assert classifier_run.provider == "test_provider"
+        assert classifier_run.model_name == "test_model"
+        assert classifier_run.model_version == "v1.2.3"
+        assert classifier_run.matched is True
+        assert classifier_run.run_status == "ok"
+        assert classifier_run.threshold == 0.7
+        assert classifier_run.confidence == pytest.approx(0.95)
 
     await engine.dispose()

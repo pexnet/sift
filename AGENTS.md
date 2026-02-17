@@ -54,6 +54,7 @@ This file stores persistent project context for future Codex sessions.
 - `PATCH /api/v1/streams/{stream_id}`
 - `DELETE /api/v1/streams/{stream_id}`
 - `GET /api/v1/streams/{stream_id}/articles`
+- `GET /api/v1/streams/{stream_id}/classifier-runs`
 - `GET /api/v1/feeds`
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
@@ -108,6 +109,10 @@ This file stores persistent project context for future Codex sessions.
 - Persisted ingest rules are implemented and enforced during ingestion.
 - Keyword streams are implemented with persisted definitions and matched article views.
 - Stream classifier foundation is implemented (rules/classifier/hybrid modes + plugin confidence threshold).
+- Classifier run persistence/model tracking baseline is implemented:
+  - classifier execution persists `stream_classifier_runs` rows during ingest and stream backfill
+  - run records capture plugin/provider/model/version, confidence/threshold, run status, and duration
+  - stream diagnostics endpoint is available (`GET /api/v1/streams/{stream_id}/classifier-runs`)
 - Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
 - Scheduler and worker orchestration are now implemented for recurring ingestion.
 - Feed folders are implemented (per-user folders + feed-to-folder assignment endpoint).
@@ -154,9 +159,8 @@ This file stores persistent project context for future Codex sessions.
 ## Next Delivery Sequence
 
 1. Add stream-level ranking and prioritization controls.
-2. Add classifier run persistence and model/version tracking.
-3. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-4. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+2. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
+3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Next UI Slice (Prioritized)
 

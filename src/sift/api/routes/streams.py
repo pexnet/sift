@@ -13,6 +13,7 @@ from sift.domain.schemas import (
     KeywordStreamUpdate,
     StreamArticleOut,
     StreamBackfillResultOut,
+    StreamClassifierRunOut,
 )
 from sift.services.stream_service import StreamConflictError, StreamNotFoundError, StreamValidationError, stream_service
 
@@ -87,6 +88,24 @@ async def list_stream_articles(
 ) -> list[StreamArticleOut]:
     try:
         return await stream_service.list_stream_articles(
+            session=session,
+            user_id=current_user.id,
+            stream_id=stream_id,
+            limit=limit,
+        )
+    except StreamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.get("/{stream_id}/classifier-runs", response_model=list[StreamClassifierRunOut])
+async def list_stream_classifier_runs(
+    stream_id: UUID,
+    limit: int = Query(default=100, ge=1, le=500),
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> list[StreamClassifierRunOut]:
+    try:
+        return await stream_service.list_stream_classifier_runs(
             session=session,
             user_id=current_user.id,
             stream_id=stream_id,
