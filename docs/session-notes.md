@@ -1,5 +1,27 @@
 # Session Notes
 
+## 2026-02-17 (Planning Workflow Update: Active Backlog + Backlog History Split)
+
+### Implemented This Session
+
+- Split backlog documentation into active vs historical sources:
+  - `docs/backlog.md` now contains only active remaining items (`Next`, `Deferred`).
+  - created `docs/backlog-history.md` to archive completed/historical backlog content.
+- Moved prior completed backlog sections into `docs/backlog-history.md`:
+  - done foundations
+  - completed monitoring/UI milestones
+  - archived completed-session index previously kept in active backlog
+- Updated project instructions in `AGENTS.md`:
+  - planning workflow now reads both active backlog and backlog history
+  - backlog governance now requires moving completed items to history file
+  - storage guidance now explicitly distinguishes active backlog vs history archive
+
+### Verification
+
+- Documentation-only planning/process update.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No code test suite execution was required for this docs-only update.
+
 ## 2026-02-17 (Planning Update: Monitoring Span Explainability + Action Iconification)
 
 ### Implemented This Session

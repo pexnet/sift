@@ -199,18 +199,21 @@ This file stores persistent project context for future Codex sessions.
 
 ## Planning Workflow For Future Sessions
 
-1. Read `AGENTS.md`, `docs/backlog.md`, and `docs/session-notes.md`.
+1. Read `AGENTS.md`, `docs/backlog.md`, `docs/backlog-history.md`, and `docs/session-notes.md`.
 2. Confirm or update the next 3-5 priority steps.
 3. Review newly captured long-horizon ideas and record/normalize them in `docs/backlog.md`.
 4. Implement one vertical slice fully (code + tests + docs update).
 5. End each session by updating:
    - `docs/session-notes.md` with verification results and next priorities.
    - `docs/architecture.md` if architecture changed.
-   - `docs/backlog.md` when backlog status/priorities change.
+   - `docs/backlog.md` for active priority/deferred changes.
+   - `docs/backlog-history.md` when completed items are moved out of active backlog.
 
 ## Backlog Governance
 
 - Any long-horizon idea captured during sessions must be reviewed and added to `docs/backlog.md`.
+- `docs/backlog.md` must contain only active remaining work (`Next`, `Deferred`).
+- Completed or historical backlog entries must be moved to `docs/backlog-history.md`.
 - Avoid keeping durable backlog items only in `docs/session-notes.md`; session notes are log/history, backlog is planning source of truth.
 
 ## Where to Store Future Knowledge
@@ -218,4 +221,5 @@ This file stores persistent project context for future Codex sessions.
 - Stable constraints/instructions: `AGENTS.md`.
 - Design/architecture decisions and tradeoffs: `docs/architecture.md`.
 - Iteration log (what changed, why, what is next): `docs/session-notes.md`.
-- Backlog source of truth (done/next/deferred): `docs/backlog.md`.
+- Active backlog source of truth (`Next`, `Deferred`): `docs/backlog.md`.
+- Backlog completion/history archive: `docs/backlog-history.md`.
