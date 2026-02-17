@@ -28,7 +28,8 @@ This is the source of truth for product backlog status and long-term roadmap ite
    - completed on 2026-02-16: structured match evidence payloads (keyword/regex snippets + classifier evidence) surfaced in reader metadata
    - completed on 2026-02-16: inline reader highlighting toggle using structured evidence values
    - completed on 2026-02-16: offset-aware reader highlighting with jump-to-highlight evidence panel
-   - next: extend plugin contracts to emit richer multi-finding evidence blocks (provider-native snippets/scores)
+   - completed on 2026-02-17: plugin contracts now emit richer multi-finding classifier evidence blocks
+     (provider-native snippets/scores, optional offsets)
 
 ### Linked Specifications
 

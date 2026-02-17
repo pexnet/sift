@@ -38,6 +38,7 @@ class StreamClassificationDecision:
     provider: str | None = None
     model_name: str | None = None
     model_version: str | None = None
+    findings: list[dict[str, Any]] | None = None
 
 
 class StreamClassifierPlugin(Protocol):

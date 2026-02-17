@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.config import get_settings
@@ -136,14 +137,21 @@ class AuthService:
                 User.is_active.is_(True),
             )
         )
-        result = await session.execute(query)
+        try:
+            result = await session.execute(query)
+        except SQLAlchemyError:
+            await session.rollback()
+            return None
         row = result.one_or_none()
         if row is None:
             return None
 
         user, user_session = row
         user_session.last_seen_at = now
-        await session.commit()
+        try:
+            await session.commit()
+        except SQLAlchemyError:
+            await session.rollback()
         return user
 
     async def revoke_session(self, session: AsyncSession, raw_token: str) -> None:
@@ -162,4 +170,3 @@ class AuthService:
 
 
 auth_service = AuthService()
-

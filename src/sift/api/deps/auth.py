@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.config import get_settings
@@ -16,7 +17,10 @@ async def get_current_user(
     if not raw_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
-    user = await auth_service.get_user_by_session_token(session, raw_token=raw_token)
+    try:
+        user = await auth_service.get_user_by_session_token(session, raw_token=raw_token)
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from exc
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
 
@@ -32,5 +36,7 @@ async def get_optional_user(
     if not raw_token:
         return None
 
-    return await auth_service.get_user_by_session_token(session, raw_token=raw_token)
-
+    try:
+        return await auth_service.get_user_by_session_token(session, raw_token=raw_token)
+    except SQLAlchemyError:
+        return None

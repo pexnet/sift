@@ -1,4 +1,5 @@
 import json
+import math
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -197,6 +198,84 @@ def _match_evidence_from_json(raw: str | None) -> dict[str, Any] | None:
     if not isinstance(loaded, dict):
         return None
     return loaded
+
+
+def _normalize_classifier_findings(findings: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    if not findings:
+        return []
+    normalized: list[dict[str, Any]] = []
+    for raw_finding in findings:
+        if not isinstance(raw_finding, dict):
+            continue
+        finding: dict[str, Any] = {}
+
+        label = raw_finding.get("label")
+        if isinstance(label, str) and label.strip():
+            finding["label"] = label.strip()
+
+        text = raw_finding.get("text")
+        if isinstance(text, str) and text.strip():
+            finding["text"] = text.strip()
+        else:
+            snippet = raw_finding.get("snippet")
+            if isinstance(snippet, str) and snippet.strip():
+                finding["text"] = snippet.strip()
+
+        value = raw_finding.get("value")
+        if isinstance(value, str) and value.strip():
+            finding["value"] = value.strip()
+
+        source = raw_finding.get("source")
+        if isinstance(source, str) and source.strip():
+            finding["source"] = source.strip()
+
+        field = raw_finding.get("field")
+        if isinstance(field, str) and field.strip():
+            finding["field"] = field.strip()
+
+        score_value = raw_finding.get("score")
+        if isinstance(score_value, (int, float)) and not isinstance(score_value, bool):
+            score = float(score_value)
+            if math.isfinite(score):
+                finding["score"] = round(score, 4)
+
+        start_value = raw_finding.get("start")
+        end_value = raw_finding.get("end")
+        if isinstance(start_value, int) and isinstance(end_value, int) and end_value > start_value:
+            finding["start"] = start_value
+            finding["end"] = end_value
+            offset_basis = raw_finding.get("offset_basis")
+            if isinstance(offset_basis, str) and offset_basis.strip():
+                finding["offset_basis"] = offset_basis.strip()
+            else:
+                finding["offset_basis"] = "field_text_v1"
+
+        if finding:
+            normalized.append(finding)
+    return normalized
+
+
+def _classifier_finding_reason(findings: list[dict[str, Any]]) -> str | None:
+    if not findings:
+        return None
+    first = findings[0]
+    label = first.get("label")
+    text = first.get("text")
+    value = first.get("value")
+    score = first.get("score")
+    if isinstance(label, str) and isinstance(text, str):
+        return f"{label}: {text}"
+    if isinstance(text, str):
+        return text
+    if isinstance(label, str) and isinstance(value, str):
+        return f'{label}: "{value}"'
+    if isinstance(value, str):
+        return value
+    if isinstance(label, str):
+        return label
+    if isinstance(score, (int, float)):
+        return f"finding score {float(score):.2f}"
+    return None
 
 
 def _normalize_classifier_mode(value: str) -> Literal["rules_only", "classifier_only", "hybrid"]:
@@ -877,6 +956,7 @@ class StreamService:
                     )
                 )
                 if classifier_match and decision:
+                    normalized_findings = _normalize_classifier_findings(decision.findings)
                     classifier_evidence = {
                         "matcher_type": "classifier",
                         "plugin": stream.classifier_plugin,
@@ -890,10 +970,23 @@ class StreamService:
                         classifier_reason = f"classifier: {decision.reason.strip()}"
                         classifier_evidence["reason"] = decision.reason.strip()
                         classifier_evidence["snippets"] = [{"text": decision.reason.strip()}]
+                    elif normalized_findings:
+                        finding_reason = _classifier_finding_reason(normalized_findings)
+                        if finding_reason:
+                            classifier_reason = f"classifier: {finding_reason}"
                     else:
                         classifier_reason = (
                             f"classifier confidence {decision.confidence:.2f} ({stream.classifier_plugin})"
                         )
+                    if normalized_findings:
+                        classifier_evidence["findings"] = normalized_findings
+                        snippets = [
+                            {"text": finding["text"]}
+                            for finding in normalized_findings
+                            if isinstance(finding.get("text"), str) and finding["text"]
+                        ]
+                        if snippets:
+                            classifier_evidence["snippets"] = snippets[:5]
 
             final_match = False
             final_reason: str | None = None

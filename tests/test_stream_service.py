@@ -33,6 +33,16 @@ class FakePluginManager:
                 provider="test_provider",
                 model_name="test_model",
                 model_version="v1.2.3",
+                findings=[
+                    {
+                        "label": "provider finding",
+                        "field": "content_text",
+                        "start": 4,
+                        "end": 10,
+                        "text": "model launch context",
+                        "score": 0.87,
+                    }
+                ],
             )
         if plugin_name == "low_conf":
             return StreamClassificationDecision(matched=True, confidence=0.25, reason="low")
@@ -256,6 +266,10 @@ async def test_collect_matching_stream_ids_with_classifier_modes() -> None:
     assert (decision_evidence.get(streams[1].id) or {}).get("provider") == "test_provider"
     assert (decision_evidence.get(streams[1].id) or {}).get("model_name") == "test_model"
     assert (decision_evidence.get(streams[1].id) or {}).get("model_version") == "v1.2.3"
+    classifier_findings = (decision_evidence.get(streams[1].id) or {}).get("findings")
+    assert isinstance(classifier_findings, list)
+    assert classifier_findings[0].get("label") == "provider finding"
+    assert classifier_findings[0].get("score") == pytest.approx(0.87)
 
     _, classifier_runs = await stream_service.collect_matching_stream_decisions_with_classifier_runs(
         streams,

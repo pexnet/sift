@@ -43,6 +43,7 @@ type OffsetHighlightResult = {
   html: string;
   appliedMarkerIds: Set<string>;
 };
+const EMPTY_EVIDENCE_MODEL: EvidenceModel = { rows: [], ranges: [], terms: [] };
 
 const SKIP_HIGHLIGHT_TAGS = new Set(["MARK", "CODE", "PRE", "SCRIPT", "STYLE"]);
 
@@ -113,11 +114,22 @@ const buildEvidenceSummary = (reason: string | undefined, rawEvidence: unknown):
   const classifierReason = classifier && typeof classifier.reason === "string" ? classifier.reason : "";
   const classifierConfidence =
     classifier && typeof classifier.confidence === "number" ? classifier.confidence.toFixed(2) : "";
+  const classifierFindings = classifier && Array.isArray(classifier.findings) ? classifier.findings : [];
   if (classifierPlugin || classifierReason || classifierConfidence) {
     const classifierParts = [classifierPlugin, classifierReason, classifierConfidence ? `confidence ${classifierConfidence}` : ""]
       .filter(Boolean)
       .join(", ");
     parts.push(`classifier (${classifierParts})`);
+  }
+  if (classifierFindings.length > 0) {
+    const firstFinding = asRecord(classifierFindings[0]);
+    const findingLabel = toString(firstFinding?.label);
+    const findingText = toString(firstFinding?.text) ?? toString(firstFinding?.snippet) ?? toString(firstFinding?.value);
+    const findingScore = toNumber(firstFinding?.score);
+    const findingSummary = [findingLabel, findingText, findingScore !== null ? `score ${findingScore.toFixed(2)}` : ""]
+      .filter(Boolean)
+      .join(", ");
+    parts.push(`findings ${classifierFindings.length}${findingSummary ? ` (${findingSummary})` : ""}`);
   }
 
   if (parts.length === 0) {
@@ -240,6 +252,7 @@ const createEvidenceModel = (
 
     const classifier = asRecord(classifierEvidence);
     if (classifier) {
+      const findingSnippetValues = new Set<string>();
       const plugin = toString(classifier.plugin);
       const confidence = toNumber(classifier.confidence);
       const reason = toString(classifier.reason);
@@ -254,11 +267,46 @@ const createEvidenceModel = (
           markerId: null,
         });
       }
+      const classifierFindings = Array.isArray(classifier.findings) ? classifier.findings : [];
+      classifierFindings.forEach((entry, index) => {
+        const finding = asRecord(entry);
+        if (!finding) {
+          return;
+        }
+        const label = toString(finding.label) ?? "Classifier finding";
+        const value = toString(finding.value);
+        const text = toString(finding.text) ?? toString(finding.snippet) ?? value;
+        const score = toNumber(finding.score);
+        const field = toString(finding.field);
+        const start = toNumber(finding.start);
+        const end = toNumber(finding.end);
+        const markerId = `reader-highlight-${streamId}-classifier-finding-${index}`;
+
+        if (field === "content_text" && start !== null && end !== null && end > start) {
+          ranges.push({ id: markerId, start, end });
+        }
+        if (value) {
+          addUniqueTerm(terms, seenTerms, value);
+        } else if (text && text.length <= 80) {
+          addUniqueTerm(terms, seenTerms, text);
+        }
+        if (text) {
+          findingSnippetValues.add(text);
+        }
+
+        rows.push({
+          id: `${streamId}-classifier-finding-${index}`,
+          streamName,
+          title: `${label}${score !== null ? ` (score ${score.toFixed(2)})` : ""}${field ? ` (${field})` : ""}`,
+          snippet: text,
+          markerId: field === "content_text" ? markerId : null,
+        });
+      });
       const classifierSnippets = Array.isArray(classifier.snippets) ? classifier.snippets : [];
       classifierSnippets.forEach((entry, index) => {
         const snippetRecord = asRecord(entry);
         const text = toString(snippetRecord?.text) ?? (typeof entry === "string" ? entry : null);
-        if (!text) {
+        if (!text || findingSnippetValues.has(text)) {
           return;
         }
         rows.push({
@@ -473,18 +521,28 @@ export function ReaderPane({
     .filter((name): name is string => Boolean(name));
   const streamMatchReasons = detail?.stream_match_reasons ?? selectedArticle?.stream_match_reasons ?? null;
   const streamMatchEvidence = detail?.stream_match_evidence ?? selectedArticle?.stream_match_evidence ?? null;
-  const evidenceModel = createEvidenceModel(streamIds, streamNameById, streamMatchEvidence);
+  let evidenceModel = EMPTY_EVIDENCE_MODEL;
+  try {
+    evidenceModel = createEvidenceModel(streamIds, streamNameById, streamMatchEvidence);
+  } catch {
+    evidenceModel = EMPTY_EVIDENCE_MODEL;
+  }
   const hasHighlightCandidates = evidenceModel.ranges.length > 0 || evidenceModel.terms.length > 0;
   const [showHighlights, setShowHighlights] = useState(true);
 
   let renderedContentHtml = contentHtml;
   let appliedMarkerIds = new Set<string>();
   if (showHighlights && contentHtml) {
-    const offsetHighlightResult = highlightHtmlByOffsets(contentHtml, evidenceModel.ranges);
-    renderedContentHtml = offsetHighlightResult.html;
-    appliedMarkerIds = offsetHighlightResult.appliedMarkerIds;
-    if (appliedMarkerIds.size === 0 && evidenceModel.terms.length > 0) {
-      renderedContentHtml = highlightHtmlByTerms(contentHtml, evidenceModel.terms);
+    try {
+      const offsetHighlightResult = highlightHtmlByOffsets(contentHtml, evidenceModel.ranges);
+      renderedContentHtml = offsetHighlightResult.html;
+      appliedMarkerIds = offsetHighlightResult.appliedMarkerIds;
+      if (appliedMarkerIds.size === 0 && evidenceModel.terms.length > 0) {
+        renderedContentHtml = highlightHtmlByTerms(contentHtml, evidenceModel.terms);
+      }
+    } catch {
+      renderedContentHtml = contentHtml;
+      appliedMarkerIds = new Set<string>();
     }
   }
 
@@ -504,7 +562,12 @@ export function ReaderPane({
       if (!streamName) {
         return null;
       }
-      const summary = buildEvidenceSummary(streamMatchReasons?.[streamId], streamMatchEvidence?.[streamId]);
+      let summary: string | null = null;
+      try {
+        summary = buildEvidenceSummary(streamMatchReasons?.[streamId], streamMatchEvidence?.[streamId]);
+      } catch {
+        summary = null;
+      }
       if (!summary) {
         return null;
       }

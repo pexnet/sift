@@ -312,6 +312,113 @@ describe("ReaderPane", () => {
     ).toBeVisible();
   });
 
+  it("renders classifier findings in summaries and evidence rows", () => {
+    render(
+      <ReaderPane
+        selectedArticle={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          title: "Reader title",
+          canonical_url: "https://example.com/article",
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+          stream_match_reasons: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": "classifier: high relevance",
+          },
+          stream_match_evidence: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": {
+              matcher_type: "classifier",
+              plugin: "keyword_heuristic_classifier",
+              reason: "high relevance",
+              confidence: 0.92,
+              findings: [
+                {
+                  label: "entity hit",
+                  field: "content_text",
+                  start: 0,
+                  end: 12,
+                  text: "Threat actor",
+                  score: 0.91,
+                },
+                {
+                  label: "taxonomy",
+                  text: "APT behavior observed",
+                  score: 0.78,
+                },
+              ],
+            },
+          },
+        }}
+        selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{
+          "d76760f1-ba73-416b-8b4c-a70f1734720f": "sec-stream",
+        }}
+        detail={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          source_id: "source",
+          canonical_url: "https://example.com/article",
+          title: "Reader title",
+          content_text: "Threat actor details and timeline.",
+          language: null,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+          stream_match_reasons: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": "classifier: high relevance",
+          },
+          stream_match_evidence: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": {
+              matcher_type: "classifier",
+              plugin: "keyword_heuristic_classifier",
+              reason: "high relevance",
+              confidence: 0.92,
+              findings: [
+                {
+                  label: "entity hit",
+                  field: "content_text",
+                  start: 0,
+                  end: 12,
+                  text: "Threat actor",
+                  score: 0.91,
+                },
+                {
+                  label: "taxonomy",
+                  text: "APT behavior observed",
+                  score: 0.78,
+                },
+              ],
+            },
+          },
+        }}
+        contentHtml="<p>Threat actor details and timeline.</p>"
+        isLoading={false}
+        isError={false}
+        isMutating={false}
+        hasMutationError={false}
+        onToggleRead={vi.fn()}
+        onToggleSaved={vi.fn()}
+        onOpenOriginal={vi.fn()}
+        onMoveSelection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Match evidence: sec-stream:/)).toBeVisible();
+    expect(screen.getByText(/findings 2/i)).toBeVisible();
+    expect(screen.getByText("sec-stream: entity hit (score 0.91) (content_text)")).toBeVisible();
+    expect(screen.getByText("APT behavior observed")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: /Jump to highlight/i }).length).toBeGreaterThan(0);
+  });
+
   it("highlights matched terms in reader body and allows toggling highlights", () => {
     const { container } = render(
       <ReaderPane

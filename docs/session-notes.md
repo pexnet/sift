@@ -1,5 +1,35 @@
 # Session Notes
 
+## 2026-02-17 (Monitoring Explainability: Rich Classifier Findings)
+
+### Implemented This Session
+
+- Extended classifier plugin decision contract with structured findings:
+  - `StreamClassificationDecision.findings` now accepts a list of finding objects.
+- Upgraded built-in classifier plugin evidence output:
+  - keyword heuristic classifier now emits finding rows with label/snippet/score
+  - when available, findings include field offsets for UI highlight mapping
+- Extended stream matching evidence persistence:
+  - classifier evidence now stores normalized `findings` blocks
+  - classifier reason fallback now uses first finding summary when explicit reason is absent
+  - classifier snippets are derived from findings for backward-compatible rendering
+- Upgraded reader explainability rendering:
+  - match evidence summary now includes classifier finding counts and first finding details
+  - evidence panel now renders classifier findings as first-class rows
+  - findings with `field=content_text` + offsets support jump-to-highlight actions
+- Added/updated tests:
+  - `tests/test_stream_service.py` (classifier finding evidence assertions)
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx` (classifier findings summary + evidence row rendering)
+
+### Verification
+
+- `python -m pytest tests/test_stream_service.py tests/test_stream_backfill_api.py`
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ReaderPane.test.tsx`
+
 ## 2026-02-17 (Classifier Run Persistence + Model/Version Tracking Baseline)
 
 ### Implemented This Session
