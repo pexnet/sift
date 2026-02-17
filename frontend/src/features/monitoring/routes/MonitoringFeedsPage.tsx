@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Chip,
+  Collapse,
   CircularProgress,
   Divider,
   FormControl,
@@ -152,6 +153,20 @@ function formatMode(mode: ClassifierMode): string {
   return "Hybrid";
 }
 
+function hasAdvancedConfig(stream: KeywordStream): boolean {
+  return (
+    stream.priority !== 100 ||
+    stream.include_regex.length > 0 ||
+    stream.exclude_regex.length > 0 ||
+    (stream.source_contains ?? "").length > 0 ||
+    (stream.language_equals ?? "").length > 0 ||
+    stream.classifier_mode !== "rules_only" ||
+    (stream.classifier_plugin ?? "").length > 0 ||
+    Object.keys(stream.classifier_config ?? {}).length > 0 ||
+    stream.classifier_min_confidence !== 0.7
+  );
+}
+
 type Feedback = {
   severity: "success" | "error" | "info";
   message: string;
@@ -166,6 +181,7 @@ export function MonitoringFeedsPage() {
 
   const [editingStreamId, setEditingStreamId] = useState<string | null>(null);
   const [form, setForm] = useState<StreamFormState>(DEFAULT_FORM_STATE);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -181,12 +197,14 @@ export function MonitoringFeedsPage() {
   const resetForm = () => {
     setEditingStreamId(null);
     setForm(DEFAULT_FORM_STATE);
+    setShowAdvanced(false);
     setSubmitError(null);
   };
 
   const startEdit = (stream: KeywordStream) => {
     setEditingStreamId(stream.id);
     setForm(toFormState(stream));
+    setShowAdvanced(hasAdvancedConfig(stream));
     setSubmitError(null);
     setFeedback(null);
   };
@@ -222,7 +240,7 @@ export function MonitoringFeedsPage() {
       sourceContains.length > 0 ||
       languageEquals.length > 0;
     if (!hasPositiveCriteria && !classifierEnabled) {
-      setSubmitError("Provide at least one positive rule (query, keyword, regex, source, or language).");
+      setSubmitError("Provide at least one positive rule (query, keyword, regex, source URL, or language).");
       return;
     }
     if (classifierEnabled && classifierPlugin.length === 0) {
@@ -394,10 +412,13 @@ export function MonitoringFeedsPage() {
               {isEditing ? "Edit monitoring feed" : "Create monitoring feed"}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>
-              Define matching rules and classifier behavior.
+              Define match rules first, then add optional classifier behavior.
             </Typography>
             <Box component="form" onSubmit={(event) => void submitForm(event)} sx={{ mt: 1.6 }}>
               <Stack spacing={1.2}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Basics
+                </Typography>
                 <TextField
                   label="Name"
                   size="small"
@@ -424,16 +445,12 @@ export function MonitoringFeedsPage() {
                   }
                   label="Active"
                 />
+                <Divider sx={{ my: 0.4 }} />
+                <Typography variant="subtitle2" color="text.secondary">
+                  Match Rules
+                </Typography>
                 <TextField
-                  label="Priority"
-                  size="small"
-                  type="number"
-                  inputProps={{ min: 0, max: 10000 }}
-                  value={form.priority}
-                  onChange={(event) => setForm((previous) => ({ ...previous, priority: event.target.value }))}
-                />
-                <TextField
-                  label="Search query (v1)"
+                  label="Core search query (v1)"
                   size="small"
                   value={form.matchQuery}
                   onChange={(event) =>
@@ -459,105 +476,140 @@ export function MonitoringFeedsPage() {
                   }
                   helperText="Comma or newline separated"
                 />
-                <TextField
-                  label="Include regex"
+                <Button
+                  type="button"
                   size="small"
-                  multiline
-                  minRows={2}
-                  value={form.includeRegex}
-                  onChange={(event) =>
-                    setForm((previous) => ({ ...previous, includeRegex: event.target.value }))
-                  }
-                  helperText="One regex pattern per line"
-                />
-                <TextField
-                  label="Exclude regex"
-                  size="small"
-                  multiline
-                  minRows={2}
-                  value={form.excludeRegex}
-                  onChange={(event) =>
-                    setForm((previous) => ({ ...previous, excludeRegex: event.target.value }))
-                  }
-                  helperText="One regex pattern per line"
-                />
-                <TextField
-                  label="Source contains"
-                  size="small"
-                  value={form.sourceContains}
-                  onChange={(event) =>
-                    setForm((previous) => ({ ...previous, sourceContains: event.target.value }))
-                  }
-                />
-                <TextField
-                  label="Language equals"
-                  size="small"
-                  value={form.languageEquals}
-                  onChange={(event) =>
-                    setForm((previous) => ({ ...previous, languageEquals: event.target.value }))
-                  }
-                />
-                <FormControl size="small">
-                  <InputLabel id="monitoring-classifier-mode-label">Classifier mode</InputLabel>
-                  <Select
-                    labelId="monitoring-classifier-mode-label"
-                    label="Classifier mode"
-                    value={form.classifierMode}
-                    onChange={(event) =>
-                      setForm((previous) => ({
-                        ...previous,
-                        classifierMode: event.target.value as ClassifierMode,
-                      }))
-                    }
-                  >
-                    <MenuItem value="rules_only">Rules only</MenuItem>
-                    <MenuItem value="classifier_only">Classifier only</MenuItem>
-                    <MenuItem value="hybrid">Hybrid</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Classifier plugin"
-                  size="small"
-                  value={form.classifierPlugin}
-                  onChange={(event) =>
-                    setForm((previous) => ({ ...previous, classifierPlugin: event.target.value }))
-                  }
-                  disabled={form.classifierMode === "rules_only"}
-                  helperText={
-                    form.classifierMode === "rules_only"
-                      ? "Not required for rules-only mode."
-                      : "Required for classifier-enabled modes."
-                  }
-                />
-                <TextField
-                  label="Classifier config (JSON)"
-                  size="small"
-                  multiline
-                  minRows={3}
-                  value={form.classifierConfig}
-                  onChange={(event) =>
-                    setForm((previous) => ({ ...previous, classifierConfig: event.target.value }))
-                  }
-                  disabled={form.classifierMode === "rules_only"}
-                  helperText={
-                    form.classifierMode === "rules_only"
-                      ? "Optional when rules-only mode is selected."
-                      : "Optional JSON object passed to classifier plugin."
-                  }
-                />
-                <TextField
-                  label="Classifier min confidence"
-                  size="small"
-                  type="number"
-                  inputProps={{ min: 0, max: 1, step: 0.05 }}
-                  value={form.classifierMinConfidence}
-                  onChange={(event) =>
-                    setForm((previous) => ({
-                      ...previous,
-                      classifierMinConfidence: event.target.value,
-                    }))
-                  }
-                />
+                  variant="text"
+                  onClick={() => setShowAdvanced((previous) => !previous)}
+                  sx={{ alignSelf: "flex-start" }}
+                >
+                  {showAdvanced ? "Hide advanced options" : "Show advanced options"}
+                </Button>
+                <Collapse in={showAdvanced} unmountOnExit>
+                  <Stack spacing={1.2}>
+                    <Divider sx={{ my: 0.4 }} />
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Advanced Match Rules
+                    </Typography>
+                    <TextField
+                      label="Priority"
+                      size="small"
+                      type="number"
+                      inputProps={{ min: 0, max: 10000 }}
+                      value={form.priority}
+                      onChange={(event) => setForm((previous) => ({ ...previous, priority: event.target.value }))}
+                      helperText="Lower values are evaluated earlier."
+                    />
+                    <TextField
+                      label="Include regex"
+                      size="small"
+                      multiline
+                      minRows={2}
+                      value={form.includeRegex}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, includeRegex: event.target.value }))
+                      }
+                      helperText="One regex pattern per line"
+                    />
+                    <TextField
+                      label="Exclude regex"
+                      size="small"
+                      multiline
+                      minRows={2}
+                      value={form.excludeRegex}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, excludeRegex: event.target.value }))
+                      }
+                      helperText="One regex pattern per line"
+                    />
+                    <TextField
+                      label="Source URL contains"
+                      size="small"
+                      value={form.sourceContains}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, sourceContains: event.target.value }))
+                      }
+                      placeholder="example.com"
+                      helperText="Case-insensitive match against source URL/domain."
+                    />
+                    <TextField
+                      label="Language code equals"
+                      size="small"
+                      value={form.languageEquals}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, languageEquals: event.target.value }))
+                      }
+                      placeholder="en"
+                      helperText="Use feed language code (for example: en, fr, de)."
+                    />
+                    <Divider sx={{ my: 0.4 }} />
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Classifier (Optional)
+                    </Typography>
+                    <FormControl size="small">
+                      <InputLabel id="monitoring-classifier-mode-label">Classifier mode</InputLabel>
+                      <Select
+                        labelId="monitoring-classifier-mode-label"
+                        label="Classifier mode"
+                        value={form.classifierMode}
+                        onChange={(event) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            classifierMode: event.target.value as ClassifierMode,
+                          }))
+                        }
+                      >
+                        <MenuItem value="rules_only">Rules only</MenuItem>
+                        <MenuItem value="classifier_only">Classifier only</MenuItem>
+                        <MenuItem value="hybrid">Hybrid</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="Classifier plugin"
+                      size="small"
+                      value={form.classifierPlugin}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, classifierPlugin: event.target.value }))
+                      }
+                      disabled={form.classifierMode === "rules_only"}
+                      helperText={
+                        form.classifierMode === "rules_only"
+                          ? "Not required for rules-only mode."
+                          : "Required for classifier-enabled modes."
+                      }
+                    />
+                    <TextField
+                      label="Classifier config (JSON)"
+                      size="small"
+                      multiline
+                      minRows={3}
+                      value={form.classifierConfig}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, classifierConfig: event.target.value }))
+                      }
+                      disabled={form.classifierMode === "rules_only"}
+                      helperText={
+                        form.classifierMode === "rules_only"
+                          ? "Optional when rules-only mode is selected."
+                          : "Optional JSON object passed to classifier plugin."
+                      }
+                    />
+                    <TextField
+                      label="Classifier min confidence"
+                      size="small"
+                      type="number"
+                      inputProps={{ min: 0, max: 1, step: 0.05 }}
+                      value={form.classifierMinConfidence}
+                      onChange={(event) =>
+                        setForm((previous) => ({
+                          ...previous,
+                          classifierMinConfidence: event.target.value,
+                        }))
+                      }
+                      helperText="Used in classifier-only or hybrid modes."
+                    />
+                  </Stack>
+                </Collapse>
                 {submitError ? <Alert severity="error">{submitError}</Alert> : null}
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
                   {isEditing ? (
@@ -644,7 +696,7 @@ export function MonitoringFeedsPage() {
                       Exclude regex: {stream.exclude_regex.length > 0 ? stream.exclude_regex.join(" | ") : "none"}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Source: {stream.source_contains || "any"}
+                      Source URL contains: {stream.source_contains || "any"}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Language: {stream.language_equals || "any"}

@@ -54,7 +54,16 @@ export function HelpPage() {
             <Typography variant="body2">2. Add a Search query to define the core matching logic.</Typography>
             <Typography variant="body2">3. Add include keywords for must-have terms and exclude keywords for noise terms.</Typography>
             <Typography variant="body2">4. Add include/exclude regex (one pattern per line) for structured patterns like CVE IDs.</Typography>
-            <Typography variant="body2">5. Optionally set source/language constraints and classifier mode/plugin.</Typography>
+            <Typography variant="body2">
+              5. Optionally set source/language constraints and classifier mode/plugin.
+            </Typography>
+            <Typography variant="body2">
+              Source URL contains is a case-insensitive substring check on article source URL (for example:
+              <strong> example.com</strong>).
+            </Typography>
+            <Typography variant="body2">
+              Language code equals should use feed language code values such as <strong>en</strong> or <strong>fr</strong>.
+            </Typography>
             <Typography variant="body2">6. Save, then run backfill to apply your updated definition to existing articles.</Typography>
           </Stack>
         </Paper>

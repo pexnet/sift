@@ -127,6 +127,7 @@ describe("MonitoringFeedsPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Include keywords/i }), {
       target: { value: "corelight, microsoft" },
     });
+    fireEvent.click(screen.getByRole("button", { name: /Show advanced options/i }));
     fireEvent.change(screen.getByRole("textbox", { name: /Include regex/i }), {
       target: { value: "cve-\\d{4}-\\d+" },
     });
@@ -198,6 +199,7 @@ describe("MonitoringFeedsPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
       target: { value: "plugin stream" },
     });
+    fireEvent.click(screen.getByRole("button", { name: /Show advanced options/i }));
     fireEvent.mouseDown(screen.getByLabelText(/Classifier mode/i));
     fireEvent.click(screen.getByRole("option", { name: "Classifier only" }));
     fireEvent.change(screen.getByRole("textbox", { name: /Classifier plugin/i }), {
