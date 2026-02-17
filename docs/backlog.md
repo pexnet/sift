@@ -33,9 +33,13 @@ This is the source of truth for product backlog status and long-term roadmap ite
 
 ### Linked Specifications
 
-- Feed recommendations v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
+- Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
+- Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
+  use saved/starred article seeds in v1.
+- Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
+  enforce free-tier-safe per-provider request budgets/rate limits by default.
 
 ## Done (History)
 
@@ -251,7 +255,7 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 
 - Add a dedicated plugin section in workspace navigation where each enabled plugin owns its own folder/area.
 - Initial target examples:
-  - `Recommended feeds` plugin area
+  - `Discover feeds` plugin area
   - `Bluesky` plugin area (when plugin is implemented)
 - Introduce centralized plugin registry configuration (single file) for:
   - plugin metadata and route/UI area configuration

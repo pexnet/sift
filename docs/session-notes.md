@@ -1,5 +1,58 @@
 # Session Notes
 
+## 2026-02-17 (Planning Update: Discovery Providers + Free-Tier Rate Limits)
+
+### Implemented This Session
+
+- Extended `Discover feeds v1` planning spec with provider strategy details:
+  - default provider chain guidance (`searxng` primary + managed fallback)
+  - optional adapter notes for constrained/legacy providers
+- Added planned discovery execution flow:
+  - query variant compilation
+  - provider search execution
+  - staged feed endpoint resolution (direct parse, HTML autodiscovery, constrained heuristics)
+  - validation, dedupe, and source attribution behavior
+- Added explicit free-tier protection planning:
+  - per-provider budget/rate-limit controls (`max_requests_per_run`, `max_requests_per_day`, request spacing, and
+    query/result caps)
+  - partial-result warning behavior when budget exhaustion occurs
+- Updated related planning docs for consistency:
+  - `docs/specs/plugin-configuration-registry-v1.md`
+  - `docs/architecture.md`
+  - `docs/backlog.md`
+
+### Verification
+
+- Documentation-only planning update.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No code test suite execution was required for this docs-only update.
+
+## 2026-02-17 (Planning Alignment: Discover Feeds + Discovery Streams)
+
+### Implemented This Session
+
+- Updated planning/docs direction from saved-driven recommendations to stream-driven discovery:
+  - locked user-facing naming: `Discover feeds` + `Discovery streams`
+  - locked v1 model as separate discovery domain (not monitoring stream reuse)
+- Captured discovery architecture decisions across docs:
+  - separate `discovery_streams` from monitoring `keyword_streams`
+  - per-stream manual generation workflow
+  - recommendation dedupe by normalized URL with source-stream attribution
+- Captured recommendation decision semantics for v1:
+  - statuses include `pending`, `accepted`, `denied`, `resolved_existing`
+  - denied URLs are suppressed until manual reset
+  - already subscribed feed URLs are auto-resolved as `resolved_existing`
+- Captured product/UX boundary:
+  - optional copy-from-monitoring convenience into discovery stream criteria
+  - no saved/starred article seed usage in v1
+- Updated linked specs and plugin naming examples to use `Discover feeds` / `discover_feeds`.
+
+### Verification
+
+- Documentation-only alignment pass.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No code test suite execution was required for this docs-only update (optional markdown checks may be run separately).
+
 ## 2026-02-16 (Workspace UX: Help in Rail + Scope-Aware Mark Read)
 
 ### Implemented This Session

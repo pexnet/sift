@@ -42,10 +42,18 @@ Top-level structure:
 
 Example logical entries:
 
-1. `recommended_feeds`:
+1. `discover_feeds`:
    - enabled true/false
-   - provider keys and generation limits
-   - UI area label `Recommended feeds`
+   - provider chain (`searxng`, `brave_search`, optional adapters)
+   - provider credentials/env references
+   - generation limits and provider budgets:
+     - `max_requests_per_run`
+     - `max_requests_per_day`
+     - `min_interval_ms`
+     - `max_query_variants_per_stream`
+     - `max_results_per_query`
+   - fallback policy and timeout settings
+   - UI area label `Discover feeds`
 2. `bluesky`:
    - enabled true/false
    - auth/api parameters
@@ -59,6 +67,8 @@ Example logical entries:
    - backend hooks are skipped
    - UI areas are hidden
 4. Validation errors should fail with actionable messages (plugin id + field path).
+5. Discovery provider wrappers enforce configured per-provider budgets/rate limits before external calls.
+6. Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
 
 ## API and Admin Surface (Future Direction)
 
@@ -81,8 +91,9 @@ Future phase:
 
 1. Plugin registry is loaded from one configuration file.
 2. Enabling/disabling a plugin changes both backend activation and UI visibility.
-3. Recommended feeds and Bluesky plugin entries can be toggled independently.
+3. Discover feeds and Bluesky plugin entries can be toggled independently.
 4. Invalid registry entries produce clear startup/validation errors.
+5. Discovery plugin config can enforce free-tier-safe request budgets without code changes.
 
 ## Test Plan (for later implementation)
 
@@ -90,12 +101,13 @@ Future phase:
 2. Runtime tests for enabled vs disabled plugin registration.
 3. UI navigation tests confirming hidden/visible plugin areas based on toggles.
 4. Regression tests for existing plugin manager behavior.
+5. Discovery budget/rate-limit config tests (cap enforcement and partial-result warning behavior).
 
 ## Rollout Notes
 
 1. Start with compatibility mode: map existing `plugin_paths` settings into registry defaults.
 2. Introduce explicit deprecation window for legacy plugin path config.
-3. Migrate first-party plugins (noop/classifier/recommendations/future Bluesky) to registry entries.
+3. Migrate first-party plugins (noop/classifier/discovery/future Bluesky) to registry entries.
 
 ## Backlog References
 

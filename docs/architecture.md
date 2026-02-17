@@ -270,6 +270,7 @@ Plugins are loaded by dotted path and may implement one or more hooks:
 - `on_article_ingested(article)` for ingest-time enrichment/transformation.
 - `classify_stream(article, stream)` for stream relevance decisions with confidence.
 - Planned hooks:
+  - `discover_feeds(seed_query, options)` for discovery-stream feed candidate lookup
   - scoring
   - post-filter action
   - outbound integration
@@ -516,7 +517,28 @@ Architecture implications:
   - advanced query evaluation currently prioritizes correctness and is app-layer evaluated for complex expressions
   - PostgreSQL acceleration (`tsvector`/`tsquery`, `pg_trgm`, or hybrid pre-filter) should be added in a later slice
 
-### 3) Dashboard as Command Center
+### 3) Discover Feeds (Discovery Streams)
+
+Planned capability:
+
+- Add a dedicated discovery-stream domain for feed discovery generation and decisions.
+- Keep discovery streams separate from monitoring `keyword_streams`; allow optional copy convenience from monitoring
+  criteria into discovery stream criteria.
+- Provide per-stream manual generation flow only in v1 (`POST /api/v1/discovery/streams/{stream_id}/generate`).
+- Provide candidate decision workflow under discovery endpoints (`/api/v1/discovery/recommendations/*`).
+- Support multi-source dedupe by normalized feed URL while preserving source-stream attribution.
+
+Architecture implications:
+
+- Add `discovery_streams` model and APIs separate from monitoring stream execution/storage.
+- Add `feed_recommendations` model with decision status including `resolved_existing`.
+- Add `feed_recommendation_sources` attribution table so one candidate can map to many discovery streams.
+- Keep denied candidate suppression state and manual reset semantics in recommendation state transitions.
+- Add a provider-adapter abstraction with ordered fallback support (`searxng` primary, managed API alternatives).
+- Add provider-scoped budget/rate-limit enforcement (per-run + daily caps + request spacing) to protect free tiers.
+- Add staged feed resolution pipeline (direct feed parse -> HTML autodiscovery -> constrained heuristic feed-path probes).
+
+### 4) Dashboard as Command Center
 
 Planned capability:
 
@@ -533,7 +555,7 @@ Architecture implications:
 - Extend existing `dashboard_card` plugin slot with source-priority context.
 - Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
 
-### 4) Duplicate Candidate Review (Iteration 1)
+### 5) Duplicate Candidate Review (Iteration 1)
 
 Planned capability:
 
@@ -548,10 +570,11 @@ Architecture implications:
 - Add read API for duplicate groups leveraging existing canonical dedup fields.
 - Preserve merge/resolve workflows for a later iteration.
 
-### 5) Plugin Roadmap Ideas
+### 6) Plugin Roadmap Ideas
 
 Planned plugins:
 
+- Discover feeds plugin (stream-driven feed discovery with provider-backed candidate lookup).
 - LLM summarization plugin (initial provider target: Ollama Cloud).
 - Vector similarity plugin for article/topic relatedness and future semantic monitoring workflows.
 
@@ -561,7 +584,7 @@ Architecture implications:
 - Keep vector/embedding storage optional and plugin-boundary isolated from core ingest requirements.
 
 
-### 6) Trends Detection Across Selected Feed Folders
+### 7) Trends Detection Across Selected Feed Folders
 
 Planned capability:
 
