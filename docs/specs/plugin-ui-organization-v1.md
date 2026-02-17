@@ -13,7 +13,7 @@ standardized. This spec defines a UI organization model where each plugin gets i
 
 Examples from current product ideas:
 
-1. Feed recommendation features should appear in a dedicated `Recommended feeds` area.
+1. Feed discovery features should appear in a dedicated `Discover feeds` area.
 2. A future Bluesky integration should appear in a dedicated `Bluesky` area.
 
 ## Goal
@@ -38,13 +38,13 @@ without mixing them into unrelated core areas.
    - unread/pending count (optional)
    - route/view target
 4. Core examples:
-   - `recommended_feeds` (from recommendation plugin)
+   - `discover_feeds` (from discovery plugin)
    - `bluesky` (from Bluesky plugin when enabled)
 
 ## Plugin Folder Naming Rules
 
 1. User-facing labels should be short and product-specific.
-2. Internal ids must be namespaced by plugin id (for example, `plugin.recommended_feeds.main`).
+2. Internal ids must be namespaced by plugin id (for example, `plugin.discover_feeds.main`).
 3. Ordering is deterministic and configurable from plugin config.
 
 ## Route/View Model (Planned)
@@ -62,7 +62,7 @@ without mixing them into unrelated core areas.
 ## Acceptance Criteria (for later implementation)
 
 1. Plugin areas are visible in a dedicated workspace `Plugins` nav section.
-2. Recommended feeds appears in its own area when recommendation plugin is enabled.
+2. Discover feeds appears in its own area when discovery plugin is enabled.
 3. Bluesky appears in its own area when Bluesky plugin is enabled.
 4. Disabled plugins do not render nav areas.
 5. Existing core workspace scopes continue to function unchanged.
@@ -77,7 +77,7 @@ without mixing them into unrelated core areas.
 ## Rollout Notes
 
 1. Deliver behind feature branch and progressive plugin-by-plugin adoption.
-2. Start with `Recommended feeds` as first plugin-area implementation.
+2. Start with `Discover feeds` as first plugin-area implementation.
 3. Add Bluesky area only when Bluesky plugin backend/UI slices are ready.
 
 ## Backlog References
