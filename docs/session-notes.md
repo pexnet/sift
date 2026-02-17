@@ -1,5 +1,25 @@
 # Session Notes
 
+## 2026-02-17 (Planning Update: Silent Feeds for Monitoring-Only Population)
+
+### Implemented This Session
+
+- Added new planning spec: `docs/specs/silent-feeds-v1.md`.
+- Scoped `silent` feed mode semantics:
+  - silent feeds keep normal ingestion and monitoring stream matching behavior
+  - new ingested articles from silent feeds are auto-marked read
+  - switching a feed to silent bulk-marks existing unread for that feed as read
+  - unsilencing stops future auto-read but does not revert historical read states
+- Updated planning docs for backlog/architecture alignment:
+  - added linked spec and deferred backlog item (placed as lowest priority) in `docs/backlog.md`
+  - added deferred architecture section for silent feed model/API/pipeline implications in `docs/architecture.md`
+
+### Verification
+
+- Documentation-only planning update.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No code test suite execution was required for this docs-only update.
+
 ## 2026-02-17 (Planning Update: Discovery Providers + Free-Tier Rate Limits)
 
 ### Implemented This Session

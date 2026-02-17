@@ -601,6 +601,22 @@ Architecture implications:
 - Persist trend snapshots so dashboard reads are fast and historically comparable.
 - Provide read APIs/view models for dashboard and future analytics surfaces.
 
+### 8) Silent Feeds for Monitoring-Only Population
+
+Planned capability:
+
+- Add feed-level `silent` mode for feeds used primarily to populate monitoring streams.
+- Silent feeds continue normal ingest and stream matching behavior.
+- Articles ingested from silent feeds are auto-marked read for the feed owner.
+- Switching a feed to silent bulk-marks existing unread for that feed as read.
+
+Architecture implications:
+
+- Extend `feeds` model/API with `is_silent` boolean state.
+- Add feed-setting mutation endpoint for silent toggle behavior.
+- Ensure ingest pipeline applies silent auto-read without changing matcher execution/evidence persistence.
+- Ensure unread/navigation counters remain coherent after silent toggle and ingest updates.
+
 ### Deferred Delivery Sequence (Post Current Core Priorities)
 
 1. Feed health/edit + lifecycle controls.
@@ -609,3 +625,4 @@ Architecture implications:
 4. Duplicate candidate review screen.
 5. Trends detection for selected feed folders (dashboard-oriented).
 6. Plugin implementations (LLM summary, vector similarity).
+7. Silent feeds for monitoring-only population.

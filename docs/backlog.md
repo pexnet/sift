@@ -36,6 +36,7 @@ This is the source of truth for product backlog status and long-term roadmap ite
 - Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
+- Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
   use saved/starred article seeds in v1.
 - Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
@@ -264,6 +265,17 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 - Keep secrets in environment variables and reference them from config.
 - Plan compatibility mode to migrate from legacy `plugin_paths` to registry-based plugin activation.
 
+### 9) Silent Feeds for Monitoring-Only Population
+
+- Add feed-level `silent` mode for high-noise feeds that should populate monitoring streams without creating unread
+  backlog.
+- Silent feeds should:
+  - ingest and match monitoring rules exactly like normal feeds
+  - auto-mark ingested articles as read
+  - keep unread counts at zero after ingest/toggle processing
+- When a feed is switched to silent, existing unread for that feed should be bulk-marked read.
+- Spec reference: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
+
 ### Suggested Deferred Delivery Sequence
 
 1. Feed health/edit page (operability baseline).
@@ -273,3 +285,4 @@ Reference for detailed per-session implementation and verification logs: `docs/s
 5. Trends detection for selected feed folders (dashboard-oriented).
 6. Advanced search query acceleration (PostgreSQL-oriented).
 7. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+8. Silent feeds for monitoring-only population.
