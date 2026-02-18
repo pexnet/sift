@@ -29,6 +29,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
+- Full article fetch on-demand v1: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
 - Workspace action iconification v1:
   [docs/specs/workspace-action-iconification-v1.md](specs/workspace-action-iconification-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
@@ -148,8 +149,15 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Add external identity provider support on top of existing `auth_identities` foundation.
 - Delivery order:
   - Google first
-  - then Azure/Apple
+- then Azure/Apple
 - Keep current local auth provider behavior unchanged as fallback.
+
+### 12) Full Article Fetch On-Demand
+
+- Add user-triggered `Fetch full article` action in reader to retrieve the full source-page content on demand.
+- Persist extracted fulltext separately from feed excerpt content and show source state in reader.
+- Keep initial version manual/on-demand only (no global auto-fetch).
+- Spec reference: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
 
 ### Suggested Deferred Delivery Sequence
 
@@ -164,3 +172,4 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 9. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
 10. Silent feeds for monitoring-only population.
 11. OIDC provider integration (Google, then Azure/Apple).
+12. Full article fetch on-demand (reader-triggered).

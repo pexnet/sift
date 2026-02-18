@@ -621,6 +621,20 @@ Architecture implications:
 - Ensure ingest pipeline applies silent auto-read without changing matcher execution/evidence persistence.
 - Ensure unread/navigation counters remain coherent after silent toggle and ingest updates.
 
+### 9) Full Article Fetch On-Demand
+
+Planned capability:
+
+- Add reader-level on-demand full article fetch action for currently selected articles.
+- Fetch source page content from article canonical URL and extract main readable content.
+- Persist extracted fulltext separately from feed-provided excerpt and render it when available.
+
+Architecture implications:
+
+- Add persisted fulltext storage model (separate from `articles.content_text`) with fetch status and error metadata.
+- Add article-scoped fetch mutation endpoint and extend article detail payload with fulltext status/content source fields.
+- Add guarded outbound fetch pipeline (scheme restrictions, network safety checks, timeout/size bounds).
+
 ### Deferred Delivery Sequence (Post Current Core Priorities)
 
 1. Feed health/edit + lifecycle controls.
@@ -634,3 +648,4 @@ Architecture implications:
 9. Plugin implementations (LLM summary, vector similarity).
 10. Silent feeds for monitoring-only population.
 11. OIDC provider integration (Google, then Azure/Apple).
+12. Full article fetch on-demand (reader-triggered).

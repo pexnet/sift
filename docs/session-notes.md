@@ -1,5 +1,31 @@
 # Session Notes
 
+## 2026-02-18 (Planning Update: Full Article Fetch On-Demand v1)
+
+### Implemented This Session
+
+- Added new planning spec for reader-triggered full article fetch:
+  - `docs/specs/full-article-fetch-on-demand-v1.md`
+  - scopes manual `Fetch full article` action from reader, persisted extracted fulltext storage, and guarded fetch
+    pipeline requirements.
+- Updated active backlog deferred planning:
+  - added linked spec reference in `docs/backlog.md`
+  - added deferred backlog item `Full Article Fetch On-Demand` as a later-priority item
+  - updated suggested deferred delivery sequence to include this feature as lowest priority.
+- Updated architecture deferred planning:
+  - added long-term backlog section for full article fetch capability and architecture implications
+  - updated deferred delivery sequence ordering accordingly.
+- Updated `AGENTS.md` deferred list with this later-priority feature for cross-doc planning consistency.
+
+### Verification
+
+- Documentation/planning update only.
+- Source-code context reviewed for current behavior:
+  - ingestion currently stores feed-provided excerpt content (`src/sift/services/ingestion_service.py`)
+  - reader currently renders article detail content with `Open original` action (`frontend/src/features/workspace/components/ReaderPane.tsx`)
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+
 ## 2026-02-18 (Planning Alignment: Backlog/Architecture/Agent Notes Consistency Pass)
 
 ### Implemented This Session

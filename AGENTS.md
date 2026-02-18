@@ -175,6 +175,7 @@ This file stores persistent project context for future Codex sessions.
 ## Deferred
 
 1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
+2. Add reader-triggered full article fetch on demand (later priority).
 
 ## Feature Notes
 
