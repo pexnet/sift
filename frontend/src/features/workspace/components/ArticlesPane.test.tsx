@@ -165,6 +165,27 @@ describe("ArticlesPane", () => {
             stream_match_reasons: {
               "fd6dd555-1902-4f29-b5ba-3f5a7246e9f1": "regex: cve-\\d{4}-\\d+",
             },
+            stream_match_evidence: {
+              "fd6dd555-1902-4f29-b5ba-3f5a7246e9f1": {
+                matcher_type: "rules",
+                query_hits: [
+                  {
+                    field: "title",
+                    token: "darktrace",
+                    start: 0,
+                    end: 9,
+                  },
+                ],
+                regex_hits: [
+                  {
+                    field: "content_text",
+                    value: "CVE-2026-1234",
+                    start: 5,
+                    end: 18,
+                  },
+                ],
+              },
+            },
           },
         ]}
         articleTotal={1}
@@ -182,6 +203,7 @@ describe("ArticlesPane", () => {
 
     expect(screen.getByText("Matched: darktrace")).toBeVisible();
     expect(screen.getByText("Why matched: darktrace: regex: cve-\\d{4}-\\d+")).toBeVisible();
+    expect(screen.getByText("Matched terms: darktrace (title), CVE-2026-1234 (content)")).toBeVisible();
   });
 
   it("runs scope read action from list control", () => {

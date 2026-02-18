@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
+import { buildMatchedTermsSummary } from "../lib/matchEvidence";
 import { formatRelativeTime } from "../lib/time";
 import type { ArticleDetail, ArticleListItem } from "../../../shared/types/contracts";
 
@@ -37,13 +38,15 @@ type EvidenceRow = {
 type EvidenceModel = {
   rows: EvidenceRow[];
   ranges: HighlightRange[];
+  titleRanges: HighlightRange[];
   terms: string[];
+  titleTerms: string[];
 };
 type OffsetHighlightResult = {
   html: string;
   appliedMarkerIds: Set<string>;
 };
-const EMPTY_EVIDENCE_MODEL: EvidenceModel = { rows: [], ranges: [], terms: [] };
+const EMPTY_EVIDENCE_MODEL: EvidenceModel = { rows: [], ranges: [], titleRanges: [], terms: [], titleTerms: [] };
 
 const SKIP_HIGHLIGHT_TAGS = new Set(["MARK", "CODE", "PRE", "SCRIPT", "STYLE"]);
 
@@ -76,6 +79,8 @@ const toString = (value: unknown): string | null => {
   return normalized || null;
 };
 
+const normalizeFieldLabel = (field: string): string => (field === "content_text" ? "content" : field);
+
 const buildEvidenceSummary = (reason: string | undefined, rawEvidence: unknown): string | null => {
   const evidence = asRecord(rawEvidence);
   if (!evidence) {
@@ -107,6 +112,13 @@ const buildEvidenceSummary = (reason: string | undefined, rawEvidence: unknown):
 
   if (ruleEvidence && "query" in ruleEvidence) {
     parts.push("query expression matched");
+  }
+  const queryHit = firstRecord(ruleEvidence?.query_hits);
+  if (queryHit) {
+    const token = toString(queryHit.token) ?? toString(queryHit.value) ?? "query token";
+    const field = normalizeFieldLabel(toString(queryHit.field) ?? "content_text");
+    const snippet = toString(queryHit.snippet);
+    parts.push(`query "${token}" (${field})${snippet ? ` in "${snippet}"` : ""}`);
   }
 
   const classifier = asRecord(classifierEvidence);
@@ -159,8 +171,11 @@ const createEvidenceModel = (
 ): EvidenceModel => {
   const rows: EvidenceRow[] = [];
   const ranges: HighlightRange[] = [];
+  const titleRanges: HighlightRange[] = [];
   const terms: string[] = [];
+  const titleTerms: string[] = [];
   const seenTerms = new Set<string>();
+  const seenTitleTerms = new Set<string>();
 
   for (const streamId of streamIds) {
     const streamName = streamNameById[streamId];
@@ -179,14 +194,15 @@ const createEvidenceModel = (
     const pushHitRow = (
       hit: EvidenceRecord,
       options: {
-        kind: "keyword" | "regex";
+        kind: "keyword" | "regex" | "query";
         streamIndex: number;
         hitIndex: number;
       }
     ) => {
       const { kind, streamIndex, hitIndex } = options;
       const field = toString(hit.field) ?? "content_text";
-      const value = toString(hit.value);
+      const displayField = normalizeFieldLabel(field);
+      const value = kind === "query" ? toString(hit.token) ?? toString(hit.value) : toString(hit.value);
       const snippet = toString(hit.snippet);
       const pattern = kind === "regex" ? toString(hit.pattern) : null;
       const start = toNumber(hit.start);
@@ -196,15 +212,32 @@ const createEvidenceModel = (
       if (field === "content_text" && start !== null && end !== null && end > start) {
         ranges.push({ id: markerId, start, end });
       }
+      if (field === "title" && start !== null && end !== null && end > start) {
+        titleRanges.push({ id: markerId, start, end });
+      }
       if (value) {
         addUniqueTerm(terms, seenTerms, value);
+        if (field === "title") {
+          addUniqueTerm(titleTerms, seenTitleTerms, value);
+        }
       }
 
       if (kind === "keyword") {
         rows.push({
           id: `${streamId}-keyword-${streamIndex}-${hitIndex}`,
           streamName,
-          title: value ? `Keyword hit: "${value}" (${field})` : `Keyword hit (${field})`,
+          title: value ? `Keyword hit: "${value}" (${displayField})` : `Keyword hit (${displayField})`,
+          snippet,
+          markerId: field === "content_text" ? markerId : null,
+        });
+        return;
+      }
+
+      if (kind === "query") {
+        rows.push({
+          id: `${streamId}-query-hit-${streamIndex}-${hitIndex}`,
+          streamName,
+          title: value ? `Query hit: "${value}" (${displayField})` : `Query hit (${displayField})`,
           snippet,
           markerId: field === "content_text" ? markerId : null,
         });
@@ -215,8 +248,8 @@ const createEvidenceModel = (
         id: `${streamId}-regex-${streamIndex}-${hitIndex}`,
         streamName,
         title: pattern
-          ? `Regex hit: /${pattern}/${value ? ` => "${value}"` : ""} (${field})`
-          : `Regex hit${value ? `: "${value}"` : ""} (${field})`,
+          ? `Regex hit: /${pattern}/${value ? ` => "${value}"` : ""} (${displayField})`
+          : `Regex hit${value ? `: "${value}"` : ""} (${displayField})`,
         snippet,
         markerId: field === "content_text" ? markerId : null,
       });
@@ -240,11 +273,20 @@ const createEvidenceModel = (
       pushHitRow(hit, { kind: "regex", streamIndex: rows.length, hitIndex: index });
     });
 
+    const queryHits = Array.isArray(rulesEvidence?.query_hits) ? rulesEvidence.query_hits : [];
+    queryHits.forEach((entry, index) => {
+      const hit = asRecord(entry);
+      if (!hit) {
+        return;
+      }
+      pushHitRow(hit, { kind: "query", streamIndex: rows.length, hitIndex: index });
+    });
+
     if (rulesEvidence && "query" in rulesEvidence) {
       rows.push({
         id: `${streamId}-query`,
         streamName,
-        title: "Query expression matched",
+        title: queryHits.length > 0 ? "Query expression matched (with spans)" : "Query expression matched",
         snippet: null,
         markerId: null,
       });
@@ -278,6 +320,7 @@ const createEvidenceModel = (
         const text = toString(finding.text) ?? toString(finding.snippet) ?? value;
         const score = toNumber(finding.score);
         const field = toString(finding.field);
+        const displayField = field ? normalizeFieldLabel(field) : null;
         const start = toNumber(finding.start);
         const end = toNumber(finding.end);
         const markerId = `reader-highlight-${streamId}-classifier-finding-${index}`;
@@ -285,10 +328,19 @@ const createEvidenceModel = (
         if (field === "content_text" && start !== null && end !== null && end > start) {
           ranges.push({ id: markerId, start, end });
         }
+        if (field === "title" && start !== null && end !== null && end > start) {
+          titleRanges.push({ id: markerId, start, end });
+        }
         if (value) {
           addUniqueTerm(terms, seenTerms, value);
+          if (field === "title") {
+            addUniqueTerm(titleTerms, seenTitleTerms, value);
+          }
         } else if (text && text.length <= 80) {
           addUniqueTerm(terms, seenTerms, text);
+          if (field === "title") {
+            addUniqueTerm(titleTerms, seenTitleTerms, text);
+          }
         }
         if (text) {
           findingSnippetValues.add(text);
@@ -297,7 +349,7 @@ const createEvidenceModel = (
         rows.push({
           id: `${streamId}-classifier-finding-${index}`,
           streamName,
-          title: `${label}${score !== null ? ` (score ${score.toFixed(2)})` : ""}${field ? ` (${field})` : ""}`,
+          title: `${label}${score !== null ? ` (score ${score.toFixed(2)})` : ""}${displayField ? ` (${displayField})` : ""}`,
           snippet: text,
           markerId: field === "content_text" ? markerId : null,
         });
@@ -320,7 +372,7 @@ const createEvidenceModel = (
     }
   }
 
-  return { rows, ranges, terms };
+  return { rows, ranges, titleRanges, terms, titleTerms };
 };
 
 const normalizeRanges = (ranges: HighlightRange[], contentLength: number): HighlightRange[] => {
@@ -499,6 +551,64 @@ const highlightHtmlByTerms = (html: string, terms: string[]): string => {
   return container.innerHTML;
 };
 
+const highlightTextByRanges = (text: string, ranges: HighlightRange[]): ReactNode => {
+  const normalized = normalizeRanges(ranges, text.length);
+  if (normalized.length === 0) {
+    return text;
+  }
+
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  normalized.forEach((range, index) => {
+    if (range.start > cursor) {
+      nodes.push(text.slice(cursor, range.start));
+    }
+    nodes.push(
+      <mark key={`reader-title-highlight-${range.id}-${index}`} className="workspace-reader__highlight">
+        {text.slice(range.start, range.end)}
+      </mark>
+    );
+    cursor = range.end;
+  });
+  if (cursor < text.length) {
+    nodes.push(text.slice(cursor));
+  }
+  return <>{nodes}</>;
+};
+
+const highlightTextByTerms = (text: string, terms: string[]): ReactNode => {
+  const normalizedTerms = terms
+    .map((term) => term.trim())
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length);
+  if (normalizedTerms.length === 0) {
+    return text;
+  }
+
+  const pattern = new RegExp(`(${normalizedTerms.map((term) => escapeRegExp(term)).join("|")})`, "gi");
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match = pattern.exec(text);
+  while (match) {
+    const start = match.index;
+    const end = start + match[0].length;
+    if (start > lastIndex) {
+      nodes.push(text.slice(lastIndex, start));
+    }
+    nodes.push(
+      <mark key={`reader-title-term-highlight-${start}-${end}`} className="workspace-reader__highlight">
+        {text.slice(start, end)}
+      </mark>
+    );
+    lastIndex = end;
+    match = pattern.exec(text);
+  }
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+  return nodes.length === 0 ? text : <>{nodes}</>;
+};
+
 export function ReaderPane({
   selectedArticle,
   selectedArticleId,
@@ -527,7 +637,11 @@ export function ReaderPane({
   } catch {
     evidenceModel = EMPTY_EVIDENCE_MODEL;
   }
-  const hasHighlightCandidates = evidenceModel.ranges.length > 0 || evidenceModel.terms.length > 0;
+  const hasHighlightCandidates =
+    evidenceModel.ranges.length > 0 ||
+    evidenceModel.terms.length > 0 ||
+    evidenceModel.titleRanges.length > 0 ||
+    evidenceModel.titleTerms.length > 0;
   const [showHighlights, setShowHighlights] = useState(true);
 
   let renderedContentHtml = contentHtml;
@@ -574,6 +688,15 @@ export function ReaderPane({
       return `${streamName}: ${summary}`;
     })
     .filter((value): value is string => Boolean(value));
+  const matchedTermsSummary = buildMatchedTermsSummary(streamIds, streamMatchEvidence);
+  const articleTitle = detail?.title || "Untitled article";
+  let renderedArticleTitle: ReactNode = articleTitle;
+  if (showHighlights) {
+    renderedArticleTitle = highlightTextByRanges(articleTitle, evidenceModel.titleRanges);
+    if (renderedArticleTitle === articleTitle && evidenceModel.titleTerms.length > 0) {
+      renderedArticleTitle = highlightTextByTerms(articleTitle, evidenceModel.titleTerms);
+    }
+  }
 
   const jumpToHighlight = (markerId: string) => {
     const target = document.getElementById(markerId);
@@ -608,7 +731,7 @@ export function ReaderPane({
 
             <Box>
               <Typography variant="h4" className="workspace-reader__title">
-                {detail.title || "Untitled article"}
+                {renderedArticleTitle}
               </Typography>
               <Typography variant="body2" color="text.secondary" className="workspace-reader__meta">
                 {detail.feed_title || "Unknown source"}
@@ -622,6 +745,11 @@ export function ReaderPane({
               {matchedReasonSummaries.length > 0 ? (
                 <Typography variant="body2" className="workspace-reader__match">
                   Why matched: {matchedReasonSummaries.join(" · ")}
+                </Typography>
+              ) : null}
+              {matchedTermsSummary ? (
+                <Typography variant="body2" className="workspace-reader__match">
+                  Matched terms: {matchedTermsSummary}
                 </Typography>
               ) : null}
               {matchedEvidenceSummaries.length > 0 ? (
@@ -647,7 +775,7 @@ export function ReaderPane({
               <Button size="small" variant="text" onClick={() => onMoveSelection(1)}>
                 Next
               </Button>
-              {contentHtml && hasHighlightCandidates ? (
+              {hasHighlightCandidates ? (
                 <Button size="small" variant="text" onClick={() => setShowHighlights((current) => !current)}>
                   {showHighlights ? "Hide highlights" : "Show highlights"}
                 </Button>

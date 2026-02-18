@@ -23,7 +23,7 @@ from sift.domain.schemas import (
 )
 from sift.plugins.base import ArticleContext, StreamClassifierContext
 from sift.plugins.manager import PluginManager
-from sift.search.query_language import ParsedSearchQuery, SearchQuerySyntaxError, parse_search_query
+from sift.search.query_language import ParsedSearchQuery, SearchQueryHit, SearchQuerySyntaxError, parse_search_query
 
 
 class StreamConflictError(Exception):
@@ -352,6 +352,21 @@ def _build_snippet(text: str, *, start: int, end: int, radius: int = 48) -> str:
     return snippet
 
 
+def _query_hit_to_evidence(hit: SearchQueryHit, *, title: str, content_text: str) -> dict[str, Any]:
+    field_text = title if hit.field == "title" else content_text
+    query_hit: dict[str, Any] = {
+        "field": hit.field,
+        "offset_basis": "field_text_v1",
+        "token": hit.token,
+        "start": hit.start,
+        "end": hit.end,
+        "snippet": _build_snippet(field_text, start=hit.start, end=hit.end),
+    }
+    if hit.operator_context:
+        query_hit["operator_context"] = hit.operator_context
+    return query_hit
+
+
 def _find_keyword_hit(title: str, content_text: str, keyword: str) -> dict[str, Any] | None:
     keyword_lower = keyword.lower()
 
@@ -443,6 +458,7 @@ def stream_rule_match_outcome(
     evidence: dict[str, Any] = {"matcher_type": "rules"}
     include_keyword_hits: list[dict[str, Any]] = []
     include_regex_hits: list[dict[str, Any]] = []
+    query_hits: list[dict[str, Any]] = []
 
     if stream.match_query and not stream.match_query.matches(
         title=title,
@@ -453,6 +469,16 @@ def stream_rule_match_outcome(
     if stream.match_query:
         reason = "query matched"
         evidence["query"] = {"expression": True}
+        query_hits = [
+            _query_hit_to_evidence(hit, title=title, content_text=content_text)
+            for hit in stream.match_query.matched_hits(
+                title=title,
+                content_text=content_text,
+                source_text=source_url,
+            )
+        ]
+        if query_hits:
+            evidence["query_hits"] = query_hits
 
     for keyword in stream.include_keywords:
         if keyword in payload:

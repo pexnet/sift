@@ -305,6 +305,7 @@ describe("ReaderPane", () => {
 
     expect(screen.getByText("Matched by monitoring feeds: darktrace")).toBeVisible();
     expect(screen.getByText("Why matched: darktrace: keyword: darktrace")).toBeVisible();
+    expect(screen.getByText("Matched terms: darktrace (title)")).toBeVisible();
     expect(
       screen.getByText(
         'Match evidence: darktrace: keyword: darktrace | keyword "darktrace" in "Darktrace deep dive"'
@@ -414,7 +415,7 @@ describe("ReaderPane", () => {
 
     expect(screen.getByText(/Match evidence: sec-stream:/)).toBeVisible();
     expect(screen.getByText(/findings 2/i)).toBeVisible();
-    expect(screen.getByText("sec-stream: entity hit (score 0.91) (content_text)")).toBeVisible();
+    expect(screen.getByText("sec-stream: entity hit (score 0.91) (content)")).toBeVisible();
     expect(screen.getByText("APT behavior observed")).toBeVisible();
     expect(screen.getAllByRole("button", { name: /Jump to highlight/i }).length).toBeGreaterThan(0);
   });
@@ -478,6 +479,76 @@ describe("ReaderPane", () => {
     fireEvent.click(screen.getByRole("button", { name: /Hide highlights/i }));
     expect(screen.getByRole("button", { name: /Show highlights/i })).toBeVisible();
     expect(container.querySelectorAll("mark.workspace-reader__highlight").length).toBe(0);
+  });
+
+  it("renders query-hit rows and highlights title spans", () => {
+    const { container } = render(
+      <ReaderPane
+        selectedArticle={undefined}
+        selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{
+          "d76760f1-ba73-416b-8b4c-a70f1734720f": "sec-stream",
+        }}
+        detail={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          source_id: "source",
+          canonical_url: "https://example.com/article",
+          title: "Darktrace response guidance",
+          content_text: "Coverage includes SentinelOne telemetry and response context.",
+          language: null,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: ["d76760f1-ba73-416b-8b4c-a70f1734720f"],
+          stream_match_reasons: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": "query matched",
+          },
+          stream_match_evidence: {
+            "d76760f1-ba73-416b-8b4c-a70f1734720f": {
+              matcher_type: "rules",
+              query: { expression: true },
+              query_hits: [
+                {
+                  field: "title",
+                  token: "Darktrace",
+                  start: 0,
+                  end: 9,
+                  snippet: "Darktrace response guidance",
+                },
+                {
+                  field: "content_text",
+                  token: "SentinelOne",
+                  start: 18,
+                  end: 29,
+                  snippet: "Coverage includes SentinelOne telemetry",
+                },
+              ],
+            },
+          },
+        }}
+        contentHtml="<p>Coverage includes SentinelOne telemetry and response context.</p>"
+        isLoading={false}
+        isError={false}
+        isMutating={false}
+        hasMutationError={false}
+        onToggleRead={vi.fn()}
+        onToggleSaved={vi.fn()}
+        onOpenOriginal={vi.fn()}
+        onMoveSelection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Matched terms: Darktrace (title), SentinelOne (content)")).toBeVisible();
+    expect(screen.getByText('sec-stream: Query hit: "Darktrace" (title)')).toBeVisible();
+    expect(screen.getByText('sec-stream: Query hit: "SentinelOne" (content)')).toBeVisible();
+    expect(container.querySelectorAll(".workspace-reader__title mark.workspace-reader__highlight").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /Hide highlights/i }));
+    expect(container.querySelectorAll(".workspace-reader__title mark.workspace-reader__highlight").length).toBe(0);
   });
 
   it("renders evidence rows with jump-to-highlight action", () => {

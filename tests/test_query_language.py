@@ -44,6 +44,31 @@ def test_parse_query_supports_fuzzy() -> None:
     assert query.matches(title="malware report", content_text="", source_text=None) is False
 
 
+def test_parse_query_collects_title_and_content_hits() -> None:
+    query = parse_search_query("darktrace AND sentinel*")
+    hits = query.matched_hits(
+        title="Darktrace coverage",
+        content_text="SentinelOne telemetry update",
+        source_text="https://example.com",
+    )
+    assert len(hits) >= 2
+    assert any(hit.field == "title" and hit.token.lower() == "darktrace" for hit in hits)
+    assert any(hit.field == "content_text" and hit.token.lower().startswith("sentinel") for hit in hits)
+    assert all(hit.operator_context == "AND" for hit in hits)
+
+
+def test_parse_query_excludes_not_branch_hits() -> None:
+    query = parse_search_query("microsoft AND NOT sports")
+    hits = query.matched_hits(
+        title="Microsoft security update",
+        content_text="cloud telemetry",
+        source_text="https://example.com",
+    )
+    assert len(hits) >= 1
+    assert any(hit.token.lower() == "microsoft" for hit in hits)
+    assert all(hit.token.lower() != "sports" for hit in hits)
+
+
 @pytest.mark.parametrize(
     "expression",
     [
@@ -58,4 +83,3 @@ def test_parse_query_supports_fuzzy() -> None:
 def test_parse_query_rejects_invalid_syntax(expression: str) -> None:
     with pytest.raises(SearchQuerySyntaxError):
         parse_search_query(expression)
-

@@ -16,6 +16,7 @@ from sift.services.stream_service import (
     StreamMatchDecision,
     StreamValidationError,
     stream_matches,
+    stream_rule_match_outcome,
     stream_service,
 )
 
@@ -406,6 +407,43 @@ def test_stream_matches_respects_match_query() -> None:
     )
 
 
+def test_stream_rule_match_outcome_includes_query_hits() -> None:
+    compiled_stream = CompiledKeywordStream(
+        id=uuid4(),
+        name="query-hits",
+        priority=100,
+        match_query=parse_search_query("darktrace AND sentinel*"),
+        include_keywords=[],
+        exclude_keywords=[],
+        include_regex=[],
+        exclude_regex=[],
+        source_contains=None,
+        language_equals=None,
+        classifier_mode="rules_only",
+        classifier_plugin=None,
+        classifier_config={},
+        classifier_min_confidence=0.7,
+    )
+
+    reason, evidence = stream_rule_match_outcome(
+        compiled_stream,
+        title="Darktrace security bulletin",
+        content_text="SentinelOne telemetry update for enterprise teams.",
+        source_url="https://example.com/feed",
+        language="en",
+    )
+    assert reason == "query matched"
+    assert evidence is not None
+    assert "query" in evidence
+    assert "query_hits" in evidence
+    query_hits = evidence["query_hits"]
+    assert isinstance(query_hits, list)
+    assert any(hit.get("field") == "title" and hit.get("token", "").lower() == "darktrace" for hit in query_hits)
+    assert any(hit.get("field") == "content_text" and "sentinel" in hit.get("token", "").lower() for hit in query_hits)
+    assert all(hit.get("offset_basis") == "field_text_v1" for hit in query_hits)
+    assert all(isinstance(hit.get("snippet"), str) and hit["snippet"] for hit in query_hits)
+
+
 def test_stream_matches_supports_regex_include_exclude() -> None:
     compiled_stream = CompiledKeywordStream(
         id=uuid4(),
@@ -585,6 +623,10 @@ async def test_run_stream_backfill_replaces_existing_matches() -> None:
         assert matches[0].match_reason == "query matched"
         assert matches[0].match_evidence is not None
         assert matches[0].match_evidence.get("query") is not None
+        query_hits = matches[0].match_evidence.get("query_hits")
+        assert isinstance(query_hits, list)
+        assert any(hit.get("field") == "title" for hit in query_hits)
+        assert any(hit.get("token", "").lower() == "microsoft" for hit in query_hits)
 
     await engine.dispose()
 

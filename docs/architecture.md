@@ -401,15 +401,11 @@ Design goals:
 
 ## Next UI Slice (Prioritized)
 
-1. Monitoring feed management v1 was completed on 2026-02-16.
-2. Monitoring search language v1 was completed on 2026-02-16.
-3. Monitoring feed management v2 is in progress:
-   - backfill execution baseline is completed
-   - regex matcher expansion baseline is completed
-   - match-reason explainability baseline is completed
-   - plugin matcher config baseline is completed
-   - remaining v2 scope:
-   - deeper match explainability (matched spans/snippets)
+1. Monitoring match visual explainability v1 was completed on 2026-02-18:
+   - query-hit evidence (`query_hits`) is persisted and surfaced in APIs
+   - compact `Matched terms` summaries are rendered in list/reader
+   - title/content span-level highlighting is rendered in reader surfaces
+2. Workspace action iconification v1 is the next prioritized UI slice.
 
 ## Deferred
 

@@ -11,6 +11,7 @@ class SearchQuerySyntaxError(ValueError):
 
 
 TokenKind = Literal["WORD", "PHRASE", "LPAREN", "RPAREN", "AND", "OR", "NOT", "EOF"]
+QueryHitField = Literal["title", "content_text"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,6 +232,35 @@ class ParsedSearchQuery:
         words = re.findall(r"\w+", normalized_corpus, flags=re.UNICODE)
         return _evaluate_node(self.expression, normalized_corpus=normalized_corpus, words=words)
 
+    def matched_hits(
+        self,
+        *,
+        title: str,
+        content_text: str,
+        source_text: str | None = None,
+    ) -> list[SearchQueryHit]:
+        normalized_corpus = _normalize_text("\n".join([title, content_text, source_text or ""]))
+        words = re.findall(r"\w+", normalized_corpus, flags=re.UNICODE)
+        matched, hits = _evaluate_node_with_hits(
+            self.expression,
+            normalized_corpus=normalized_corpus,
+            words=words,
+            title=title,
+            content_text=content_text,
+        )
+        if not matched:
+            return []
+        return _dedupe_hits(hits)
+
+
+@dataclass(frozen=True, slots=True)
+class SearchQueryHit:
+    field: QueryHitField
+    token: str
+    start: int
+    end: int
+    operator_context: Literal["AND", "OR"] | None = None
+
 
 def parse_search_query(value: str) -> ParsedSearchQuery:
     parser = _Parser(_tokenize(value))
@@ -239,6 +269,189 @@ def parse_search_query(value: str) -> ParsedSearchQuery:
 
 def requires_advanced_search(value: str) -> bool:
     return bool(re.search(r'["()~*]|\b(?:and|or|not)\b', value, flags=re.IGNORECASE))
+
+
+def _evaluate_node_with_hits(
+    node: _ExprNode,
+    *,
+    normalized_corpus: str,
+    words: list[str],
+    title: str,
+    content_text: str,
+    operator_context: Literal["AND", "OR"] | None = None,
+) -> tuple[bool, list[SearchQueryHit]]:
+    if isinstance(node, _WordNode):
+        matched = node.value in normalized_corpus
+        if not matched:
+            return False, []
+        return True, _find_substring_hits(
+            term=node.value,
+            title=title,
+            content_text=content_text,
+            operator_context=operator_context,
+        )
+    if isinstance(node, _PhraseNode):
+        matched = node.value in normalized_corpus
+        if not matched:
+            return False, []
+        return True, _find_substring_hits(
+            term=node.value,
+            title=title,
+            content_text=content_text,
+            operator_context=operator_context,
+        )
+    if isinstance(node, _PrefixNode):
+        matched = any(word.startswith(node.prefix) for word in words)
+        if not matched:
+            return False, []
+        return True, _find_prefix_hits(
+            prefix=node.prefix,
+            title=title,
+            content_text=content_text,
+            operator_context=operator_context,
+        )
+    if isinstance(node, _FuzzyNode):
+        matched = any(_levenshtein_with_limit(node.value, word, node.distance) <= node.distance for word in words)
+        if not matched:
+            return False, []
+        return True, _find_fuzzy_hits(
+            value=node.value,
+            distance=node.distance,
+            title=title,
+            content_text=content_text,
+            operator_context=operator_context,
+        )
+    if isinstance(node, _NotNode):
+        child_match, _ = _evaluate_node_with_hits(
+            node.child,
+            normalized_corpus=normalized_corpus,
+            words=words,
+            title=title,
+            content_text=content_text,
+            operator_context=operator_context,
+        )
+        return (not child_match), []
+    if isinstance(node, _BinaryNode):
+        left_match, left_hits = _evaluate_node_with_hits(
+            node.left,
+            normalized_corpus=normalized_corpus,
+            words=words,
+            title=title,
+            content_text=content_text,
+            operator_context=node.op,
+        )
+        right_match, right_hits = _evaluate_node_with_hits(
+            node.right,
+            normalized_corpus=normalized_corpus,
+            words=words,
+            title=title,
+            content_text=content_text,
+            operator_context=node.op,
+        )
+        if node.op == "AND":
+            if left_match and right_match:
+                return True, [*left_hits, *right_hits]
+            return False, []
+        if left_match and right_match:
+            return True, [*left_hits, *right_hits]
+        if left_match:
+            return True, left_hits
+        if right_match:
+            return True, right_hits
+        return False, []
+    return False, []
+
+
+def _find_substring_hits(
+    *,
+    term: str,
+    title: str,
+    content_text: str,
+    operator_context: Literal["AND", "OR"] | None,
+) -> list[SearchQueryHit]:
+    hits: list[SearchQueryHit] = []
+    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (("title", title), ("content_text", content_text))
+    for field, value in fields:
+        start = value.lower().find(term)
+        if start < 0:
+            continue
+        end = start + len(term)
+        token = value[start:end] or term
+        hits.append(
+            SearchQueryHit(
+                field=field,
+                token=token,
+                start=start,
+                end=end,
+                operator_context=operator_context,
+            )
+        )
+    return hits
+
+
+def _find_prefix_hits(
+    *,
+    prefix: str,
+    title: str,
+    content_text: str,
+    operator_context: Literal["AND", "OR"] | None,
+) -> list[SearchQueryHit]:
+    hits: list[SearchQueryHit] = []
+    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (("title", title), ("content_text", content_text))
+    for field, value in fields:
+        for match in re.finditer(r"\w+", value, flags=re.UNICODE):
+            token = match.group(0)
+            if token.lower().startswith(prefix):
+                hits.append(
+                    SearchQueryHit(
+                        field=field,
+                        token=token,
+                        start=match.start(),
+                        end=match.end(),
+                        operator_context=operator_context,
+                    )
+                )
+                break
+    return hits
+
+
+def _find_fuzzy_hits(
+    *,
+    value: str,
+    distance: int,
+    title: str,
+    content_text: str,
+    operator_context: Literal["AND", "OR"] | None,
+) -> list[SearchQueryHit]:
+    hits: list[SearchQueryHit] = []
+    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (("title", title), ("content_text", content_text))
+    for field, text in fields:
+        for match in re.finditer(r"\w+", text, flags=re.UNICODE):
+            token = match.group(0)
+            if _levenshtein_with_limit(value, token.lower(), distance) <= distance:
+                hits.append(
+                    SearchQueryHit(
+                        field=field,
+                        token=token,
+                        start=match.start(),
+                        end=match.end(),
+                        operator_context=operator_context,
+                    )
+                )
+                break
+    return hits
+
+
+def _dedupe_hits(hits: list[SearchQueryHit]) -> list[SearchQueryHit]:
+    deduped: list[SearchQueryHit] = []
+    seen: set[tuple[str, int, int, str]] = set()
+    for hit in hits:
+        key = (hit.field, hit.start, hit.end, hit.token.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(hit)
+    return deduped
 
 
 def _evaluate_node(node: _ExprNode, *, normalized_corpus: str, words: list[str]) -> bool:

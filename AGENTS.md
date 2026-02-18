@@ -164,15 +164,11 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next UI Slice (Prioritized)
 
-1. Monitoring feed management v1 was completed on 2026-02-16.
-2. Monitoring search language v1 was completed on 2026-02-16.
-3. Monitoring feed management v2 is in progress:
-   - historical backfill execution path is completed
-   - regex matcher expansion baseline is completed
-   - match-reason explainability baseline is completed
-   - plugin matcher config baseline is completed
-   - remaining v2 scope:
-   - deeper match explainability (matched spans/snippets)
+1. Monitoring match visual explainability v1 was completed on 2026-02-18:
+   - query-hit evidence now persists with field/token/offset/snippet metadata
+   - compact `Matched terms` summaries are rendered in list/reader surfaces
+   - reader title/content now support span-level highlighting from query/rule/classifier evidence
+2. Workspace action iconification v1 is the next prioritized UI slice.
 
 ## Deferred
 

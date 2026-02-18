@@ -20,6 +20,11 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - completed on 2026-02-16: offset-aware reader highlighting with jump-to-highlight evidence panel
    - completed on 2026-02-17: plugin contracts now emit richer multi-finding classifier evidence blocks
      (provider-native snippets/scores, optional offsets)
+4. Monitoring match visual explainability v1 completed on 2026-02-18:
+   - query match evidence now persists `query_hits` with field/token/offset/snippet details
+   - article list and reader now show compact `Matched terms` summaries
+   - reader title supports title-field match highlighting (query/rule/classifier evidence)
+   - evidence panel now renders query-hit rows with content jump-to-highlight actions
 
 ### Core and Platform Foundations
 

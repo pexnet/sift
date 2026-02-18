@@ -19,10 +19,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Next UI Slice
 
-1. Implement monitoring match visual explainability v1:
-   - title/content span-level highlighting for query/rule/classifier evidence
-   - compact matched-term summaries in list/reader surfaces
-2. Implement workspace action iconification v1:
+1. Implement workspace action iconification v1:
    - icon-first controls for list/reader actions
    - tooltips and explicit accessibility labels for all icon actions
 
@@ -32,8 +29,6 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
-- Monitoring match visual explainability v1:
-  [docs/specs/monitoring-match-visual-explainability-v1.md](specs/monitoring-match-visual-explainability-v1.md)
 - Workspace action iconification v1:
   [docs/specs/workspace-action-iconification-v1.md](specs/workspace-action-iconification-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not

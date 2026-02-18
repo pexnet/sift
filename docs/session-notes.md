@@ -1,5 +1,44 @@
 # Session Notes
 
+## 2026-02-18 (Monitoring Match Visual Explainability v1: Query Spans + List/Reader Term Summaries)
+
+### Implemented This Session
+
+- Implemented query-hit extraction for advanced monitoring expressions:
+  - `ParsedSearchQuery.matched_hits(...)` now returns matched title/content tokens with offsets and operator context.
+  - stream rule evidence now persists `query_hits` entries with `field`, `token`, `start`, `end`, `offset_basis`, and
+    snippet text.
+- Extended stream matching evidence persistence and validation coverage:
+  - query-hit evidence now persists through both ingest-time matching and backfill matching.
+  - added backend coverage in:
+    - `tests/test_query_language.py`
+    - `tests/test_stream_service.py`
+    - `tests/test_stream_backfill_api.py`
+- Implemented list/reader matched-term compact summaries:
+  - added shared evidence summary helper in `frontend/src/features/workspace/lib/matchEvidence.ts`
+  - article rows now render `Matched terms: ...` when concrete evidence hits exist.
+  - reader metadata now renders `Matched terms: ...` alongside existing explainability rows.
+- Implemented title/content visual explainability refinements in reader:
+  - reader evidence model now consumes `query_hits` as first-class evidence rows.
+  - title-field offsets are now highlighted in reader title text.
+  - evidence rows show query-hit lines with content jump-to-highlight actions where applicable.
+  - added/updated frontend coverage:
+    - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+    - `frontend/src/features/workspace/components/ArticlesPane.test.tsx`
+- Updated planning/source-of-truth docs after delivery:
+  - moved completed UI slice from active backlog to history (`docs/backlog.md`, `docs/backlog-history.md`)
+  - synchronized architecture UI-priority section (`docs/architecture.md`)
+  - updated implementation status in spec (`docs/specs/monitoring-match-visual-explainability-v1.md`)
+
+### Verification
+
+- `python -m pytest tests/test_query_language.py tests/test_stream_service.py tests/test_stream_backfill_api.py`
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+- `pnpm --dir frontend run test -- src/features/workspace/components/ReaderPane.test.tsx src/features/workspace/components/ArticlesPane.test.tsx`
+
 ## 2026-02-17 (Planning Workflow Update: Active Backlog + Backlog History Split)
 
 ### Implemented This Session

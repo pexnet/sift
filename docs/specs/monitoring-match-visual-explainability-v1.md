@@ -2,8 +2,8 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
+- State: Implemented on 2026-02-18
+- Scope: Delivered in backend and frontend (query-hit evidence, list/reader matched-term summaries, title/content highlighting)
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context

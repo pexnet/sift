@@ -2,6 +2,7 @@ import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from "@m
 import type { RefObject } from "react";
 
 import { formatRelativeTime } from "../lib/time";
+import { buildMatchedTermsSummary } from "../lib/matchEvidence";
 import type { ArticleListItem, WorkspaceSearch } from "../../../shared/types/contracts";
 
 type ArticlesPaneProps = {
@@ -127,6 +128,7 @@ export function ArticlesPane({
             const relativePublished = article.published_at ? formatRelativeTime(article.published_at) : "";
             const matchedStreams = formatMatchedStreams(article.stream_ids ?? []);
             const matchedReason = primaryMatchReason(article.stream_ids ?? [], article.stream_match_reasons);
+            const matchedTerms = buildMatchedTermsSummary(article.stream_ids ?? [], article.stream_match_evidence);
             const rowClassName = [
               "workspace-row",
               selected ? "workspace-row--selected" : "",
@@ -155,6 +157,9 @@ export function ArticlesPane({
                   ) : null}
                   {matchedReason ? (
                     <span className="workspace-row__match">Why matched: {matchedReason}</span>
+                  ) : null}
+                  {matchedTerms ? (
+                    <span className="workspace-row__match">Matched terms: {matchedTerms}</span>
                   ) : null}
                 </span>
                 <span className="workspace-row__time">{relativePublished}</span>

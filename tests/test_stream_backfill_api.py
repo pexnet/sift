@@ -97,6 +97,9 @@ def test_stream_backfill_api_runs_and_replaces_matches() -> None:
                 assert rows[0].match_evidence_json is not None
                 evidence = json.loads(rows[0].match_evidence_json)
                 assert "query" in evidence
+                assert "query_hits" in evidence
+                assert any(hit.get("field") == "title" for hit in evidence["query_hits"])
+                assert any(hit.get("token", "").lower() == "microsoft" for hit in evidence["query_hits"])
 
         asyncio.run(verify())
     finally:
