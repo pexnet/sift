@@ -1,5 +1,35 @@
 # Session Notes
 
+## 2026-02-18 (Workspace Action Iconification v1 Delivered)
+
+### Implemented This Session
+
+- Implemented icon-first action controls in workspace list/reader surfaces:
+  - list control `Mark all in scope as read` is now icon-first with explicit accessibility label
+  - reader actions are now icon-first for:
+    - `Mark as read` / `Mark as unread`
+    - `Save article` / `Remove from saved`
+    - `Open original source`
+    - `Previous article` / `Next article`
+    - `Hide match highlights` / `Show match highlights`
+- Preserved existing behavior and keyboard mappings:
+  - no changes to action semantics or mutation flows
+  - shortcuts remain unchanged (`j/k`, `o`, `m`, `s`)
+- Updated component tests for iconified controls:
+  - `frontend/src/features/workspace/components/ArticlesPane.test.tsx`
+  - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
+- Updated planning/source-of-truth docs to mark this UI slice complete:
+  - `docs/specs/workspace-action-iconification-v1.md` status set to implemented
+  - `docs/backlog.md` next UI slice section updated (no active queued slice)
+  - `docs/backlog-history.md` archived completed workspace action iconification v1 milestone
+  - `docs/architecture.md` and `AGENTS.md` synchronized with completion status.
+
+### Verification
+
+- `pnpm --dir frontend run test -- src/features/workspace/components/ArticlesPane.test.tsx src/features/workspace/components/ReaderPane.test.tsx`
+- `pnpm --dir frontend run lint`
+- `pnpm --dir frontend run typecheck`
+
 ## 2026-02-18 (Planning Update: Article LLM Summary On-Demand v1)
 
 ### Implemented This Session

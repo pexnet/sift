@@ -1,4 +1,5 @@
-import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
+import { Alert, IconButton, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import type { RefObject } from "react";
 
 import { formatRelativeTime } from "../lib/time";
@@ -69,6 +70,13 @@ export function ArticlesPane({
     return null;
   };
 
+  const markScopeReadTooltip = isMarkAllReadPending
+    ? "Marking all articles in current scope as read"
+    : "Mark all articles in current scope as read";
+  const markScopeReadAriaLabel = isMarkAllReadPending
+    ? "Marking all articles in current scope as read"
+    : "Mark all articles in current scope as read";
+
   return (
     <Paper className="workspace-list" component="section" elevation={0}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }} className="workspace-list__header">
@@ -103,14 +111,19 @@ export function ArticlesPane({
           onChange={(event) => onSearchChange(event.target.value)}
           sx={{ flex: 1 }}
         />
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={onMarkScopeRead}
-          disabled={isLoading || isMarkAllReadPending || articleTotal === 0}
-        >
-          {isMarkAllReadPending ? "Marking..." : "Mark all in scope as read"}
-        </Button>
+        <Tooltip title={markScopeReadTooltip}>
+          <span>
+            <IconButton
+              size="small"
+              aria-label={markScopeReadAriaLabel}
+              onClick={onMarkScopeRead}
+              disabled={isLoading || isMarkAllReadPending || articleTotal === 0}
+              sx={{ width: 40, height: 40 }}
+            >
+              <DoneAllRoundedIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Stack>
 
       {isLoading ? <Typography color="text.secondary">Loading articles...</Typography> : null}

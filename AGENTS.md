@@ -153,6 +153,10 @@ This file stores persistent project context for future Codex sessions.
   - query-hit evidence persistence (`query_hits`) for match-query-driven stream matches
   - compact `Matched terms` summaries in article list and reader metadata
   - reader title/content span-level highlighting and query-hit evidence rows
+- Workspace action iconification v1 is implemented:
+  - article-list scope read action is icon-first with tooltip semantics and explicit accessibility label
+  - reader actions (read/save/open/prev/next/highlight toggle) are icon-first with explicit accessibility labels
+  - keyboard shortcuts remain unchanged (`j/k`, `o`, `m`, `s`)
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -168,9 +172,7 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next UI Slice (Prioritized)
 
-1. Implement workspace action iconification v1:
-   - icon-first controls for list/reader actions
-   - tooltips and explicit accessibility labels for all icon actions
+1. No active prioritized UI slice is currently queued.
 
 ## Deferred
 

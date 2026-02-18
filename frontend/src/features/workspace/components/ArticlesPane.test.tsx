@@ -262,7 +262,8 @@ describe("ArticlesPane", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Mark all in scope as read/i }));
+    const markAllButton = screen.getByRole("button", { name: /Mark all articles in current scope as read/i });
+    fireEvent.click(markAllButton);
     expect(onMarkScopeRead).toHaveBeenCalledTimes(1);
   });
 });

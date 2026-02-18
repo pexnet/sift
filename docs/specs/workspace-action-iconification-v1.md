@@ -2,8 +2,9 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
+- State: Implemented
+- Implemented on: 2026-02-18
+- Scope: Delivered in frontend workspace list/reader controls
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context

@@ -406,7 +406,10 @@ Design goals:
    - query-hit evidence (`query_hits`) is persisted and surfaced in APIs
    - compact `Matched terms` summaries are rendered in list/reader
    - title/content span-level highlighting is rendered in reader surfaces
-2. Workspace action iconification v1 is the next prioritized UI slice.
+2. Workspace action iconification v1 was completed on 2026-02-18:
+   - list and reader actions now use icon-first controls with explicit `aria-label` values
+   - tooltip/label copy includes shortcut hints for core reader actions (`j/k`, `o`, `m`, `s`)
+   - no behavioral changes to existing reader/list actions or keyboard shortcut mappings.
 
 ## Deferred
 

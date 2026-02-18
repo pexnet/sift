@@ -1,4 +1,13 @@
-import { Alert, Box, Button, Divider, Paper, Stack, Typography } from "@mui/material";
+import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
+import BookmarkRoundedIcon from "@mui/icons-material/BookmarkRounded";
+import DoneRoundedIcon from "@mui/icons-material/DoneRounded";
+import MarkEmailUnreadRoundedIcon from "@mui/icons-material/MarkEmailUnreadRounded";
+import NavigateBeforeRoundedIcon from "@mui/icons-material/NavigateBeforeRounded";
+import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
+import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
+import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import { Alert, Box, Button, Divider, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { type ReactNode, useState } from "react";
 
 import { buildMatchedTermsSummary } from "../lib/matchEvidence";
@@ -706,6 +715,14 @@ export function ReaderPane({
     target.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const toggleReadLabel = selectedArticle?.is_read ? "Mark as unread (m)" : "Mark as read (m)";
+  const toggleSavedLabel = selectedArticle?.is_starred ? "Remove from saved (s)" : "Save article (s)";
+  const openOriginalAvailable = Boolean(detail?.canonical_url);
+  const openOriginalTooltip = openOriginalAvailable ? "Open original source (o)" : "Original source unavailable";
+  const previousArticleLabel = "Previous article (k)";
+  const nextArticleLabel = "Next article (j)";
+  const toggleHighlightsLabel = showHighlights ? "Hide match highlights" : "Show match highlights";
+
   return (
     <Paper className="workspace-reader" component="section" elevation={0}>
       {!selectedArticleId ? (
@@ -760,25 +777,94 @@ export function ReaderPane({
             </Box>
 
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap className="workspace-reader__actions">
-              <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleRead}>
-                {selectedArticle?.is_read ? "Mark unread" : "Mark read"}
-              </Button>
-              <Button size="small" variant="outlined" disabled={isMutating} onClick={onToggleSaved}>
-                {selectedArticle?.is_starred ? "Unsave" : "Save"}
-              </Button>
-              <Button size="small" variant="outlined" onClick={onOpenOriginal} disabled={!detail.canonical_url}>
-                Open original
-              </Button>
-              <Button size="small" variant="text" onClick={() => onMoveSelection(-1)}>
-                Prev
-              </Button>
-              <Button size="small" variant="text" onClick={() => onMoveSelection(1)}>
-                Next
-              </Button>
+              <Tooltip title={toggleReadLabel}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={toggleReadLabel}
+                    disabled={isMutating}
+                    onClick={onToggleRead}
+                    sx={{ width: 40, height: 40 }}
+                  >
+                    {selectedArticle?.is_read ? (
+                      <MarkEmailUnreadRoundedIcon fontSize="small" />
+                    ) : (
+                      <DoneRoundedIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={toggleSavedLabel}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={toggleSavedLabel}
+                    disabled={isMutating}
+                    onClick={onToggleSaved}
+                    sx={{ width: 40, height: 40 }}
+                  >
+                    {selectedArticle?.is_starred ? (
+                      <BookmarkRoundedIcon fontSize="small" />
+                    ) : (
+                      <BookmarkBorderRoundedIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={openOriginalTooltip}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label="Open original source (o)"
+                    onClick={onOpenOriginal}
+                    disabled={!openOriginalAvailable}
+                    sx={{ width: 40, height: 40 }}
+                  >
+                    <OpenInNewRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={previousArticleLabel}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={previousArticleLabel}
+                    onClick={() => onMoveSelection(-1)}
+                    sx={{ width: 40, height: 40 }}
+                  >
+                    <NavigateBeforeRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={nextArticleLabel}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={nextArticleLabel}
+                    onClick={() => onMoveSelection(1)}
+                    sx={{ width: 40, height: 40 }}
+                  >
+                    <NavigateNextRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
               {hasHighlightCandidates ? (
-                <Button size="small" variant="text" onClick={() => setShowHighlights((current) => !current)}>
-                  {showHighlights ? "Hide highlights" : "Show highlights"}
-                </Button>
+                <Tooltip title={toggleHighlightsLabel}>
+                  <span>
+                    <IconButton
+                      size="small"
+                      aria-label={toggleHighlightsLabel}
+                      onClick={() => setShowHighlights((current) => !current)}
+                      sx={{ width: 40, height: 40 }}
+                    >
+                      {showHighlights ? (
+                        <VisibilityOffRoundedIcon fontSize="small" />
+                      ) : (
+                        <VisibilityRoundedIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </span>
+                </Tooltip>
               ) : null}
             </Stack>
 

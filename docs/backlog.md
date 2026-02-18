@@ -19,9 +19,9 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Next UI Slice
 
-1. Implement workspace action iconification v1:
-   - icon-first controls for list/reader actions
-   - tooltips and explicit accessibility labels for all icon actions
+- No active prioritized UI slice is currently queued.
+- Most recently completed: workspace action iconification v1 (completed on 2026-02-18; archived in
+  `docs/backlog-history.md`).
 
 ### Linked Specifications
 

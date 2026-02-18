@@ -25,6 +25,13 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - article list and reader now show compact `Matched terms` summaries
    - reader title supports title-field match highlighting (query/rule/classifier evidence)
    - evidence panel now renders query-hit rows with content jump-to-highlight actions
+5. Workspace action iconification v1 completed on 2026-02-18:
+   - article-list `Mark all in scope as read` control is now icon-first with explicit tooltip semantics and
+     accessibility label
+   - reader actions are now icon-first for read/unread, save/unsave, open original, previous/next article, and
+     highlight toggle
+   - keyboard shortcut behavior is unchanged and action discoverability is preserved through explicit `aria-label`
+     copy.
 
 ### Core and Platform Foundations
 

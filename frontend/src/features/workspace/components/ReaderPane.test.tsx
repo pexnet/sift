@@ -55,11 +55,17 @@ describe("ReaderPane", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Mark read/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Save/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Open original/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Prev/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
+    const markReadButton = screen.getByRole("button", { name: /Mark as read \(m\)/i });
+    const saveButton = screen.getByRole("button", { name: /Save article \(s\)/i });
+    const openOriginalButton = screen.getByRole("button", { name: /Open original source \(o\)/i });
+    const prevButton = screen.getByRole("button", { name: /Previous article \(k\)/i });
+    const nextButton = screen.getByRole("button", { name: /Next article \(j\)/i });
+
+    fireEvent.click(markReadButton);
+    fireEvent.click(saveButton);
+    fireEvent.click(openOriginalButton);
+    fireEvent.click(prevButton);
+    fireEvent.click(nextButton);
 
     expect(screen.getByText("Body")).toBeVisible();
     expect(onToggleRead).toHaveBeenCalledTimes(1);
@@ -473,11 +479,11 @@ describe("ReaderPane", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /Hide highlights/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Hide match highlights/i })).toBeVisible();
     expect(container.querySelectorAll("mark.workspace-reader__highlight").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole("button", { name: /Hide highlights/i }));
-    expect(screen.getByRole("button", { name: /Show highlights/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Hide match highlights/i }));
+    expect(screen.getByRole("button", { name: /Show match highlights/i })).toBeVisible();
     expect(container.querySelectorAll("mark.workspace-reader__highlight").length).toBe(0);
   });
 
@@ -547,7 +553,7 @@ describe("ReaderPane", () => {
     expect(screen.getByText('sec-stream: Query hit: "SentinelOne" (content)')).toBeVisible();
     expect(container.querySelectorAll(".workspace-reader__title mark.workspace-reader__highlight").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole("button", { name: /Hide highlights/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Hide match highlights/i }));
     expect(container.querySelectorAll(".workspace-reader__title mark.workspace-reader__highlight").length).toBe(0);
   });
 
