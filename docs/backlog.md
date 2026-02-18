@@ -30,6 +30,12 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 - Full article fetch on-demand v1: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
+- Dashboard command center v1: [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
+- Stream ranking/prioritization controls v1:
+  [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
+- Feed health ops panel v1: [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
+- Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
+- Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
 - Workspace action iconification v1:
   [docs/specs/workspace-action-iconification-v1.md](specs/workspace-action-iconification-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
@@ -59,13 +65,29 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### 3) Dashboard as Daily Command Center
 
-- Introduce a dashboard route focused on first-read triage and daily priorities.
+- Introduce a dedicated command-center route (`/app/dashboard`) while keeping existing left workspace chrome:
+  - rail + navigation tree remain visible
+  - dashboard fills the remaining workspace content area
 - Add prioritization controls to weight content sources (regular feeds vs monitoring feeds vs other scopes).
-- Candidate dashboard widgets:
-  - latest unread by priority
-  - high-signal monitoring matches
-  - feed health summary (errors/stale feeds)
-  - saved/flagged follow-up queue
+- Candidate dashboard cards:
+  - prioritized unread queue
+  - high-value monitoring feed signals
+  - feed health ops summary (errors/stale/freshness/queue lag)
+  - saved follow-up queue
+  - trends card (explicit unavailable state until trend dependency is implemented)
+  - discovery candidates (feed recommendations + monitoring-first candidate articles)
+- Optional future cards:
+  - alerts
+  - follow-up detail tab
+- Dashboard spec gate checklist (required before implementation starts):
+  - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
+  - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
+  - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
+  - [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
+  - [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
+  - [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
+- Rule:
+  - dashboard implementation starts only after all checklist dependency specs are drafted and linked.
 
 ### 4) Duplicate Detection Visibility (Iteration 1)
 
@@ -164,7 +186,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 1. Feed health/edit page (operability baseline).
 2. Monitoring feed management v2 follow-ups.
-3. Dashboard v1 (priority inbox and command-center widgets).
+3. Dashboard v1 (priority inbox and command-center widgets; start only after dashboard spec-gate checklist is complete).
 4. Discover feeds v1 (discovery streams + recommendation decisions).
 5. Duplicate-candidate settings view.
 6. Trends detection for selected feed folders (dashboard-oriented).

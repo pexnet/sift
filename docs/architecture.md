@@ -550,18 +550,31 @@ Architecture implications:
 
 Planned capability:
 
-- A top-level dashboard route optimized for daily triage.
+- A dedicated command-center route at `/app/dashboard` optimized for daily triage.
+- Keep existing left workspace chrome (rail + navigation tree) and render dashboard in the main content area.
 - User-configurable prioritization across sources (feeds, monitoring feeds, and future scoped sources).
 - Candidate cards:
-  - latest unread by priority
-  - high-signal monitoring matches
-  - stale/error feed watchlist
+  - prioritized unread queue
+  - high-value monitoring feed signals
+  - feed health ops summary (stale/error/freshness/queue lag)
   - saved/follow-up queue
+  - trends (unavailable state until dependency is implemented)
+  - discovery candidates (feed recommendations + monitoring-first candidate articles)
+- Optional future cards:
+  - alerts
+  - follow-up detail tab
 
 Architecture implications:
 
 - Extend existing `dashboard_card` plugin slot with source-priority context.
 - Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
+- Dashboard dependency spec gate before implementation:
+  - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
+  - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
+  - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
+  - [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
+  - [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
+  - [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 
 ### 5) Duplicate Candidate Review (Iteration 1)
 
@@ -644,7 +657,7 @@ Architecture implications:
 
 1. Feed health/edit + lifecycle controls.
 2. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
-3. Dashboard v1 command center.
+3. Dashboard v1 command center (only after dashboard dependency spec gate checklist is complete).
 4. Discover feeds v1 (discovery streams + recommendation decisions).
 5. Duplicate candidate review screen.
 6. Trends detection for selected feed folders (dashboard-oriented).

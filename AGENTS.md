@@ -180,6 +180,14 @@ This file stores persistent project context for future Codex sessions.
 2. Add reader-triggered full article fetch on demand (later priority).
 3. Add on-demand article LLM summary feature (later priority; spec:
    `docs/specs/article-llm-summary-on-demand-v1.md`).
+4. Add dashboard command center v1 (`/app/dashboard`) as deferred command-center planning/implementation with spec gate
+   dependencies:
+   - `docs/specs/dashboard-command-center-v1.md`
+   - `docs/specs/stream-ranking-prioritization-controls-v1.md`
+   - `docs/specs/feed-health-ops-panel-v1.md`
+   - `docs/specs/monitoring-signal-scoring-v1.md`
+   - `docs/specs/trends-detection-dashboard-v1.md`
+   - `docs/specs/feed-recommendations-v1.md`
 
 ## Feature Notes
 
@@ -202,6 +210,11 @@ This file stores persistent project context for future Codex sessions.
   - keep vector storage behind plugin boundaries
   - start with pluggable providers (e.g., pgvector, Qdrant, Weaviate)
   - use for semantic matching/classification plugins, not as a hard dependency of core ingestion
+- Dashboard direction:
+  - route should be `/app/dashboard` and preserve workspace rail + navigation tree
+  - v1 cards should include priority queue, feed health, saved follow-up, monitoring signal, trends, and discovery
+    candidates (feed + article candidates)
+  - dashboard build should start only after dependency specs are drafted and linked in backlog
 
 ## Planning Workflow For Future Sessions
 

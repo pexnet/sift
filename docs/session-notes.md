@@ -1,5 +1,41 @@
 # Session Notes
 
+## 2026-02-18 (Planning Update: Dashboard Command Center Program + Spec Gate)
+
+### Implemented This Session
+
+- Added new dashboard planning umbrella spec:
+  - `docs/specs/dashboard-command-center-v1.md`
+  - locks route/layout direction to `/app/dashboard` while keeping workspace rail + navigation tree visible.
+- Added required dependency specs for dashboard build gating:
+  - `docs/specs/stream-ranking-prioritization-controls-v1.md`
+  - `docs/specs/feed-health-ops-panel-v1.md`
+  - `docs/specs/monitoring-signal-scoring-v1.md`
+  - `docs/specs/trends-detection-dashboard-v1.md`
+- Captured dashboard card/interaction planning decisions:
+  - prioritized unread queue via weighted heuristic
+  - feed ops health summary panel
+  - saved follow-up card
+  - high-value monitoring signal card
+  - trends card with explicit unavailable state until trend dependency is implemented
+  - discovery candidates card with both feed recommendations and monitoring-first candidate articles
+  - optional future cards: alerts + follow-up detail
+  - hybrid refresh model: summary auto-refresh + per-card manual refresh
+- Updated backlog governance for dashboard delivery:
+  - added dashboard spec-gate checklist under deferred dashboard item in `docs/backlog.md`
+  - added explicit rule that dashboard implementation starts only after dependency specs are drafted and linked.
+- Updated planning alignment docs:
+  - `docs/architecture.md` dashboard section now reflects `/app/dashboard`, card model, and spec-gate requirement
+  - `AGENTS.md` deferred and feature notes now include dashboard command-center direction and dependencies.
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Specs/backlog alignment check:
+  - `rg -n "dashboard-command-center-v1|spec gate|monitoring-signal-scoring-v1|feed-health-ops-panel-v1|trends-detection-dashboard-v1" docs AGENTS.md`
+
 ## 2026-02-18 (Workspace Action Iconification v1 Delivered)
 
 ### Implemented This Session
