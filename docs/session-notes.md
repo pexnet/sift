@@ -1,5 +1,38 @@
 # Session Notes
 
+## 2026-02-18 (Planning Update: Article LLM Summary On-Demand v1)
+
+### Implemented This Session
+
+- Added new planning spec for on-demand article summaries:
+  - `docs/specs/article-llm-summary-on-demand-v1.md`
+  - captures planned API additions:
+    - `POST /api/v1/articles/{article_id}/summary/generate`
+    - `GET /api/v1/articles/{article_id}` summary status/result extension
+    - planned plugin contract hook `summarize_article(article, options)`
+- Updated deferred backlog planning:
+  - linked LLM summary spec in `docs/backlog.md` under `Plugin Backlog Ideas`
+  - kept this feature explicitly in Deferred (not promoted to Next)
+  - fixed OIDC delivery-order indentation in backlog for consistency.
+- Updated architecture and agent planning docs for alignment:
+  - `docs/architecture.md` now references planned summary hook and links LLM summary spec in plugin roadmap ideas
+  - `AGENTS.md` deferred list now includes on-demand LLM summary as later priority
+  - `AGENTS.md` feature notes now capture shared LLM capability plugin direction (summary first).
+- Captured fixed planning decisions for this feature:
+  - plugin-first architecture
+  - async job + status flow
+  - full-article content preferred when available
+  - latest-only summary persistence
+  - reader action + reader summary card UX with disabled-with-hint behavior when capability is unavailable.
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Docs consistency verification command:
+  - `rg -n "article-llm-summary-on-demand-v1|summarize_article|LLM summarization plugin" docs AGENTS.md`
+
 ## 2026-02-18 (Planning Update: Full Article Fetch On-Demand v1)
 
 ### Implemented This Session

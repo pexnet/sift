@@ -83,6 +83,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Vector-similarity plugin:
   - embeddings-backed article/topic similarity
   - supports related-content surfacing and future semantic monitoring workflows
+- Spec reference: [docs/specs/article-llm-summary-on-demand-v1.md](specs/article-llm-summary-on-demand-v1.md)
 
 ### 6) Trends Detection for Selected Feed Folders
 
@@ -149,7 +150,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Add external identity provider support on top of existing `auth_identities` foundation.
 - Delivery order:
   - Google first
-- then Azure/Apple
+  - then Azure/Apple
 - Keep current local auth provider behavior unchanged as fallback.
 
 ### 12) Full Article Fetch On-Demand

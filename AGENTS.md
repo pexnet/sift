@@ -176,6 +176,8 @@ This file stores persistent project context for future Codex sessions.
 
 1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
 2. Add reader-triggered full article fetch on demand (later priority).
+3. Add on-demand article LLM summary feature (later priority; spec:
+   `docs/specs/article-llm-summary-on-demand-v1.md`).
 
 ## Feature Notes
 
@@ -187,6 +189,9 @@ This file stores persistent project context for future Codex sessions.
 - Classifier plugin direction:
   - implement as plugin hooks, not hard-coded core logic
   - support provider/model versioning, score/confidence, and failure isolation
+- LLM plugin direction:
+  - use a shared LLM capability plugin contract with operation-specific hooks
+  - summary is the first planned LLM operation in that shared contract
 - Feed folders direction:
   - add folder object per user
   - support OPML folder mapping on import

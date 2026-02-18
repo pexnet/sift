@@ -271,6 +271,7 @@ Plugins are loaded by dotted path and may implement one or more hooks:
 - `classify_stream(article, stream)` for stream relevance decisions with confidence.
 - Planned hooks:
   - `discover_feeds(seed_query, options)` for discovery-stream feed candidate lookup
+  - `summarize_article(article, options)` for on-demand reader summary generation
   - scoring
   - post-filter action
   - outbound integration
@@ -580,6 +581,7 @@ Planned plugins:
 
 - Discover feeds plugin (stream-driven feed discovery with provider-backed candidate lookup).
 - LLM summarization plugin (initial provider target: Ollama Cloud).
+  - spec reference: [docs/specs/article-llm-summary-on-demand-v1.md](specs/article-llm-summary-on-demand-v1.md)
 - Vector similarity plugin for article/topic relatedness and future semantic monitoring workflows.
 
 Architecture implications:
