@@ -4,7 +4,7 @@ This file archives completed and historical backlog items that were removed from
 
 Active backlog source of truth: [docs/backlog.md](backlog.md)
 
-## Archived Backlog History (Moved on 2026-02-17)
+## Archived Backlog History (Archive Initiated on 2026-02-17)
 
 ### Monitoring UI Milestones (Previously in Active Next UI Slice)
 

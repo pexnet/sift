@@ -1,5 +1,29 @@
 # Session Notes
 
+## 2026-02-18 (Planning Alignment: Backlog/Architecture/Agent Notes Consistency Pass)
+
+### Implemented This Session
+
+- Aligned planning documents to keep `docs/backlog.md` as the active source of truth and remove drift:
+  - updated `AGENTS.md` next UI slice to match active backlog wording (workspace action iconification v1).
+  - updated `docs/architecture.md` UI extension status to reflect completed monitoring visual explainability v1
+    (`query_hits`, title/content spans, compact matched-term summaries).
+  - updated `docs/architecture.md` monitoring-management deferred wording to remove stale "span highlighting pending"
+    language now that baseline is implemented.
+- Normalized deferred planning coverage in `docs/backlog.md`:
+  - added explicit deferred item for `Discover feeds (Discovery streams)` to match linked spec.
+  - added explicit deferred item for OIDC provider integration (Google first, then Azure/Apple) to match
+    `AGENTS.md`/`docs/architecture.md`.
+  - updated suggested deferred delivery sequence ordering to include discovery, plugin UI/config, and OIDC.
+- Updated backlog history heading wording for clarity:
+  - `docs/backlog-history.md` now uses `Archive Initiated on 2026-02-17` to avoid stale-date ambiguity.
+
+### Verification
+
+- Documentation/planning alignment update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+
 ## 2026-02-18 (Monitoring Match Visual Explainability v1: Query Spans + List/Reader Term Summaries)
 
 ### Implemented This Session

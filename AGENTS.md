@@ -149,6 +149,10 @@ This file stores persistent project context for future Codex sessions.
   - ingest-time stream matching evaluates saved expression query
   - article listing search supports advanced query syntax with validation errors for invalid expressions
   - monitoring feed editor supports creating/updating `match_query`
+- Monitoring match visual explainability v1 is implemented:
+  - query-hit evidence persistence (`query_hits`) for match-query-driven stream matches
+  - compact `Matched terms` summaries in article list and reader metadata
+  - reader title/content span-level highlighting and query-hit evidence rows
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -164,11 +168,9 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next UI Slice (Prioritized)
 
-1. Monitoring match visual explainability v1 was completed on 2026-02-18:
-   - query-hit evidence now persists with field/token/offset/snippet metadata
-   - compact `Matched terms` summaries are rendered in list/reader surfaces
-   - reader title/content now support span-level highlighting from query/rule/classifier evidence
-2. Workspace action iconification v1 is the next prioritized UI slice.
+1. Implement workspace action iconification v1:
+   - icon-first controls for list/reader actions
+   - tooltips and explicit accessibility labels for all icon actions
 
 ## Deferred
 

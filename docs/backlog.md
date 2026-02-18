@@ -133,13 +133,34 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - When a feed is switched to silent, existing unread for that feed should be bulk-marked read.
 - Spec reference: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 
+### 10) Discover Feeds (Discovery Streams)
+
+- Add the `Discover feeds` vertical slice using separate `discovery_streams` (not monitoring stream reuse).
+- Implement discovery-stream generation and recommendation decision flow:
+  - discovery stream CRUD
+  - manual generation trigger
+  - recommendation accept/deny/reset workflow
+- Keep provider execution behind ordered adapters with free-tier-safe budgets/rate limits.
+- Spec reference: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
+
+### 11) OIDC Provider Integration
+
+- Add external identity provider support on top of existing `auth_identities` foundation.
+- Delivery order:
+  - Google first
+  - then Azure/Apple
+- Keep current local auth provider behavior unchanged as fallback.
+
 ### Suggested Deferred Delivery Sequence
 
 1. Feed health/edit page (operability baseline).
 2. Monitoring feed management v2 follow-ups.
 3. Dashboard v1 (priority inbox and command-center widgets).
-4. Duplicate-candidate settings view.
-5. Trends detection for selected feed folders (dashboard-oriented).
-6. Advanced search query acceleration (PostgreSQL-oriented).
-7. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
-8. Silent feeds for monitoring-only population.
+4. Discover feeds v1 (discovery streams + recommendation decisions).
+5. Duplicate-candidate settings view.
+6. Trends detection for selected feed folders (dashboard-oriented).
+7. Advanced search query acceleration (PostgreSQL-oriented).
+8. Plugin UI areas + centralized plugin configuration.
+9. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+10. Silent feeds for monitoring-only population.
+11. OIDC provider integration (Google, then Azure/Apple).

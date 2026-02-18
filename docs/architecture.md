@@ -454,12 +454,15 @@ Design goals:
    - `/account/monitoring` stream-backed monitoring CRUD
    - backfill execution endpoint integration with success feedback
    - list/reader explainability labels for matched monitoring streams
-3. Monitoring feed management v2 remains in progress:
+3. Monitoring feed management v2 baseline + visual explainability v1 are completed:
    - completed: historical backfill execution baseline
    - completed: regex matcher expansion baseline
    - completed: match-reason explainability baseline
    - completed: plugin matcher config baseline
-   - remaining: deeper match-evidence rendering (spans/snippets)
+   - completed: query-hit evidence persistence (`query_hits`) and title/content span-level rendering
+   - completed: compact `Matched terms` summaries in list/reader
+   - remaining follow-ups are deferred in backlog (matcher composition expansion, optional trigger backfill, richer
+     plugin/query explainability refinements)
 
 ## Long-Term Product Backlog (Captured, Explicitly Deferred)
 
@@ -505,8 +508,9 @@ Planned capability:
 - Baseline manual backfill execution is implemented; optional create/update-triggered backfill remains deferred.
 - Explainability in monitoring article lists/reader:
   - baseline textual `Why matched` summaries are implemented
-  - remaining: highlight matched keyword/regex spans
-  - remaining: show plugin-provided match snippets
+  - span-level visual explainability baseline is implemented (`query_hits`, title/content highlights, compact
+    matched-term summaries)
+  - remaining: richer plugin/query evidence rendering refinements and deeper matcher composition capabilities
 
 Architecture implications:
 
@@ -622,7 +626,11 @@ Architecture implications:
 1. Feed health/edit + lifecycle controls.
 2. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
 3. Dashboard v1 command center.
-4. Duplicate candidate review screen.
-5. Trends detection for selected feed folders (dashboard-oriented).
-6. Plugin implementations (LLM summary, vector similarity).
-7. Silent feeds for monitoring-only population.
+4. Discover feeds v1 (discovery streams + recommendation decisions).
+5. Duplicate candidate review screen.
+6. Trends detection for selected feed folders (dashboard-oriented).
+7. Advanced search query acceleration (PostgreSQL-oriented).
+8. Plugin UI areas + centralized plugin configuration.
+9. Plugin implementations (LLM summary, vector similarity).
+10. Silent feeds for monitoring-only population.
+11. OIDC provider integration (Google, then Azure/Apple).
