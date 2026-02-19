@@ -227,12 +227,15 @@ This file stores persistent project context for future Codex sessions.
    - `docs/architecture.md` if architecture changed.
    - `docs/backlog.md` for active priority/deferred changes.
    - `docs/backlog-history.md` when completed items are moved out of active backlog.
+   - `docs/specs/` and `docs/specs/done/` so completed feature specs are archived out of active specs.
 
 ## Backlog Governance
 
 - Any long-horizon idea captured during sessions must be reviewed and added to `docs/backlog.md`.
 - `docs/backlog.md` must contain only active remaining work (`Next`, `Deferred`).
 - Completed or historical backlog entries must be moved to `docs/backlog-history.md`.
+- `docs/specs/` must contain only active/planned specs.
+- When a spec-defined feature is implemented, move that spec to `docs/specs/done/` and update doc links.
 - Avoid keeping durable backlog items only in `docs/session-notes.md`; session notes are log/history, backlog is planning source of truth.
 
 ## Where to Store Future Knowledge
@@ -242,3 +245,5 @@ This file stores persistent project context for future Codex sessions.
 - Iteration log (what changed, why, what is next): `docs/session-notes.md`.
 - Active backlog source of truth (`Next`, `Deferred`): `docs/backlog.md`.
 - Backlog completion/history archive: `docs/backlog-history.md`.
+- Active/planned feature specs: `docs/specs/`.
+- Completed feature spec archive: `docs/specs/done/`.

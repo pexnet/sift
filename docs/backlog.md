@@ -21,7 +21,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 - No active prioritized UI slice is currently queued.
 - Most recently completed: workspace action iconification v1 (completed on 2026-02-18; archived in
-  `docs/backlog-history.md`).
+  `docs/backlog-history.md`; spec archived in `docs/specs/done/workspace-action-iconification-v1.md`).
 
 ### Linked Specifications
 
@@ -36,8 +36,6 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Feed health ops panel v1: [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
 - Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
 - Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
-- Workspace action iconification v1:
-  [docs/specs/workspace-action-iconification-v1.md](specs/workspace-action-iconification-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
   use saved/starred article seeds in v1.
 - Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and

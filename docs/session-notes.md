@@ -1,5 +1,31 @@
 # Session Notes
 
+## 2026-02-19 (Docs Governance Update: Spec Archive Lifecycle)
+
+### Implemented This Session
+
+- Added explicit spec-lifecycle governance in `AGENTS.md`:
+  - active/planned specs stay in `docs/specs/`
+  - implemented specs move to `docs/specs/done/`
+  - planning workflow and knowledge-location sections now include this archive rule.
+- Archived implemented specs out of active specs:
+  - `docs/specs/done/monitoring-match-visual-explainability-v1.md`
+  - `docs/specs/done/workspace-action-iconification-v1.md`
+- Updated docs links after archive move:
+  - removed completed workspace iconification spec from active linked-spec list in `docs/backlog.md`
+  - fixed moved-spec backlog links to `../../backlog.md`
+  - updated session-note references for archived spec paths.
+
+### Verification
+
+- Documentation/governance update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Archive + reference validation commands:
+  - `Get-ChildItem docs/specs`
+  - `Get-ChildItem docs/specs/done`
+  - `rg -n "workspace-action-iconification-v1\\.md|monitoring-match-visual-explainability-v1\\.md|docs/specs/done" docs AGENTS.md`
+
 ## 2026-02-18 (Planning Update: Dashboard Command Center Program + Spec Gate)
 
 ### Implemented This Session
@@ -55,7 +81,7 @@
   - `frontend/src/features/workspace/components/ArticlesPane.test.tsx`
   - `frontend/src/features/workspace/components/ReaderPane.test.tsx`
 - Updated planning/source-of-truth docs to mark this UI slice complete:
-  - `docs/specs/workspace-action-iconification-v1.md` status set to implemented
+  - `docs/specs/done/workspace-action-iconification-v1.md` status set to implemented
   - `docs/backlog.md` next UI slice section updated (no active queued slice)
   - `docs/backlog-history.md` archived completed workspace action iconification v1 milestone
   - `docs/architecture.md` and `AGENTS.md` synchronized with completion status.
@@ -177,7 +203,7 @@
 - Updated planning/source-of-truth docs after delivery:
   - moved completed UI slice from active backlog to history (`docs/backlog.md`, `docs/backlog-history.md`)
   - synchronized architecture UI-priority section (`docs/architecture.md`)
-  - updated implementation status in spec (`docs/specs/monitoring-match-visual-explainability-v1.md`)
+  - updated implementation status in spec (`docs/specs/done/monitoring-match-visual-explainability-v1.md`)
 
 ### Verification
 
@@ -215,11 +241,11 @@
 ### Implemented This Session
 
 - Added detailed planning spec for monitoring match visual explainability:
-  - `docs/specs/monitoring-match-visual-explainability-v1.md`
+  - `docs/specs/done/monitoring-match-visual-explainability-v1.md`
   - scopes title/content span-level visibility for query/rule/classifier evidence
   - defines proposed `query_hits` evidence contract extension and phased implementation plan
 - Added detailed planning spec for workspace action iconification:
-  - `docs/specs/workspace-action-iconification-v1.md`
+  - `docs/specs/done/workspace-action-iconification-v1.md`
   - scopes icon-first list/reader action controls with tooltips and explicit accessibility labels
 - Updated backlog next-iteration actions:
   - added both slices under `Next UI Slice` planned actions in `docs/backlog.md`

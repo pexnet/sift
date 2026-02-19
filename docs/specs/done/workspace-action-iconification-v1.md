@@ -5,7 +5,7 @@
 - State: Implemented
 - Implemented on: 2026-02-18
 - Scope: Delivered in frontend workspace list/reader controls
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 
 ## Context
 
@@ -120,4 +120,4 @@ Frontend:
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
