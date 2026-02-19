@@ -2,10 +2,10 @@
 
 ## Status
 
-- State: In Progress (implementation kickoff)
-- Scope: Backend + frontend vertical slice (`/account/feed-health` + feed lifecycle/health APIs)
-- Backlog reference: [docs/backlog.md](../backlog.md)
-- Related dashboard dependency spec: [docs/specs/feed-health-ops-panel-v1.md](feed-health-ops-panel-v1.md)
+- State: Implemented (2026-02-19)
+- Scope: Completed backend + frontend vertical slice (`/account/feed-health` + feed lifecycle/health APIs)
+- Backlog reference: [docs/backlog-history.md](../../backlog-history.md)
+- Related dashboard dependency spec: [docs/specs/feed-health-ops-panel-v1.md](../feed-health-ops-panel-v1.md)
 
 ## Context
 
@@ -121,7 +121,23 @@ Frontend:
 2. interval update and lifecycle mutation flows
 3. archive confirmation and marked-read feedback
 
+## Implementation Summary
+
+1. Added feed lifecycle/fetch metadata columns and migration backfill:
+   - `is_archived`
+   - `archived_at`
+   - `last_fetch_success_at`
+   - `last_fetch_error_at`
+2. Implemented lifecycle and health APIs:
+   - `GET /api/v1/feeds/health`
+   - `PATCH /api/v1/feeds/{feed_id}/settings`
+   - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+   - `GET /api/v1/feeds` now supports `include_archived`
+3. Implemented `/account/feed-health` UI with lifecycle controls, interval editing, filters, and archive confirmation.
+4. Implemented archive side effect to bulk-mark existing unread articles from the feed as read.
+5. Verified with backend/frontend tests and quality gates during implementation session.
+
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
-- Feed health ops dashboard dependency spec: [docs/specs/feed-health-ops-panel-v1.md](feed-health-ops-panel-v1.md)
+- Backlog history: [docs/backlog-history.md](../../backlog-history.md)
+- Feed health ops dashboard dependency spec: [docs/specs/feed-health-ops-panel-v1.md](../feed-health-ops-panel-v1.md)

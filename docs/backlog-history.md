@@ -81,6 +81,18 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - persisted `stream_classifier_runs` records for classifier executions during ingest/backfill
    - captured plugin/provider/model/version metadata, confidence/threshold, and run status
    - added diagnostics API endpoint: `GET /api/v1/streams/{stream_id}/classifier-runs`
+14. Feed health + edit surface v1 completed on 2026-02-19:
+   - new settings route: `/account/feed-health`
+   - new APIs:
+     - `GET /api/v1/feeds/health`
+     - `PATCH /api/v1/feeds/{feed_id}/settings`
+     - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+   - feed lifecycle/fetch metadata additions:
+     - `is_archived`
+     - `archived_at`
+     - `last_fetch_success_at`
+     - `last_fetch_error_at`
+   - archive action side effect: bulk-marks existing unread feed articles as read.
 
 ### Frontend Workspace and UX History
 
@@ -164,5 +176,11 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - Monitoring explainability baseline delivered (persisted match reasons + workspace rendering).
 8. 2026-02-16:
    - Monitoring plugin matcher config baseline delivered (classifier config persistence + UI + plugin context wiring).
+9. 2026-02-18:
+   - Monitoring match visual explainability v1 delivered (`query_hits`, matched-term summaries, reader highlights).
+   - Workspace action iconification v1 delivered (icon-first list/reader actions with accessibility labels).
+10. 2026-02-19:
+   - Feed health + edit surface v1 delivered (`/account/feed-health`, lifecycle + health APIs, archive mark-read side
+     effect).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.

@@ -181,13 +181,16 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add feed health + edit surface v1 (`/account/feed-health`, lifecycle controls, health APIs).
-2. Add stream-level ranking and prioritization controls.
-3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+1. Add stream-level ranking and prioritization controls.
+2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features (spec:
+   `docs/specs/scheduler-ingestion-observability-v1.md`).
+3. Keep vector-database integration deferred until current core priorities are complete.
 
 ## Next UI Slice (Prioritized)
 
 1. No active prioritized UI slice is currently queued.
+2. Most recently completed: feed health + edit surface v1 (2026-02-19; spec archived at
+   `docs/specs/done/feed-health-edit-surface-v1.md`).
 
 ## Deferred
 

@@ -376,6 +376,14 @@ Design goals:
    - persisted fields include plugin/provider/model/version, confidence/threshold, match result, and run status
    - ingest and stream backfill flows both record classifier runs
    - stream API provides classifier run diagnostics endpoint (`GET /api/v1/streams/{stream_id}/classifier-runs`)
+17. Feed health + lifecycle management baseline:
+   - endpoints:
+     - `GET /api/v1/feeds/health`
+     - `PATCH /api/v1/feeds/{feed_id}/settings`
+     - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+   - archived feeds are excluded from scheduler candidate selection and navigation feed-tree rendering
+   - archive lifecycle action bulk-marks existing unread articles from that feed as read
+   - settings UI route `/account/feed-health` supports feed-level lifecycle and interval controls
 
 ## Frontend Delivery Standard
 
@@ -399,21 +407,19 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Add feed health + edit surface v1 (`/account/feed-health`, lifecycle controls, health APIs).
-2. Add stream-level ranking and prioritization controls.
-3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-4. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
+1. Add stream-level ranking and prioritization controls.
+2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features (spec:
+   `docs/specs/scheduler-ingestion-observability-v1.md`).
+3. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
 
 ## Next UI Slice (Prioritized)
 
-1. Monitoring match visual explainability v1 was completed on 2026-02-18:
-   - query-hit evidence (`query_hits`) is persisted and surfaced in APIs
-   - compact `Matched terms` summaries are rendered in list/reader
-   - title/content span-level highlighting is rendered in reader surfaces
-2. Workspace action iconification v1 was completed on 2026-02-18:
-   - list and reader actions now use icon-first controls with explicit `aria-label` values
-   - tooltip/label copy includes shortcut hints for core reader actions (`j/k`, `o`, `m`, `s`)
-   - no behavioral changes to existing reader/list actions or keyboard shortcut mappings.
+1. No active prioritized UI slice is currently queued.
+2. Most recently completed: feed health + edit surface v1 on 2026-02-19:
+   - `/account/feed-health` route is implemented for lifecycle/freshness management
+   - feed health APIs are implemented (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
+     `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
+   - archive action bulk-marks existing unread feed articles as read
 
 ## Deferred
 

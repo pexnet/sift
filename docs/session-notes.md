@@ -1,5 +1,57 @@
 # Session Notes
 
+## 2026-02-19 (Observability Planning Spec Captured)
+
+### Implemented This Session
+
+- Added new implementation-ready observability planning spec:
+  - `docs/specs/scheduler-ingestion-observability-v1.md`
+  - scope is backend runtime observability for API/scheduler/worker and ingestion pipeline telemetry
+  - locked decisions captured:
+    - OTel-aligned + Prometheus-compatible metrics
+    - VMUI-first operational posture for resource efficiency
+    - metadata-only logging defaults
+    - no collector required in v1
+    - trace-ready contract with tracing backend deferred
+- Updated active backlog references:
+  - `docs/backlog.md` `Next` priority #2 now links the observability spec inline
+  - `docs/backlog.md` linked-spec list now includes scheduler/ingestion observability spec
+- Kept priority ordering and deferred sequence unchanged.
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency checks:
+  - `rg -n "scheduler.*observability|scheduler-ingestion-observability-v1|Linked Specifications" docs/backlog.md AGENTS.md docs/architecture.md docs/session-notes.md docs/specs`
+  - `Get-ChildItem docs/specs`
+
+## 2026-02-19 (Planning Docs Consolidation Pass)
+
+### Implemented This Session
+
+- Consolidated active planning docs so implemented feed-health work is no longer listed as active `Next` work:
+  - updated `docs/backlog.md` core priorities to start with stream ranking, then scheduler observability
+  - updated `AGENTS.md` `Next Delivery Sequence` to match
+  - updated `docs/architecture.md` `Planned Next Moves` to match
+- Consolidated completed-work references:
+  - moved completed spec to `docs/specs/done/feed-health-edit-surface-v1.md`
+  - updated `docs/backlog-history.md` with completed feed health + edit surface v1 summary
+  - updated stale spec/path references in active docs.
+- Recorded current next step explicitly in planning docs:
+  - next active implementation priority is stream-level ranking and prioritization controls.
+
+### Verification
+
+- Documentation/planning consolidation only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency check commands:
+  - `rg -n "feed health \\+ edit surface v1|stream-level ranking and prioritization controls|Planned Next Moves|Next Delivery Sequence" docs/backlog.md AGENTS.md docs/architecture.md docs/backlog-history.md`
+  - `Get-ChildItem docs/specs`
+  - `Get-ChildItem docs/specs/done`
+
 ## 2026-02-19 (Feed Health + Edit Surface v1 Delivered)
 
 ### Implemented This Session
@@ -27,6 +79,10 @@
   - per-feed interval editing and lifecycle actions (pause/resume/archive/unarchive)
   - archive confirmation explicitly mentions unread mark-read behavior
   - success feedback includes archive `marked_read_count`
+  - follow-up UI polish completed:
+    - clearer filter panel copy/actions (`Apply filters`, `Reset`)
+    - additional status context (`Last refreshed`, stale age, interval badge)
+    - clearer lifecycle action labels (`Pause updates`, `Resume updates`, `Archive feed`, `Unarchive feed`)
 - Added test coverage:
   - `tests/test_feed_health_service.py`
   - `tests/test_feed_health_api.py`
@@ -37,7 +93,7 @@
   - extended `frontend/src/features/auth/routes/AccountPage.test.tsx`
 - Synced planning docs and spec tracking:
   - promoted feed health into `Next` priorities in `docs/backlog.md`
-  - added in-progress implementation spec `docs/specs/feed-health-edit-surface-v1.md`
+  - added implementation spec `docs/specs/done/feed-health-edit-surface-v1.md` (archived to done after delivery)
   - updated `AGENTS.md` and `docs/architecture.md` priority and API status references.
 
 ### Verification

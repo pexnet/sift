@@ -13,15 +13,15 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Add feed health + edit surface v1 (`/account/feed-health`, lifecycle controls, health APIs).
-2. Add stream-level ranking and prioritization controls.
-3. Add scheduler and ingestion observability (metrics, latency, failures).
+1. Add stream-level ranking and prioritization controls.
+2. Add scheduler and ingestion observability (metrics, latency, failures; spec:
+   [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)).
 
 ### Next UI Slice
 
 - No active prioritized UI slice is currently queued.
-- Most recently completed: workspace action iconification v1 (completed on 2026-02-18; archived in
-  `docs/backlog-history.md`; spec archived in `docs/specs/done/workspace-action-iconification-v1.md`).
+- Most recently completed: feed health + edit surface v1 (completed on 2026-02-19; archived in
+  `docs/backlog-history.md`; spec archived in `docs/specs/done/feed-health-edit-surface-v1.md`).
 
 ### Linked Specifications
 
@@ -34,8 +34,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Stream ranking/prioritization controls v1:
   [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
 - Feed health ops panel v1: [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
-- Feed health edit surface v1:
-  [docs/specs/feed-health-edit-surface-v1.md](specs/feed-health-edit-surface-v1.md)
+- Scheduler/ingestion observability v1:
+  [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)
 - Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
 - Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
