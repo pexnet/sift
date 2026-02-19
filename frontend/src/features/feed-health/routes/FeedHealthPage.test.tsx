@@ -32,6 +32,7 @@ function renderPage() {
 
 describe("FeedHealthPage", () => {
   beforeEach(() => {
+    useFeedHealthQueryMock.mockClear();
     settingsMutateAsync.mockReset();
     lifecycleMutateAsync.mockReset();
     settingsMutateAsync.mockResolvedValue({
@@ -98,8 +99,11 @@ describe("FeedHealthPage", () => {
 
     expect(screen.getByRole("heading", { name: "Feed health" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Back to settings" })).toHaveAttribute("href", "/account");
+    expect(screen.getByText(/^Last refreshed:/)).toBeVisible();
+    expect(screen.getByText("Filters")).toBeVisible();
     expect(screen.getByText("Threat feed")).toBeVisible();
     expect(screen.getByText("https://example.com/threat.xml")).toBeVisible();
+    expect(screen.getByText("Interval: 30m")).toBeVisible();
     expect(screen.getByText("Unread: 4")).toBeVisible();
     expect(screen.getByText("Articles (7d): 14")).toBeVisible();
     expect(screen.getByText("Cadence: 2.00/day")).toBeVisible();
@@ -112,7 +116,7 @@ describe("FeedHealthPage", () => {
 
     const intervalInput = screen.getByLabelText("Fetch interval (minutes)");
     fireEvent.change(intervalInput, { target: { value: "120" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save interval" }));
 
     await waitFor(() => {
       expect(settingsMutateAsync).toHaveBeenCalledWith({
@@ -127,7 +131,7 @@ describe("FeedHealthPage", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
+    fireEvent.click(screen.getByRole("button", { name: "Archive feed" }));
 
     await waitFor(() => {
       expect(lifecycleMutateAsync).toHaveBeenCalledWith({
@@ -137,5 +141,36 @@ describe("FeedHealthPage", () => {
     });
     expect(screen.getByText("Feed archived. Marked 2 unread article(s) as read.")).toBeVisible();
     confirmSpy.mockRestore();
+  });
+
+  it("applies and resets filters", async () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText("Title or URL"), { target: { value: "threat" } });
+    fireEvent.click(screen.getByRole("switch", { name: "Stale only" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
+
+    await waitFor(() => {
+      expect(useFeedHealthQueryMock).toHaveBeenLastCalledWith({
+        lifecycle: "all",
+        q: "threat",
+        stale_only: true,
+        error_only: false,
+        limit: 50,
+        offset: 0,
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    await waitFor(() => {
+      expect(useFeedHealthQueryMock).toHaveBeenLastCalledWith({
+        lifecycle: "all",
+        q: "",
+        stale_only: false,
+        error_only: false,
+        limit: 50,
+        offset: 0,
+      });
+    });
   });
 });

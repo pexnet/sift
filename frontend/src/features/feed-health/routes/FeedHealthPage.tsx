@@ -79,6 +79,14 @@ export function FeedHealthPage() {
     setQuery(queryInput.trim());
   };
 
+  const resetFilters = () => {
+    setLifecycle("all");
+    setQueryInput("");
+    setQuery("");
+    setStaleOnly(false);
+    setErrorOnly(false);
+  };
+
   const updateInterval = async (feedId: string) => {
     setFeedback(null);
     const raw = intervalValueByFeedId[feedId] ?? "";
@@ -132,9 +140,19 @@ export function FeedHealthPage() {
   };
 
   return (
-    <Paper component="section" className="panel settings-panel" sx={{ maxWidth: 1200, mx: "auto" }} aria-labelledby="feed-health-heading">
+    <Paper
+      component="section"
+      className="panel settings-panel"
+      sx={{ maxWidth: 1200, mx: "auto" }}
+      aria-labelledby="feed-health-heading"
+    >
       <Stack spacing={2}>
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "stretch", sm: "center" }}
+          spacing={1}
+        >
           <Typography id="feed-health-heading" variant="h4" component="h1">
             Feed health
           </Typography>
@@ -145,54 +163,69 @@ export function FeedHealthPage() {
           </Stack>
         </Stack>
         <Typography variant="body2" color="text.secondary">
-          Inspect feed freshness and failures, then manage lifecycle and fetch interval.
+          Review freshness and ingest failures, then adjust lifecycle state and polling cadence per feed.
         </Typography>
+        {healthQuery.data?.last_updated_at ? (
+          <Typography variant="caption" color="text.secondary">
+            Last refreshed: {formatDateTime(healthQuery.data.last_updated_at)}
+          </Typography>
+        ) : null}
 
         {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
         {healthQuery.isError ? <Alert severity="error">Failed to load feed health.</Alert> : null}
 
-        <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel id="feed-health-lifecycle-label">Lifecycle</InputLabel>
-            <Select
-              labelId="feed-health-lifecycle-label"
-              label="Lifecycle"
-              value={lifecycle}
-              onChange={(event) => setLifecycle(event.target.value as FeedHealthLifecycleFilter)}
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="paused">Paused</MenuItem>
-              <MenuItem value="archived">Archived</MenuItem>
-            </Select>
-          </FormControl>
+        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 1.5 }}>
+          <Stack spacing={1.2}>
+            <Typography variant="subtitle2">Filters</Typography>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel id="feed-health-lifecycle-label">Lifecycle</InputLabel>
+                <Select
+                  labelId="feed-health-lifecycle-label"
+                  label="Lifecycle"
+                  value={lifecycle}
+                  onChange={(event) => setLifecycle(event.target.value as FeedHealthLifecycleFilter)}
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="paused">Paused</MenuItem>
+                  <MenuItem value="archived">Archived</MenuItem>
+                </Select>
+              </FormControl>
 
-          <FormControlLabel
-            control={<Switch checked={staleOnly} onChange={(event) => setStaleOnly(event.target.checked)} />}
-            label="Stale only"
-          />
-          <FormControlLabel
-            control={<Switch checked={errorOnly} onChange={(event) => setErrorOnly(event.target.checked)} />}
-            label="Error only"
-          />
+              <FormControlLabel
+                control={<Switch checked={staleOnly} onChange={(event) => setStaleOnly(event.target.checked)} />}
+                label="Stale only"
+              />
+              <FormControlLabel
+                control={<Switch checked={errorOnly} onChange={(event) => setErrorOnly(event.target.checked)} />}
+                label="Error only"
+              />
 
-          <TextField
-            size="small"
-            label="Search"
-            value={queryInput}
-            onChange={(event) => setQueryInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onApplySearch();
-              }
-            }}
-            sx={{ flex: 1, minWidth: 220 }}
-          />
-          <Button variant="outlined" onClick={onApplySearch}>
-            Apply
-          </Button>
-        </Stack>
+              <TextField
+                size="small"
+                label="Title or URL"
+                value={queryInput}
+                onChange={(event) => setQueryInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    onApplySearch();
+                  }
+                }}
+                sx={{ flex: 1, minWidth: 220 }}
+              />
+              <Stack direction="row" spacing={1}>
+                <Button variant="outlined" onClick={onApplySearch}>
+                  Apply filters
+                </Button>
+                <Button variant="text" onClick={resetFilters}>
+                  Reset
+                </Button>
+              </Stack>
+            </Stack>
+          </Stack>
+        </Box>
 
         {summary ? (
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -200,8 +233,8 @@ export function FeedHealthPage() {
             <Chip label={`Active ${summary.active_feed_count}`} size="small" />
             <Chip label={`Paused ${summary.paused_feed_count}`} size="small" />
             <Chip label={`Archived ${summary.archived_feed_count}`} size="small" />
-            <Chip label={`Stale ${summary.stale_feed_count}`} size="small" />
-            <Chip label={`Errors ${summary.error_feed_count}`} size="small" />
+            <Chip label={`Stale ${summary.stale_feed_count}`} size="small" color="warning" />
+            <Chip label={`Errors ${summary.error_feed_count}`} size="small" color="error" />
           </Stack>
         ) : null}
 
@@ -239,13 +272,24 @@ export function FeedHealthPage() {
                   <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-all" }}>
                     {item.url}
                   </Typography>
+                  {item.site_url ? (
+                    <Typography variant="caption" color="text.secondary" sx={{ wordBreak: "break-all", display: "block" }}>
+                      Site: {item.site_url}
+                    </Typography>
+                  ) : null}
                   <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 0.8 }}>
+                    <Typography variant="caption">Interval: {item.fetch_interval_minutes}m</Typography>
                     <Typography variant="caption">Unread: {item.unread_count}</Typography>
                     <Typography variant="caption">Articles (7d): {item.articles_last_7d}</Typography>
                     <Typography variant="caption">Cadence: {formatPerDay(item.estimated_articles_per_day_7d)}</Typography>
                     <Typography variant="caption">Last success: {formatDateTime(item.last_fetch_success_at)}</Typography>
                     <Typography variant="caption">Last error: {formatDateTime(item.last_fetch_error_at)}</Typography>
                   </Stack>
+                  {item.is_stale && item.stale_age_hours !== null ? (
+                    <Typography variant="caption" color="warning.main" sx={{ display: "block", mt: 0.6 }}>
+                      Stale age: {item.stale_age_hours.toFixed(1)}h
+                    </Typography>
+                  ) : null}
                   {item.last_fetch_error ? (
                     <Typography variant="caption" color="error" sx={{ display: "block", mt: 0.6 }}>
                       {item.last_fetch_error}
@@ -275,7 +319,7 @@ export function FeedHealthPage() {
                       disabled={isMutating}
                       onClick={() => void updateInterval(item.feed_id)}
                     >
-                      Save
+                      Save interval
                     </Button>
                   </Stack>
 
@@ -287,7 +331,7 @@ export function FeedHealthPage() {
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "pause")}
                       >
-                        Pause
+                        Pause updates
                       </Button>
                     ) : null}
                     {item.lifecycle_status === "paused" ? (
@@ -297,7 +341,7 @@ export function FeedHealthPage() {
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "resume")}
                       >
-                        Resume
+                        Resume updates
                       </Button>
                     ) : null}
                     {item.lifecycle_status === "archived" ? (
@@ -307,7 +351,7 @@ export function FeedHealthPage() {
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "unarchive")}
                       >
-                        Unarchive
+                        Unarchive feed
                       </Button>
                     ) : (
                       <Button
@@ -317,7 +361,7 @@ export function FeedHealthPage() {
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "archive")}
                       >
-                        Archive
+                        Archive feed
                       </Button>
                     )}
                   </Stack>
