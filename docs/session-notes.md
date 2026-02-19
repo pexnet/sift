@@ -1,5 +1,21 @@
 # Session Notes
 
+## 2026-02-19 (Process Update: `develop` -> `main` Branching Model)
+
+### Implemented This Session
+
+- Added branch-governance instructions in `AGENTS.md`:
+  - `main` is the protected production branch
+  - `develop` is the default integration branch for ongoing feature work
+  - feature branches should be created from `develop` and merged back into `develop`
+  - merge into `main` only after validation/release readiness.
+
+### Verification
+
+- Documentation/process update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+
 ## 2026-02-19 (Docs Governance Update: Spec Archive Lifecycle)
 
 ### Implemented This Session

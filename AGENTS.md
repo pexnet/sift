@@ -24,6 +24,11 @@ This file stores persistent project context for future Codex sessions.
 
 - Prefer modular monolith architecture for MVP.
 - Avoid premature microservices; isolate via interfaces first.
+- Branching workflow:
+  - `main` is the protected production branch.
+  - `develop` is the default integration branch for active feature development.
+  - Create feature branches from `develop` and merge completed features back into `develop`.
+  - Merge `develop` into `main` only when features are validated and release-ready.
 - Prefer migration-first database evolution:
   - Create migration.
   - Apply migration.
