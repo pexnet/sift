@@ -48,6 +48,10 @@ describe("AccountPage", () => {
     expect(screen.getByText("Density", { selector: "legend" })).toBeVisible();
     expect(screen.getByText("Navigation preset", { selector: "legend" })).toBeVisible();
     expect(screen.getByText("Use arrow keys to move options and Enter or Space to select.")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Manage feed health" })).toHaveAttribute(
+      "href",
+      "/account/feed-health"
+    );
     expect(screen.getByRole("link", { name: "Manage monitoring feeds" })).toHaveAttribute(
       "href",
       "/account/monitoring"

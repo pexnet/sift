@@ -37,11 +37,15 @@ class Feed(TimestampMixin, Base):
     url: Mapped[str] = mapped_column(String(1000), nullable=False, unique=True, index=True)
     site_url: Mapped[str | None] = mapped_column(String(1000))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     fetch_interval_minutes: Mapped[int] = mapped_column(Integer, default=15)
     etag: Mapped[str | None] = mapped_column(String(512))
     last_modified: Mapped[str | None] = mapped_column(String(512))
     last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_fetch_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_fetch_error: Mapped[str | None] = mapped_column(String(1000))
+    last_fetch_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Subscription(TimestampMixin, Base):

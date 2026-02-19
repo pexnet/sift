@@ -99,6 +99,9 @@ export function AccountPage() {
           Settings
         </Typography>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+          <Button component="a" href="/account/feed-health" size="small" variant="outlined">
+            Manage feed health
+          </Button>
           <Button component="a" href="/account/monitoring" size="small" variant="outlined">
             Manage monitoring feeds
           </Button>

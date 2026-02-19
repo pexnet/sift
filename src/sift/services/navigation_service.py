@@ -64,7 +64,7 @@ class NavigationService:
         feed_rows = (
             await session.execute(
                 select(Feed.id, Feed.title, Feed.folder_id)
-                .where(Feed.owner_id == user_id)
+                .where(Feed.owner_id == user_id, Feed.is_archived.is_(False))
                 .order_by(Feed.title.asc())
             )
         ).all()
@@ -81,6 +81,7 @@ class NavigationService:
                     and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
                 )
                 .where(Feed.owner_id == user_id)
+                .where(Feed.is_archived.is_(False))
                 .group_by(Article.feed_id)
             )
         ).all()

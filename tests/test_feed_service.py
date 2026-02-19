@@ -49,6 +49,14 @@ async def test_list_active_feeds_prioritizes_never_fetched_then_oldest() -> None
             last_fetched_at=now - timedelta(days=1),
             is_active=False,
         )
+        archived_feed = Feed(
+            owner_id=user.id,
+            title="Archived",
+            url="https://feed-order.example.com/archived.xml",
+            last_fetched_at=now - timedelta(days=2),
+            is_active=True,
+            is_archived=True,
+        )
         ownerless_feed = Feed(
             owner_id=None,
             title="Ownerless",
@@ -57,7 +65,7 @@ async def test_list_active_feeds_prioritizes_never_fetched_then_oldest() -> None
             is_active=True,
         )
 
-        session.add_all([never_fetched, oldest_fetched, recent_fetched, inactive_feed, ownerless_feed])
+        session.add_all([never_fetched, oldest_fetched, recent_fetched, inactive_feed, archived_feed, ownerless_feed])
         await session.commit()
 
         feeds = await feed_service.list_active_feeds(session, limit=10)

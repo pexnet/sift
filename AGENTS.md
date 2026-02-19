@@ -64,6 +64,9 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
 - `PATCH /api/v1/feeds/{feed_id}/folder`
+- `GET /api/v1/feeds/health`
+- `PATCH /api/v1/feeds/{feed_id}/settings`
+- `PATCH /api/v1/feeds/{feed_id}/lifecycle`
 - `GET /api/v1/folders`
 - `POST /api/v1/folders`
 - `PATCH /api/v1/folders/{folder_id}`
@@ -128,7 +131,8 @@ This file stores persistent project context for future Codex sessions.
   - Light/dark theme toggle with local persistence
   - Compact/comfortable density toggle (compact default)
   - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
-  - Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and talks to backend through REST APIs only.
+  - Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/feed-health`,
+    `/help`) and talks to backend through REST APIs only.
 - Settings hub + unified UI preferences are implemented:
   - `/account` now hosts appearance and reading/layout controls plus account summary
   - unified browser-local preferences model for `themeMode`, `themePreset`, `density`, and `navPreset`
@@ -162,6 +166,12 @@ This file stores persistent project context for future Codex sessions.
   - article-list scope read action is icon-first with tooltip semantics and explicit accessibility label
   - reader actions (read/save/open/prev/next/highlight toggle) are icon-first with explicit accessibility labels
   - keyboard shortcuts remain unchanged (`j/k`, `o`, `m`, `s`)
+- Feed health + edit surface v1 is implemented:
+  - `/account/feed-health` route provides feed lifecycle/health management
+  - health APIs are available (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
+    `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
+  - feeds now support lifecycle metadata (`is_archived`, `archived_at`, `last_fetch_success_at`, `last_fetch_error_at`)
+  - archiving a feed bulk-marks existing unread articles from that feed as read
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -171,8 +181,9 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+1. Add feed health + edit surface v1 (`/account/feed-health`, lifecycle controls, health APIs).
+2. Add stream-level ranking and prioritization controls.
+3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Next UI Slice (Prioritized)
 

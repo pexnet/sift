@@ -19,15 +19,69 @@ class FeedOut(BaseModel):
     url: str
     site_url: str | None
     is_active: bool
+    is_archived: bool
+    archived_at: datetime | None
     fetch_interval_minutes: int
     etag: str | None
     last_modified: str | None
     last_fetched_at: datetime | None
+    last_fetch_success_at: datetime | None
     last_fetch_error: str | None
+    last_fetch_error_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class FeedSettingsUpdate(BaseModel):
+    fetch_interval_minutes: int
+
+
+class FeedLifecycleUpdate(BaseModel):
+    action: Literal["pause", "resume", "archive", "unarchive"]
+
+
+class FeedLifecycleResultOut(BaseModel):
+    feed: FeedOut
+    marked_read_count: int
+
+
+class FeedHealthSummaryOut(BaseModel):
+    total_feed_count: int
+    active_feed_count: int
+    paused_feed_count: int
+    archived_feed_count: int
+    stale_feed_count: int
+    error_feed_count: int
+
+
+class FeedHealthItemOut(BaseModel):
+    feed_id: UUID
+    title: str
+    url: str
+    site_url: str | None
+    folder_id: UUID | None
+    lifecycle_status: Literal["active", "paused", "archived"]
+    fetch_interval_minutes: int
+    last_fetched_at: datetime | None
+    last_fetch_success_at: datetime | None
+    last_fetch_error: str | None
+    last_fetch_error_at: datetime | None
+    is_stale: bool
+    stale_age_hours: float | None
+    articles_last_7d: int
+    estimated_articles_per_day_7d: float
+    unread_count: int
+
+
+class FeedHealthListResponse(BaseModel):
+    items: list[FeedHealthItemOut]
+    total: int
+    limit: int
+    offset: int
+    summary: FeedHealthSummaryOut
+    last_updated_at: datetime
 
 
 class FeedIngestResult(BaseModel):

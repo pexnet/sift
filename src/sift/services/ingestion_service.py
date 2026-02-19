@@ -111,24 +111,29 @@ class IngestionService:
             async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
                 response = await client.get(feed.url, headers=headers)
         except httpx.HTTPError as exc:
+            fetched_at = datetime.now(UTC)
             feed.last_fetch_error = str(exc)
-            feed.last_fetched_at = datetime.now(UTC)
+            feed.last_fetched_at = fetched_at
+            feed.last_fetch_error_at = fetched_at
             await session.commit()
             result.errors.append(str(exc))
             return result
 
-        feed.last_fetched_at = datetime.now(UTC)
+        fetched_at = datetime.now(UTC)
+        feed.last_fetched_at = fetched_at
         feed.etag = response.headers.get("ETag", feed.etag)
         feed.last_modified = response.headers.get("Last-Modified", feed.last_modified)
 
         if response.status_code == 304:
             feed.last_fetch_error = None
+            feed.last_fetch_success_at = fetched_at
             await session.commit()
             return result
 
         if response.status_code != 200:
             message = f"Unexpected status {response.status_code} while fetching {feed.url}"
             feed.last_fetch_error = message
+            feed.last_fetch_error_at = fetched_at
             await session.commit()
             result.errors.append(message)
             return result
@@ -244,6 +249,7 @@ class IngestionService:
             result.inserted_count += 1
 
         feed.last_fetch_error = None
+        feed.last_fetch_success_at = fetched_at
         await session.commit()
         return result
 

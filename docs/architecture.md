@@ -27,7 +27,8 @@ This keeps deployment simple while preserving clean seams for future service ext
 **Current**
 
 - Frontend is a standalone React + TypeScript SPA in `frontend/` (Vite + MUI + TanStack Router/Query).
-- Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and is deployed independently from FastAPI.
+- Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/feed-health`,
+  `/help`) and is deployed independently from FastAPI.
 - Backend no longer serves UI pages/static frontend bundles from `src/sift`.
 - Integration with backend is API-only via `/api/v1/*`.
 
@@ -286,7 +287,9 @@ Design goals:
 
 - `feeds`: source catalog
   - includes owner reference (`owner_id`)
-  - includes fetch metadata (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_error`)
+  - includes fetch metadata (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_success_at`, `last_fetch_error`,
+    `last_fetch_error_at`)
+  - includes lifecycle metadata (`is_active`, `is_archived`, `archived_at`)
 - `subscriptions`: user to feed mapping
 - `raw_entries`: immutable source payloads (unique feed/source key for ingest dedupe)
 - `articles`: normalized canonical content (unique feed/source key for ingest dedupe)
@@ -396,9 +399,10 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-3. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
+1. Add feed health + edit surface v1 (`/account/feed-health`, lifecycle controls, health APIs).
+2. Add stream-level ranking and prioritization controls.
+3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+4. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
 
 ## Next UI Slice (Prioritized)
 
@@ -474,21 +478,20 @@ These items are intentionally documented for future implementation and are **not
 
 ### 1) Feed Health + Feed Lifecycle Management
 
-Planned capability:
+Status:
 
-- A dedicated feed status/edit surface for operators/users to inspect feed health.
-- Health/quality indicators per feed:
-  - last successful fetch/ingest timestamp
-  - recent failures + latest error context
-  - ingest cadence metrics (for example, rolling articles/day)
-- Lifecycle controls directly on this page:
-  - pause/resume feed ingestion
-  - archive/unarchive feed from active navigation
+- v1 feed health/edit surface is now implemented:
+  - new settings route: `/account/feed-health`
+  - feed health API: `GET /api/v1/feeds/health`
+  - feed settings API: `PATCH /api/v1/feeds/{feed_id}/settings`
+  - feed lifecycle API: `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+  - archive action now marks existing unread for that feed as read
+  - feed lifecycle/fetch metadata now includes `is_archived`, `archived_at`, `last_fetch_success_at`,
+    `last_fetch_error_at`
 
-Architecture implications:
+Deferred follow-up capability:
 
-- Extend feed domain/API contracts with lifecycle state (`active`/`paused`/`archived`) and health aggregates.
-- Add lightweight ingestion telemetry aggregation to power cadence and reliability indicators.
+- dashboard feed-health card aggregation endpoint and richer historical telemetry views.
 
 ### 2) Monitoring Feed Definition Management (Keyword/Regex/Plugin)
 
@@ -655,16 +658,15 @@ Architecture implications:
 
 ### Deferred Delivery Sequence (Post Current Core Priorities)
 
-1. Feed health/edit + lifecycle controls.
-2. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
-3. Dashboard v1 command center (only after dashboard dependency spec gate checklist is complete).
-4. Discover feeds v1 (discovery streams + recommendation decisions).
-5. Duplicate candidate review screen.
-6. Trends detection for selected feed folders (dashboard-oriented).
-7. Advanced search query acceleration (PostgreSQL-oriented).
-8. Plugin UI areas + centralized plugin configuration.
-9. Vector-database integration infrastructure (plugin-boundary embeddings support).
-10. Plugin implementations (LLM summary, vector similarity).
-11. Silent feeds for monitoring-only population.
-12. OIDC provider integration (Google, then Azure/Apple).
-13. Full article fetch on-demand (reader-triggered).
+1. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
+2. Dashboard v1 command center (only after dashboard dependency spec gate checklist is complete).
+3. Discover feeds v1 (discovery streams + recommendation decisions).
+4. Duplicate candidate review screen.
+5. Trends detection for selected feed folders (dashboard-oriented).
+6. Advanced search query acceleration (PostgreSQL-oriented).
+7. Plugin UI areas + centralized plugin configuration.
+8. Vector-database integration infrastructure (plugin-boundary embeddings support).
+9. Plugin implementations (LLM summary, vector similarity).
+10. Silent feeds for monitoring-only population.
+11. OIDC provider integration (Google, then Azure/Apple).
+12. Full article fetch on-demand (reader-triggered).

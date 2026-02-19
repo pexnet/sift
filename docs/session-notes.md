@@ -1,5 +1,59 @@
 # Session Notes
 
+## 2026-02-19 (Feed Health + Edit Surface v1 Delivered)
+
+### Implemented This Session
+
+- Delivered feed lifecycle + health backend slice:
+  - migration added feed lifecycle/fetch metadata fields:
+    - `feeds.is_archived`
+    - `feeds.archived_at`
+    - `feeds.last_fetch_success_at`
+    - `feeds.last_fetch_error_at`
+  - ingestion bookkeeping now updates success/error timestamps on fetch outcomes
+  - scheduler feed candidate selection now excludes archived feeds
+  - navigation tree feed nodes now exclude archived feeds
+  - new feed health service added for stale/cadence/unread aggregation and filtering
+- Added/extended feed APIs:
+  - `GET /api/v1/feeds` now supports `include_archived`
+  - `GET /api/v1/feeds/health`
+  - `PATCH /api/v1/feeds/{feed_id}/settings`
+  - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+  - lifecycle behavior includes archive side effect: bulk-mark existing unread feed articles as read
+- Delivered frontend feed health management vertical slice:
+  - new authenticated route: `/account/feed-health`
+  - new account settings entry: `Manage feed health`
+  - health filters (`lifecycle`, `stale_only`, `error_only`, `q`)
+  - per-feed interval editing and lifecycle actions (pause/resume/archive/unarchive)
+  - archive confirmation explicitly mentions unread mark-read behavior
+  - success feedback includes archive `marked_read_count`
+- Added test coverage:
+  - `tests/test_feed_health_service.py`
+  - `tests/test_feed_health_api.py`
+  - extended `tests/test_feed_service.py`
+  - extended `tests/test_navigation_service.py`
+  - extended `tests/test_ingestion_service.py`
+  - `frontend/src/features/feed-health/routes/FeedHealthPage.test.tsx`
+  - extended `frontend/src/features/auth/routes/AccountPage.test.tsx`
+- Synced planning docs and spec tracking:
+  - promoted feed health into `Next` priorities in `docs/backlog.md`
+  - added in-progress implementation spec `docs/specs/feed-health-edit-surface-v1.md`
+  - updated `AGENTS.md` and `docs/architecture.md` priority and API status references.
+
+### Verification
+
+- Backend test suite:
+  - `python -m pytest`
+- Frontend quality gates:
+  - `pnpm --dir frontend run gen:openapi`
+  - `pnpm --dir frontend run lint`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run test`
+  - `pnpm --dir frontend run build`
+- Note:
+  - `uv run pytest` was attempted first but failed in this environment due local `.venv` access issues; verification
+    used `python -m pytest` successfully.
+
 ## 2026-02-19 (Planning Reprioritization: Stream Ranking First, Vector DB Deferred)
 
 ### Implemented This Session

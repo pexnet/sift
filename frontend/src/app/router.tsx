@@ -5,6 +5,7 @@ import { DEFAULT_WORKSPACE_SEARCH, parseWorkspaceSearch } from "../entities/arti
 import { getCurrentUser } from "../shared/api/authApi";
 import type { WorkspaceSearch } from "../shared/types/contracts";
 import { AccountPage } from "../features/auth/routes/AccountPage";
+import { FeedHealthPage } from "../features/feed-health/routes/FeedHealthPage";
 import { HelpPage } from "../features/help/routes/HelpPage";
 import { LoginPage } from "../features/auth/routes/LoginPage";
 import { RegisterPage } from "../features/auth/routes/RegisterPage";
@@ -111,6 +112,13 @@ const monitoringFeedsRoute = createRoute({
   component: MonitoringFeedsPage,
 });
 
+const feedHealthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account/feed-health",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: FeedHealthPage,
+});
+
 const helpRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/help",
@@ -155,6 +163,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   accountRoute,
+  feedHealthRoute,
   monitoringFeedsRoute,
   helpRoute,
   workspaceRoute,

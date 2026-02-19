@@ -4,6 +4,24 @@ export const queryKeys = {
   auth: {
     me: () => ["auth", "me"] as const,
   },
+  feedHealthRoot: () => ["feed-health"] as const,
+  feedHealth: (filters: {
+    lifecycle: string;
+    q: string;
+    stale_only: boolean;
+    error_only: boolean;
+    limit: number;
+    offset: number;
+  }) =>
+    [
+      "feed-health",
+      filters.lifecycle,
+      filters.q,
+      filters.stale_only,
+      filters.error_only,
+      filters.limit,
+      filters.offset,
+    ] as const,
   navigation: () => ["navigation"] as const,
   streams: () => ["streams"] as const,
   folders: () => ["folders"] as const,
