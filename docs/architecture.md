@@ -397,8 +397,8 @@ Design goals:
 ## Planned Next Moves (Current Core Priority Plan)
 
 1. Add stream-level ranking and prioritization controls.
-2. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+3. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
 
 ## Next UI Slice (Prioritized)
 
@@ -663,7 +663,8 @@ Architecture implications:
 6. Trends detection for selected feed folders (dashboard-oriented).
 7. Advanced search query acceleration (PostgreSQL-oriented).
 8. Plugin UI areas + centralized plugin configuration.
-9. Plugin implementations (LLM summary, vector similarity).
-10. Silent feeds for monitoring-only population.
-11. OIDC provider integration (Google, then Azure/Apple).
-12. Full article fetch on-demand (reader-triggered).
+9. Vector-database integration infrastructure (plugin-boundary embeddings support).
+10. Plugin implementations (LLM summary, vector similarity).
+11. Silent feeds for monitoring-only population.
+12. OIDC provider integration (Google, then Azure/Apple).
+13. Full article fetch on-demand (reader-triggered).

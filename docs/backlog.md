@@ -14,8 +14,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 ### Core Platform Priorities
 
 1. Add stream-level ranking and prioritization controls.
-2. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-3. Add scheduler and ingestion observability (metrics, latency, failures).
+2. Add scheduler and ingestion observability (metrics, latency, failures).
 
 ### Next UI Slice
 
@@ -180,6 +179,13 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Keep initial version manual/on-demand only (no global auto-fetch).
 - Spec reference: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
 
+### 13) Vector Database Integration Infrastructure
+
+- Move vector-database integration out of immediate `Next` and keep it as a later deferred capability.
+- Add plugin-boundary vector infrastructure for embeddings and semantic matching workflows.
+- Keep vector storage optional and provider-pluggable (for example `pgvector`, Qdrant, Weaviate).
+- Preserve core-ingestion independence so vector infrastructure remains non-blocking for baseline feeds/streams.
+
 ### Suggested Deferred Delivery Sequence
 
 1. Feed health/edit page (operability baseline).
@@ -190,7 +196,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 6. Trends detection for selected feed folders (dashboard-oriented).
 7. Advanced search query acceleration (PostgreSQL-oriented).
 8. Plugin UI areas + centralized plugin configuration.
-9. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
-10. Silent feeds for monitoring-only population.
-11. OIDC provider integration (Google, then Azure/Apple).
-12. Full article fetch on-demand (reader-triggered).
+9. Vector-database integration infrastructure (plugin-boundary embeddings support).
+10. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+11. Silent feeds for monitoring-only population.
+12. OIDC provider integration (Google, then Azure/Apple).
+13. Full article fetch on-demand (reader-triggered).

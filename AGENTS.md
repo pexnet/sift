@@ -172,8 +172,7 @@ This file stores persistent project context for future Codex sessions.
 ## Next Delivery Sequence
 
 1. Add stream-level ranking and prioritization controls.
-2. Add vector-database integration as plugin infrastructure for embedding/matching workflows.
-3. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
 
 ## Next UI Slice (Prioritized)
 
@@ -193,6 +192,7 @@ This file stores persistent project context for future Codex sessions.
    - `docs/specs/monitoring-signal-scoring-v1.md`
    - `docs/specs/trends-detection-dashboard-v1.md`
    - `docs/specs/feed-recommendations-v1.md`
+5. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
 
 ## Feature Notes
 

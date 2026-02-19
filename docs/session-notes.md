@@ -1,5 +1,28 @@
 # Session Notes
 
+## 2026-02-19 (Planning Reprioritization: Stream Ranking First, Vector DB Deferred)
+
+### Implemented This Session
+
+- Reprioritized active `Next` platform work in `docs/backlog.md`:
+  - kept `stream-level ranking and prioritization controls` as immediate top priority
+  - moved `vector-database integration` out of immediate `Next`
+  - kept `scheduler and ingestion observability` as the second immediate core priority
+  - added explicit deferred backlog item for vector-database integration infrastructure.
+- Updated delivery sequencing docs for consistency:
+  - `AGENTS.md` `Next Delivery Sequence` now prioritizes stream ranking then scheduler/observability
+  - `AGENTS.md` `Deferred` now explicitly lists vector-database integration as later priority
+  - `docs/architecture.md` `Planned Next Moves` and deferred delivery sequence now reflect the same order.
+- Set `docs/specs/stream-ranking-prioritization-controls-v1.md` status to in-progress kickoff.
+
+### Verification
+
+- Documentation/planning reprioritization only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency check command:
+  - `rg -n "stream-level ranking|vector-database integration|scheduler and ingestion observability|Next Delivery Sequence|Core Platform Priorities" docs/backlog.md AGENTS.md docs/architecture.md`
+
 ## 2026-02-19 (Process Update: `develop` -> `main` Branching Model)
 
 ### Implemented This Session
