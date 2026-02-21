@@ -1,5 +1,33 @@
 # Session Notes
 
+## 2026-02-22 (Mobile Read-Only Mode + Desktop Readability Tightening)
+
+### Implemented This Session
+
+- Enforced mobile read-only behavior for app focus on feed reading:
+  - mobile routes now redirect from `/account`, `/account/feed-health`, `/account/monitoring`, and `/help` to `/app`
+  - mobile workspace rail now exposes reading-only actions (`Nav`, `Saved`, `Search`)
+  - mobile navigation pane now hides feed/folder management controls and action menus/dialogs
+- Added test coverage for mobile/read-only behavior:
+  - read-only management controls hidden in `NavigationPane` tests
+  - mobile workspace rail behavior updated in `WorkspacePage` route tests
+- Applied desktop readability/alignment polish pass:
+  - improved article-list readability by reducing read-row fade and strengthening metadata text
+  - refined reader header rhythm (title scale + top spacing) for tighter vertical alignment
+  - improved feed-health/monitoring table legibility with slightly stronger caption sizing and row separators
+  - monitoring rules summary text now uses a larger, easier-to-scan type style
+- Backlog update:
+  - added deferred item for a dedicated future mobile UX planning session in `docs/backlog.md`
+
+### Verification
+
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+- desktop screenshot review capture:
+  - `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+
 ## 2026-02-21 (Viewport Balance Polish Pass)
 
 ### Implemented This Session

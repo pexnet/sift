@@ -900,7 +900,7 @@ body {
 }
 
 .workspace-row--read {
-  opacity: 0.72;
+  opacity: 0.84;
 }
 
 .workspace-row--read .workspace-row__title {
@@ -945,7 +945,7 @@ body {
 
 .workspace-row__title {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 680;
   line-height: var(--workspace-line-height-title);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -953,8 +953,8 @@ body {
 }
 
 .workspace-row__meta {
-  color: var(--muted);
-  font-size: 0.86rem;
+  color: color-mix(in srgb, var(--text) 42%, var(--muted) 58%);
+  font-size: 0.88rem;
   line-height: var(--workspace-line-height-body);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -978,7 +978,7 @@ body {
 .workspace-reader {
   background: var(--reader-paper-bg);
   color: var(--reader-paper-text);
-  padding: 0.9rem 1.4rem 1.5rem;
+  padding: 0.82rem 1.4rem 1.5rem;
   overflow: auto;
   border-left: 1px solid var(--reader-paper-border);
   min-height: 0;
@@ -990,14 +990,14 @@ body {
   top: 0;
   z-index: 2;
   padding-top: 0.15rem;
-  padding-bottom: 0.78rem;
+  padding-bottom: 0.68rem;
   background: var(--workspace-reader-top-bg);
 }
 
 .workspace-reader__title {
   margin: 0;
-  font-size: clamp(1.8rem, 2.15vw, 2.45rem);
-  line-height: 1.14;
+  font-size: clamp(1.66rem, 2vw, 2.28rem);
+  line-height: 1.16;
   letter-spacing: -0.016em;
 }
 
@@ -1190,6 +1190,17 @@ body {
 
 .monitoring-table__rows {
   min-width: 0;
+}
+
+.feed-health-table .MuiTypography-caption,
+.monitoring-table .MuiTypography-caption {
+  font-size: 0.79rem;
+  line-height: 1.38;
+}
+
+.feed-health-table__row + .feed-health-table__row,
+.monitoring-table__row + .monitoring-table__row {
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent 28%);
 }
 
 .feed-health-table__name-cell .MuiTypography-root,

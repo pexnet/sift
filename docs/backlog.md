@@ -181,6 +181,15 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Keep vector storage optional and provider-pluggable (for example `pgvector`, Qdrant, Weaviate).
 - Preserve core-ingestion independence so vector infrastructure remains non-blocking for baseline feeds/streams.
 
+### 13) Mobile UX Planning (Dedicated Session)
+
+- Keep current mobile runtime in read-focused mode.
+- Run a separate mobile planning/design session later to define:
+  - mobile-specific navigation and reading ergonomics
+  - deferred settings/admin re-entry strategy (if any)
+  - final mobile density/accessibility targets and test matrix
+- Do not block current desktop polish and core platform priorities on this planning slice.
+
 ### Suggested Deferred Delivery Sequence
 
 1. Monitoring feed management v2 follow-ups.

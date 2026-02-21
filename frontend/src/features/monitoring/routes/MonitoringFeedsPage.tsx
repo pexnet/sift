@@ -711,9 +711,9 @@ export function MonitoringFeedsPage() {
                   </Box>
                   <Box sx={{ flex: 1.6, minWidth: 0 }}>
                     <Typography
-                      variant="caption"
+                      variant="body2"
                       color="text.secondary"
-                      sx={{ lineHeight: 1.28, whiteSpace: "normal", overflowWrap: "anywhere" }}
+                      sx={{ fontSize: "0.82rem", lineHeight: 1.34, whiteSpace: "normal", overflowWrap: "anywhere" }}
                     >
                       {(stream.folder_id ? (folderNameById.get(stream.folder_id) ?? "Folder") : "Unfiled")}
                       {" · "}
