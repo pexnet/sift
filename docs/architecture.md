@@ -420,7 +420,11 @@ Design goals:
 
 ## Next UI Slice (Prioritized)
 
-1. No active prioritized UI slice is currently queued.
+1. Desktop reader/workspace polish v2 (active):
+   - focus on desktop readability/alignment at `1920x1080` and `1366x768`
+   - tighten article list + reader typography rhythm and spacing consistency
+   - reduce monitoring/feed-health density friction while preserving operational scanability
+   - close with screenshot-based QA delta report
 2. Most recently completed: workspace + settings management UI touchups v1 on 2026-02-21:
    - workspace navigation now uses icon-first folder creation and chevron-first section/folder controls
    - monitoring streams now support folder assignment and are grouped by folder in navigation
@@ -436,6 +440,7 @@ Design goals:
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
+2. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
 
 ## Frontend Settings and Theme Architecture (Current)
 

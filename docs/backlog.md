@@ -19,8 +19,12 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Next UI Slice
 
-- No active prioritized UI slice is currently queued.
-- Most recently completed:
+1. Desktop reader/workspace polish v2 (active):
+  - focus strictly on desktop (`1920x1080`, `1366x768`) readability and alignment consistency
+  - tighten list-row/read-state typography hierarchy and reader header rhythm
+  - eliminate monitoring/feed-health density friction while keeping operational columns scannable
+  - gate completion with screenshot-based QA delta report against the previous desktop capture set
+2. Most recently completed:
   - workspace + settings management UI touchups v1 (completed on 2026-02-21; spec archived in
     `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
   - feed health + edit surface v1 (completed on 2026-02-19; archived in `docs/backlog-history.md`; spec archived in

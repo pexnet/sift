@@ -158,6 +158,11 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
    - monitoring management list is now one-row-per-stream with icon actions and edit-to-left-form behavior
    - feed health list is now one-row-per-feed with icon actions, `all=true` load mode, and add-feed dialog
+16. Mobile read-focus and desktop readability tightening completed on 2026-02-22:
+   - mobile now enforces a read-focused path (settings/help routes redirect to `/app` on small screens)
+   - mobile rail actions are restricted to reading-focused actions (`Nav`, `Saved`, `Search`)
+   - mobile feed/folder management controls are hidden in read-focused mode
+   - desktop readability pass tightened article/list/reader typography rhythm and table scanability
 
 ### Completed Session Index (Chronological)
 

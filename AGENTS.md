@@ -197,7 +197,11 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next UI Slice (Prioritized)
 
-1. No active prioritized UI slice is currently queued.
+1. Desktop reader/workspace polish v2:
+   - focus strictly on desktop readability/alignment (`1920x1080`, `1366x768`)
+   - tighten article-list and reader typography rhythm
+   - reduce monitoring/feed-health density friction while preserving scanability
+   - complete with screenshot-based QA delta report
 2. Most recently completed:
    - workspace + settings management UI touchups v1 (2026-02-21; spec archived at
      `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
@@ -219,6 +223,7 @@ This file stores persistent project context for future Codex sessions.
    - `docs/specs/trends-detection-dashboard-v1.md`
    - `docs/specs/feed-recommendations-v1.md`
 5. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
+6. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
 
 ## Feature Notes
 

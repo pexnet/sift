@@ -1,5 +1,36 @@
 # Session Notes
 
+## 2026-02-22 (Session Close Consolidation / Next-Session Handoff)
+
+### Session Close State
+
+- Branch: `develop`
+- Latest pushed commits:
+  - `b047508` (`Polish desktop readability and track deferred mobile planning`)
+  - `ebf9025` (`Enforce mobile read-only mode for workspace and settings`)
+- Working tree is clean at close.
+
+### Backlog Consolidation
+
+- `docs/backlog.md` now marks a single active UI slice: `Desktop reader/workspace polish v2`.
+- Mobile planning remains explicitly deferred as a dedicated future planning session.
+- `AGENTS.md` is aligned with the same active/deferred UI direction.
+- `docs/backlog-history.md` now records the completed 2026-02-22 mobile read-focus + desktop readability pass.
+
+### Next Session Quick Start
+
+1. Read:
+   - `AGENTS.md`
+   - `docs/backlog.md`
+   - `docs/session-notes.md` (top two 2026-02-22 entries)
+2. Run baseline validation:
+   - `npm --prefix frontend run lint`
+   - `npm --prefix frontend run typecheck`
+   - `npm --prefix frontend run test`
+3. Start `Desktop reader/workspace polish v2` with screenshot QA gate at:
+   - `1920x1080`
+   - `1366x768`
+
 ## 2026-02-22 (Mobile Read-Only Mode + Desktop Readability Tightening)
 
 ### Implemented This Session
