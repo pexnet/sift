@@ -1184,9 +1184,12 @@ body {
   min-height: var(--workspace-table-row-min-height);
 }
 
-.feed-health-table__rows,
-.monitoring-table__rows {
+.feed-health-table__rows {
   min-width: 980px;
+}
+
+.monitoring-table__rows {
+  min-width: 0;
 }
 
 .feed-health-table__name-cell .MuiTypography-root,

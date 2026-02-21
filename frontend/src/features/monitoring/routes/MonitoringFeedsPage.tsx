@@ -636,10 +636,6 @@ export function MonitoringFeedsPage() {
             </Box>
           </Paper>
 
-        <Typography variant="caption" className="table-scroll-hint">
-          Tip: scroll horizontally to see query, active, and action columns.
-        </Typography>
-
         <Paper variant="outlined" sx={{ flex: "1 1 auto", p: 1.2 }} className="monitoring-table">
           <Stack spacing={0.4} className="monitoring-table__rows">
             <Stack
@@ -651,22 +647,13 @@ export function MonitoringFeedsPage() {
               <Typography variant="caption" sx={{ flex: 2.2, fontWeight: 700 }}>
                 Name
               </Typography>
-              <Typography variant="caption" sx={{ flex: 1, fontWeight: 700 }}>
-                Folder
-              </Typography>
-              <Typography variant="caption" sx={{ flex: 1, fontWeight: 700 }}>
-                Mode
-              </Typography>
-              <Typography variant="caption" sx={{ width: 72, fontWeight: 700 }}>
-                Priority
-              </Typography>
-              <Typography variant="caption" sx={{ width: 72, fontWeight: 700 }}>
-                Query
+              <Typography variant="caption" sx={{ flex: 1.6, fontWeight: 700 }}>
+                Rules
               </Typography>
               <Typography variant="caption" sx={{ width: 66, fontWeight: 700 }}>
                 Active
               </Typography>
-              <Typography variant="caption" sx={{ width: 114, fontWeight: 700, textAlign: "right" }}>
+              <Typography variant="caption" sx={{ width: 96, fontWeight: 700, textAlign: "right" }}>
                 Actions
               </Typography>
             </Stack>
@@ -722,18 +709,21 @@ export function MonitoringFeedsPage() {
                       {stream.name}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" sx={{ flex: 1 }} noWrap>
-                    {stream.folder_id ? (folderNameById.get(stream.folder_id) ?? "Folder") : "Unfiled"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ flex: 1 }} noWrap>
-                    {formatMode(stream.classifier_mode)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ width: 72 }}>
-                    {stream.priority}
-                  </Typography>
-                  <Typography variant="body2" sx={{ width: 72 }}>
-                    {stream.match_query ? "Yes" : "No"}
-                  </Typography>
+                  <Box sx={{ flex: 1.6, minWidth: 0 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.28, whiteSpace: "normal", overflowWrap: "anywhere" }}
+                    >
+                      {(stream.folder_id ? (folderNameById.get(stream.folder_id) ?? "Folder") : "Unfiled")}
+                      {" · "}
+                      {formatMode(stream.classifier_mode)}
+                      {" · "}
+                      P{stream.priority}
+                      {" · "}
+                      {stream.match_query ? "Query" : "No query"}
+                    </Typography>
+                  </Box>
                   <Box sx={{ width: 66 }}>
                     <Switch
                       size="small"
@@ -745,7 +735,7 @@ export function MonitoringFeedsPage() {
                       onChange={() => void toggleActive(stream)}
                     />
                   </Box>
-                  <Stack direction="row" spacing={0.2} sx={{ width: 114, justifyContent: "flex-end" }}>
+                  <Stack direction="row" spacing={0.2} sx={{ width: 96, justifyContent: "flex-end" }}>
                     <Tooltip title="Run backfill">
                       <IconButton
                         size="small"
