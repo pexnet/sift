@@ -202,6 +202,7 @@ export function WorkspacePage({
 
   const navigationPane = (
     <NavigationPane
+      isReadOnly={layoutMode === "mobile"}
       density={density}
       navPreset={navPreset}
       hierarchy={hierarchy}
@@ -275,66 +276,78 @@ export function WorkspacePage({
     />
   );
 
+  const feedsAction = {
+    id: "feeds",
+    label: usesDrawerNav ? "Nav" : "Feeds",
+    icon: <RssFeedRoundedIcon fontSize="small" />,
+    badge: systemAllCount,
+    active: usesDrawerNav
+      ? navOpen
+      : search.scope_type !== "system" || search.state === "all",
+    onClick: () => {
+      if (usesDrawerNav) {
+        setIsNavOpen((previous) => !previous);
+        return;
+      }
+      setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" });
+    },
+  };
+
+  const savedAction = {
+    id: "saved",
+    label: "Saved",
+    icon: <BookmarkBorderRoundedIcon fontSize="small" />,
+    badge: systemSavedCount,
+    active: search.scope_type === "system" && search.state === "saved",
+    onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "saved", article_id: "" }),
+  };
+
+  const searchAction = {
+    id: "search",
+    label: "Search",
+    icon: <SearchRoundedIcon fontSize="small" />,
+    onClick: () => searchInputRef.current?.focus(),
+  };
+
+  const visibleRailActions = isMobile
+    ? [
+        feedsAction,
+        savedAction,
+        searchAction,
+      ]
+    : [
+        {
+          id: "dashboard",
+          label: "Dashboard",
+          icon: <SpaceDashboardRoundedIcon fontSize="small" />,
+          onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" }),
+        },
+        feedsAction,
+        savedAction,
+        searchAction,
+        {
+          id: "settings",
+          label: "Settings",
+          icon: <SettingsRoundedIcon fontSize="small" />,
+          onClick: () => void navigate({ to: "/account" }),
+        },
+        {
+          id: "theme",
+          label: themeMode === "dark" ? "Light mode" : "Dark mode",
+          icon: themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />,
+          onClick: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+        },
+        {
+          id: "help",
+          label: "Help",
+          icon: <HelpOutlineRoundedIcon fontSize="small" />,
+          onClick: () => void navigate({ to: "/help" }),
+        },
+      ];
+
   return (
     <Box className={shellClassName} style={desktopShellStyle} data-layout-mode={layoutMode}>
-      <WorkspaceRail
-        actions={[
-          {
-            id: "dashboard",
-            label: "Dashboard",
-            icon: <SpaceDashboardRoundedIcon fontSize="small" />,
-            onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" }),
-          },
-          {
-            id: "feeds",
-            label: usesDrawerNav ? "Nav" : "Feeds",
-            icon: <RssFeedRoundedIcon fontSize="small" />,
-            badge: systemAllCount,
-            active: usesDrawerNav
-              ? navOpen
-              : search.scope_type !== "system" || search.state === "all",
-            onClick: () => {
-              if (usesDrawerNav) {
-                setIsNavOpen((previous) => !previous);
-                return;
-              }
-              setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" });
-            },
-          },
-          {
-            id: "saved",
-            label: "Saved",
-            icon: <BookmarkBorderRoundedIcon fontSize="small" />,
-            badge: systemSavedCount,
-            active: search.scope_type === "system" && search.state === "saved",
-            onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "saved", article_id: "" }),
-          },
-          {
-            id: "search",
-            label: "Search",
-            icon: <SearchRoundedIcon fontSize="small" />,
-            onClick: () => searchInputRef.current?.focus(),
-          },
-          {
-            id: "settings",
-            label: "Settings",
-            icon: <SettingsRoundedIcon fontSize="small" />,
-            onClick: () => void navigate({ to: "/account" }),
-          },
-          {
-            id: "theme",
-            label: themeMode === "dark" ? "Light mode" : "Dark mode",
-            icon: themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />,
-            onClick: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
-          },
-          {
-            id: "help",
-            label: "Help",
-            icon: <HelpOutlineRoundedIcon fontSize="small" />,
-            onClick: () => void navigate({ to: "/help" }),
-          },
-        ]}
-      />
+      <WorkspaceRail actions={visibleRailActions} />
 
       {usesDrawerNav ? (
         <Drawer open={navOpen} onClose={() => setIsNavOpen(false)} PaperProps={{ className: "workspace-nav-drawer" }}>

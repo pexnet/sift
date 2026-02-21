@@ -46,6 +46,15 @@ async function requireAnonymous(context: RouterContext) {
   }
 }
 
+function guardMobileReadOnlyRoute() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return;
+  }
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    throw redirect({ to: "/app", search: loadPersistedWorkspaceSearch() });
+  }
+}
+
 function RootErrorBoundary() {
   return (
     <Alert severity="error" sx={{ m: 3 }}>
@@ -115,7 +124,10 @@ function AccountRouteComponent() {
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
-  beforeLoad: ({ context }) => requireAuth(context),
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
   component: AccountRouteComponent,
 });
 
@@ -130,7 +142,10 @@ function MonitoringRouteComponent() {
 const monitoringFeedsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account/monitoring",
-  beforeLoad: ({ context }) => requireAuth(context),
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
   component: MonitoringRouteComponent,
 });
 
@@ -145,7 +160,10 @@ function FeedHealthRouteComponent() {
 const feedHealthRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account/feed-health",
-  beforeLoad: ({ context }) => requireAuth(context),
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
   component: FeedHealthRouteComponent,
 });
 
@@ -160,7 +178,10 @@ function HelpRouteComponent() {
 const helpRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/help",
-  beforeLoad: ({ context }) => requireAuth(context),
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
   component: HelpRouteComponent,
 });
 

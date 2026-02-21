@@ -192,9 +192,10 @@ describe("WorkspacePage", () => {
     render(<WorkspaceHarness />);
 
     expect(document.querySelector('[data-layout-mode="mobile"]')).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Help" })).toBeNull();
     expect(screen.getByRole("button", { name: /Back to nav/i })).toBeVisible();
     expect(screen.getByRole("button", { name: /First article/i })).toBeVisible();
-
     fireEvent.click(screen.getByRole("button", { name: /First article/i }));
 
     expect(screen.queryByRole("button", { name: /First article/i })).toBeNull();

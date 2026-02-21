@@ -107,6 +107,7 @@ const hierarchy: NavigationHierarchy = {
 
 function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = {}) {
   const defaults: ComponentProps<typeof NavigationPane> = {
+    isReadOnly: false,
     density: "compact",
     navPreset: "balanced",
     hierarchy,
@@ -258,6 +259,7 @@ describe("NavigationPane", () => {
 
     rerender(
       <NavigationPane
+        isReadOnly={false}
         density="compact"
         navPreset="tight"
         hierarchy={hierarchy}
@@ -286,5 +288,14 @@ describe("NavigationPane", () => {
     );
 
     expect(navRoot?.className).toContain("workspace-nav--preset-tight");
+  });
+
+  it("hides navigation management controls in read-only mode", () => {
+    renderPane({ isReadOnly: true });
+
+    expect(screen.queryByRole("button", { name: "Add feed" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add folder" })).toBeNull();
+    expect(screen.queryByLabelText(/Folder actions for/i)).toBeNull();
+    expect(screen.queryByLabelText(/Feed actions for/i)).toBeNull();
   });
 });

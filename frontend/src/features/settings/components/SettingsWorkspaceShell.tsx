@@ -6,7 +6,7 @@ import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Box, Drawer, useMediaQuery } from "@mui/material";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { loadPersistedWorkspaceSearch } from "../../../entities/article/model";
 import type { WorkspaceSearch } from "../../../shared/types/contracts";
@@ -41,6 +41,7 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
   const navigate = useNavigate();
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 760px)");
   const isTabletOrMobile = useMediaQuery("(max-width: 1200px)");
   const {
     layout,
@@ -89,6 +90,25 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
       }}
     />
   );
+
+  useEffect(() => {
+    if (!isMobile) {
+      return;
+    }
+    const persistedSearch = loadPersistedWorkspaceSearch();
+    void navigate({
+      to: "/app",
+      search: {
+        ...persistedSearch,
+        article_id: "",
+      },
+      replace: true,
+    });
+  }, [isMobile, navigate]);
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <Box className={`workspace-shell react-density-${density}`} style={desktopShellStyle}>

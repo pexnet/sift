@@ -41,6 +41,7 @@ import {
 } from "../lib/navState";
 
 type NavigationPaneProps = {
+  isReadOnly: boolean;
   density: "compact" | "comfortable";
   navPreset: "tight" | "balanced" | "airy";
   hierarchy: NavigationHierarchy | null;
@@ -91,6 +92,7 @@ function getExpandedFolderIds(expandedFolders: Record<string, boolean>): Set<str
 }
 
 export function NavigationPane({
+  isReadOnly,
   density,
   navPreset,
   hierarchy,
@@ -271,18 +273,20 @@ export function NavigationPane({
       <Stack sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Feeds</Typography>
-          <Stack direction="row" spacing={0.4}>
-            <Tooltip title="Add feed">
-              <IconButton size="small" aria-label="Add feed" onClick={() => setCreateFeedOpen(true)}>
-                <AddLinkRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Add folder">
-              <IconButton size="small" aria-label="Add folder" onClick={() => setCreateOpen(true)}>
-                <CreateNewFolderRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+          {!isReadOnly ? (
+            <Stack direction="row" spacing={0.4}>
+              <Tooltip title="Add feed">
+                <IconButton size="small" aria-label="Add feed" onClick={() => setCreateFeedOpen(true)}>
+                  <AddLinkRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add folder">
+                <IconButton size="small" aria-label="Add folder" onClick={() => setCreateOpen(true)}>
+                  <CreateNewFolderRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          ) : null}
         </Stack>
       </Stack>
 
@@ -445,7 +449,7 @@ export function NavigationPane({
                           {folder.unread_count}
                         </Typography>
                       </ListItemButton>
-                      {!folder.is_unfiled ? (
+                      {!isReadOnly && !folder.is_unfiled ? (
                         <IconButton
                           size="small"
                           className="workspace-nav__action-button"
@@ -472,6 +476,7 @@ export function NavigationPane({
                             density={density}
                             setFailedFeedIcons={setFailedFeedIcons}
                             onSelectFeed={onSelectFeed}
+                            isReadOnly={isReadOnly}
                             onOpenFeedMenu={(event) => setFeedMenu({ anchor: event.currentTarget, feedId: feed.id })}
                           />
                         ))}
@@ -486,167 +491,171 @@ export function NavigationPane({
         </Stack>
       ) : null}
 
-      <Menu
-        open={feedMenu !== null}
-        anchorEl={feedMenu?.anchor ?? null}
-        onClose={() => setFeedMenu(null)}
-      >
-        {folderOptions.map((folderOption) => (
-          <MenuItem
-            key={folderOption.id ?? "unfiled"}
-            disabled={isAssignPending}
-            onClick={() => {
-              void (async () => {
-                if (!feedMenu) {
+      {!isReadOnly ? (
+        <>
+          <Menu
+            open={feedMenu !== null}
+            anchorEl={feedMenu?.anchor ?? null}
+            onClose={() => setFeedMenu(null)}
+          >
+            {folderOptions.map((folderOption) => (
+              <MenuItem
+                key={folderOption.id ?? "unfiled"}
+                disabled={isAssignPending}
+                onClick={() => {
+                  void (async () => {
+                    if (!feedMenu) {
+                      return;
+                    }
+                    await onAssignFeedFolder(feedMenu.feedId, folderOption.id);
+                    setFeedMenu(null);
+                  })();
+                }}
+              >
+                Move to {folderOption.name}
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <Menu
+            open={folderMenu !== null}
+            anchorEl={folderMenu?.anchor ?? null}
+            onClose={() => setFolderMenu(null)}
+          >
+            <MenuItem
+              onClick={() => {
+                if (!folderMenu) {
                   return;
                 }
-                await onAssignFeedFolder(feedMenu.feedId, folderOption.id);
-                setFeedMenu(null);
-              })();
-            }}
-          >
-            Move to {folderOption.name}
-          </MenuItem>
-        ))}
-      </Menu>
+                setActiveFolderId(folderMenu.folderId);
+                setActiveFolderName(folderMenu.folderName);
+                setFolderNameInput(folderMenu.folderName);
+                setRenameOpen(true);
+                setFolderMenu(null);
+              }}
+            >
+              Rename folder
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                if (!folderMenu) {
+                  return;
+                }
+                setActiveFolderId(folderMenu.folderId);
+                setActiveFolderName(folderMenu.folderName);
+                setDeleteOpen(true);
+                setFolderMenu(null);
+              }}
+            >
+              Delete folder
+            </MenuItem>
+          </Menu>
 
-      <Menu
-        open={folderMenu !== null}
-        anchorEl={folderMenu?.anchor ?? null}
-        onClose={() => setFolderMenu(null)}
-      >
-        <MenuItem
-          onClick={() => {
-            if (!folderMenu) {
-              return;
-            }
-            setActiveFolderId(folderMenu.folderId);
-            setActiveFolderName(folderMenu.folderName);
-            setFolderNameInput(folderMenu.folderName);
-            setRenameOpen(true);
-            setFolderMenu(null);
-          }}
-        >
-          Rename folder
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            if (!folderMenu) {
-              return;
-            }
-            setActiveFolderId(folderMenu.folderId);
-            setActiveFolderName(folderMenu.folderName);
-            setDeleteOpen(true);
-            setFolderMenu(null);
-          }}
-        >
-          Delete folder
-        </MenuItem>
-      </Menu>
+          <Dialog open={createOpen} onClose={closeDialogs}>
+            <DialogTitle>Create folder</DialogTitle>
+            <DialogContent>
+              {localError ? <Alert severity="error">{localError}</Alert> : null}
+              <TextField
+                margin="dense"
+                autoFocus
+                fullWidth
+                label="Folder name"
+                value={folderNameInput}
+                onChange={(event) => setFolderNameInput(event.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeDialogs}>Cancel</Button>
+              <Button onClick={() => void submitCreate()} disabled={isFolderMutationPending}>
+                Create
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog open={createOpen} onClose={closeDialogs}>
-        <DialogTitle>Create folder</DialogTitle>
-        <DialogContent>
-          {localError ? <Alert severity="error">{localError}</Alert> : null}
-          <TextField
-            margin="dense"
-            autoFocus
-            fullWidth
-            label="Folder name"
-            value={folderNameInput}
-            onChange={(event) => setFolderNameInput(event.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialogs}>Cancel</Button>
-          <Button onClick={() => void submitCreate()} disabled={isFolderMutationPending}>
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={createFeedOpen} onClose={closeCreateFeedDialog}>
+            <DialogTitle>Add feed</DialogTitle>
+            <DialogContent>
+              <Stack spacing={1.2} sx={{ mt: 0.4, minWidth: { xs: 260, sm: 380 } }}>
+                {feedCreateError ? <Alert severity="error">{feedCreateError}</Alert> : null}
+                <TextField
+                  margin="dense"
+                  autoFocus
+                  fullWidth
+                  required
+                  label="Feed URL"
+                  value={feedUrlInput}
+                  onChange={(event) => setFeedUrlInput(event.target.value)}
+                  placeholder="https://example.com/rss"
+                />
+                <TextField
+                  margin="dense"
+                  fullWidth
+                  label="Title (optional)"
+                  value={feedTitleInput}
+                  onChange={(event) => setFeedTitleInput(event.target.value)}
+                />
+                <FormControl size="small">
+                  <InputLabel id="nav-create-feed-folder-label">Folder</InputLabel>
+                  <Select
+                    labelId="nav-create-feed-folder-label"
+                    label="Folder"
+                    value={feedFolderIdInput}
+                    onChange={(event) => setFeedFolderIdInput(event.target.value)}
+                  >
+                    <MenuItem value="">Unfiled</MenuItem>
+                    {folders.map((folder) => (
+                      <MenuItem key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeCreateFeedDialog}>Cancel</Button>
+              <Button variant="contained" onClick={() => void submitCreateFeed()} disabled={isFeedMutationPending}>
+                Add feed
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog open={createFeedOpen} onClose={closeCreateFeedDialog}>
-        <DialogTitle>Add feed</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1.2} sx={{ mt: 0.4, minWidth: { xs: 260, sm: 380 } }}>
-            {feedCreateError ? <Alert severity="error">{feedCreateError}</Alert> : null}
-            <TextField
-              margin="dense"
-              autoFocus
-              fullWidth
-              required
-              label="Feed URL"
-              value={feedUrlInput}
-              onChange={(event) => setFeedUrlInput(event.target.value)}
-              placeholder="https://example.com/rss"
-            />
-            <TextField
-              margin="dense"
-              fullWidth
-              label="Title (optional)"
-              value={feedTitleInput}
-              onChange={(event) => setFeedTitleInput(event.target.value)}
-            />
-            <FormControl size="small">
-              <InputLabel id="nav-create-feed-folder-label">Folder</InputLabel>
-              <Select
-                labelId="nav-create-feed-folder-label"
-                label="Folder"
-                value={feedFolderIdInput}
-                onChange={(event) => setFeedFolderIdInput(event.target.value)}
-              >
-                <MenuItem value="">Unfiled</MenuItem>
-                {folders.map((folder) => (
-                  <MenuItem key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeCreateFeedDialog}>Cancel</Button>
-          <Button variant="contained" onClick={() => void submitCreateFeed()} disabled={isFeedMutationPending}>
-            Add feed
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={renameOpen} onClose={closeDialogs}>
+            <DialogTitle>Rename folder</DialogTitle>
+            <DialogContent>
+              {localError ? <Alert severity="error">{localError}</Alert> : null}
+              <TextField
+                margin="dense"
+                autoFocus
+                fullWidth
+                label="Folder name"
+                value={folderNameInput}
+                onChange={(event) => setFolderNameInput(event.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeDialogs}>Cancel</Button>
+              <Button onClick={() => void submitRename()} disabled={isFolderMutationPending}>
+                Save
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog open={renameOpen} onClose={closeDialogs}>
-        <DialogTitle>Rename folder</DialogTitle>
-        <DialogContent>
-          {localError ? <Alert severity="error">{localError}</Alert> : null}
-          <TextField
-            margin="dense"
-            autoFocus
-            fullWidth
-            label="Folder name"
-            value={folderNameInput}
-            onChange={(event) => setFolderNameInput(event.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialogs}>Cancel</Button>
-          <Button onClick={() => void submitRename()} disabled={isFolderMutationPending}>
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={deleteOpen} onClose={closeDialogs}>
-        <DialogTitle>Delete folder</DialogTitle>
-        <DialogContent>
-          {localError ? <Alert severity="error">{localError}</Alert> : null}
-          <Typography variant="body2">Delete folder "{activeFolderName}"? Feeds will be moved to Unfiled.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialogs}>Cancel</Button>
-          <Button color="error" onClick={() => void submitDelete()} disabled={isFolderMutationPending}>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={deleteOpen} onClose={closeDialogs}>
+            <DialogTitle>Delete folder</DialogTitle>
+            <DialogContent>
+              {localError ? <Alert severity="error">{localError}</Alert> : null}
+              <Typography variant="body2">Delete folder "{activeFolderName}"? Feeds will be moved to Unfiled.</Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeDialogs}>Cancel</Button>
+              <Button color="error" onClick={() => void submitDelete()} disabled={isFolderMutationPending}>
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      ) : null}
     </Paper>
   );
 }
@@ -656,6 +665,7 @@ type FeedRowProps = {
   feedIconByFeedId: Record<string, string | null>;
   failedFeedIcons: Record<string, true>;
   density: "compact" | "comfortable";
+  isReadOnly: boolean;
   selectedScopeType: string;
   selectedScopeKey: string;
   onSelectFeed: (feedId: string) => void;
@@ -668,6 +678,7 @@ function FeedRow({
   feedIconByFeedId,
   failedFeedIcons,
   density,
+  isReadOnly,
   selectedScopeType,
   selectedScopeKey,
   onSelectFeed,
@@ -720,14 +731,16 @@ function FeedRow({
           {feed.unread_count}
         </Typography>
       </ListItemButton>
-      <IconButton
-        size="small"
-        className="workspace-nav__action-button"
-        aria-label={`Feed actions for ${feed.title}`}
-        onClick={onOpenFeedMenu}
-      >
-        <MoreHorizRoundedIcon fontSize="small" />
-      </IconButton>
+      {!isReadOnly ? (
+        <IconButton
+          size="small"
+          className="workspace-nav__action-button"
+          aria-label={`Feed actions for ${feed.title}`}
+          onClick={onOpenFeedMenu}
+        >
+          <MoreHorizRoundedIcon fontSize="small" />
+        </IconButton>
+      ) : null}
     </Stack>
   );
 }
