@@ -8,6 +8,7 @@ import type {
   PatchArticleStateRequest,
   WorkspaceSearch,
 } from "../../shared/types/contracts";
+import { WORKSPACE_FILTERS_KEY } from "../../shared/lib/storage";
 
 export const DEFAULT_WORKSPACE_SEARCH: WorkspaceSearch = {
   scope_type: "system",
@@ -96,6 +97,36 @@ const bulkPatchArticleStateSchema = z
 
 export function parseWorkspaceSearch(value: unknown): WorkspaceSearch {
   return workspaceSearchSchema.parse(value) as WorkspaceSearch;
+}
+
+export function loadPersistedWorkspaceSearch(): WorkspaceSearch {
+  if (typeof window === "undefined") {
+    return DEFAULT_WORKSPACE_SEARCH;
+  }
+  const raw = window.localStorage.getItem(WORKSPACE_FILTERS_KEY);
+  if (!raw) {
+    return DEFAULT_WORKSPACE_SEARCH;
+  }
+  try {
+    const parsed = parseWorkspaceSearch(JSON.parse(raw));
+    return {
+      ...parsed,
+      article_id: "",
+    };
+  } catch {
+    return DEFAULT_WORKSPACE_SEARCH;
+  }
+}
+
+export function savePersistedWorkspaceSearch(search: WorkspaceSearch): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const normalized = parseWorkspaceSearch({
+    ...search,
+    article_id: "",
+  });
+  window.localStorage.setItem(WORKSPACE_FILTERS_KEY, JSON.stringify(normalized));
 }
 
 export function parseArticleList(payload: unknown): ArticleListResponse {

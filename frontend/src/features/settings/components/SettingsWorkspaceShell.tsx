@@ -8,7 +8,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Box, Drawer, IconButton, Tooltip, useMediaQuery } from "@mui/material";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
-import { DEFAULT_WORKSPACE_SEARCH } from "../../../entities/article/model";
+import { loadPersistedWorkspaceSearch } from "../../../entities/article/model";
 import type { WorkspaceSearch } from "../../../shared/types/contracts";
 import { useAppUiState } from "../../../app/providers";
 import { toNavigationHierarchy } from "../../../entities/navigation/model";
@@ -55,10 +55,11 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
   );
 
   const openWorkspace = (search: Partial<WorkspaceSearch>) => {
+    const persistedSearch = loadPersistedWorkspaceSearch();
     void navigate({
       to: "/app",
       search: {
-        ...DEFAULT_WORKSPACE_SEARCH,
+        ...persistedSearch,
         ...search,
         article_id: "",
       },
@@ -111,7 +112,7 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
             label: "Feeds",
             icon: <RssFeedRoundedIcon fontSize="small" />,
             badge: systemAllCount,
-            onClick: () => openWorkspace({ scope_type: "system", scope_id: "", state: "all" }),
+            onClick: () => openWorkspace({ scope_type: "system", scope_id: "" }),
           },
           {
             id: "saved",
@@ -166,7 +167,7 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
             <IconButton
               size="small"
               aria-label="Open workspace"
-              onClick={() => openWorkspace({ scope_type: "system", scope_id: "", state: "all" })}
+              onClick={() => openWorkspace({})}
             >
               <RssFeedRoundedIcon fontSize="small" />
             </IconButton>

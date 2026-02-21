@@ -1,7 +1,12 @@
 import { Alert, Box, Typography } from "@mui/material";
 import { RouterProvider, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
-import { DEFAULT_WORKSPACE_SEARCH, parseWorkspaceSearch } from "../entities/article/model";
+import {
+  loadPersistedWorkspaceSearch,
+  parseWorkspaceSearch,
+  savePersistedWorkspaceSearch,
+} from "../entities/article/model";
 import { getCurrentUser } from "../shared/api/authApi";
 import type { WorkspaceSearch } from "../shared/types/contracts";
 import { AccountPage } from "../features/auth/routes/AccountPage";
@@ -37,7 +42,7 @@ async function requireAuth(context: RouterContext) {
 async function requireAnonymous(context: RouterContext) {
   const user = await fetchCurrentUser(context);
   if (user) {
-    throw redirect({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH });
+    throw redirect({ to: "/app", search: loadPersistedWorkspaceSearch() });
   }
 }
 
@@ -60,7 +65,7 @@ function NotFoundBoundary() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         The requested page does not exist.
       </Typography>
-      <button type="button" onClick={() => void navigate({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH })}>
+      <button type="button" onClick={() => void navigate({ to: "/app", search: loadPersistedWorkspaceSearch() })}>
         Go to workspace
       </button>
     </Box>
@@ -79,7 +84,7 @@ const indexRoute = createRoute({
   beforeLoad: async ({ context }) => {
     const user = await fetchCurrentUser(context);
     if (user) {
-      throw redirect({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH });
+      throw redirect({ to: "/app", search: loadPersistedWorkspaceSearch() });
     }
     throw redirect({ to: "/login" });
   },
@@ -164,10 +169,16 @@ function WorkspaceRouteComponent() {
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
   const search = workspaceRoute.useSearch();
 
+  useEffect(() => {
+    savePersistedWorkspaceSearch(search);
+  }, [search]);
+
   const setSearch = (patch: Partial<WorkspaceSearch>) => {
+    const nextSearch: WorkspaceSearch = { ...search, ...patch };
+    savePersistedWorkspaceSearch(nextSearch);
     void navigate({
       to: "/app",
-      search: (previous: WorkspaceSearch) => ({ ...previous, ...patch }),
+      search: nextSearch,
     });
   };
 
