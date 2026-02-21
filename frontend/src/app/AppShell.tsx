@@ -11,7 +11,8 @@ export function AppShell() {
   const currentUserQuery = useCurrentUser();
   const logoutMutation = useLogoutMutation();
 
-  const isWorkspaceRoute = location.pathname === "/app";
+  const isWorkspaceRoute =
+    location.pathname === "/app" || location.pathname.startsWith("/account") || location.pathname === "/help";
 
   if (isWorkspaceRoute) {
     return (

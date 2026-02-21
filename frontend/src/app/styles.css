@@ -733,6 +733,13 @@ body {
   overflow: hidden;
 }
 
+.settings-workspace-main {
+  min-height: 0;
+  overflow: auto;
+  padding: 0.95rem;
+  overscroll-behavior: contain;
+}
+
 .workspace-splitter {
   background: transparent;
   cursor: col-resize;
@@ -1156,6 +1163,10 @@ body {
 
   .workspace-content {
     grid-column: auto;
+  }
+
+  .settings-workspace-main {
+    padding: 0.7rem;
   }
 
   .workspace-nav-drawer {

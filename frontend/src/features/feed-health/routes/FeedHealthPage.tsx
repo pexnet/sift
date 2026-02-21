@@ -349,11 +349,27 @@ export function FeedHealthPage() {
                 <Button
                   size="small"
                   variant="text"
-                  sx={{ px: 0, justifyContent: "flex-start", minWidth: 0, textTransform: "none", fontWeight: 600 }}
+                  sx={{
+                    px: 0,
+                    justifyContent: "flex-start",
+                    alignItems: "flex-start",
+                    minWidth: 0,
+                    width: "100%",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                   aria-label={`Open details for ${item.title}`}
                   onClick={() => setSelectedFeed(item)}
                 >
-                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                      whiteSpace: "normal",
+                      wordBreak: "break-word",
+                      lineHeight: 1.25,
+                    }}
+                  >
                     {item.title}
                   </Typography>
                 </Button>

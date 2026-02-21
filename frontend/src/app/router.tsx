@@ -10,6 +10,7 @@ import { HelpPage } from "../features/help/routes/HelpPage";
 import { LoginPage } from "../features/auth/routes/LoginPage";
 import { RegisterPage } from "../features/auth/routes/RegisterPage";
 import { MonitoringFeedsPage } from "../features/monitoring/routes/MonitoringFeedsPage";
+import { SettingsWorkspaceShell } from "../features/settings/components/SettingsWorkspaceShell";
 import { WorkspacePage } from "../features/workspace/routes/WorkspacePage";
 import { AppProviders, queryClient, useAppUiState } from "./providers";
 import { AppShell } from "./AppShell";
@@ -98,32 +99,64 @@ const registerRoute = createRoute({
   component: RegisterPage,
 });
 
+function AccountRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <AccountPage />
+    </SettingsWorkspaceShell>
+  );
+}
+
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
   beforeLoad: ({ context }) => requireAuth(context),
-  component: AccountPage,
+  component: AccountRouteComponent,
 });
+
+function MonitoringRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <MonitoringFeedsPage />
+    </SettingsWorkspaceShell>
+  );
+}
 
 const monitoringFeedsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account/monitoring",
   beforeLoad: ({ context }) => requireAuth(context),
-  component: MonitoringFeedsPage,
+  component: MonitoringRouteComponent,
 });
+
+function FeedHealthRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <FeedHealthPage />
+    </SettingsWorkspaceShell>
+  );
+}
 
 const feedHealthRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account/feed-health",
   beforeLoad: ({ context }) => requireAuth(context),
-  component: FeedHealthPage,
+  component: FeedHealthRouteComponent,
 });
+
+function HelpRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <HelpPage />
+    </SettingsWorkspaceShell>
+  );
+}
 
 const helpRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/help",
   beforeLoad: ({ context }) => requireAuth(context),
-  component: HelpPage,
+  component: HelpRouteComponent,
 });
 
 function WorkspaceRouteComponent() {

@@ -121,7 +121,6 @@ describe("FeedHealthPage", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { name: "Feed health" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "General" })).toHaveAttribute("href", "/account");
     expect(screen.getByRole("button", { name: "Add feed" })).toBeVisible();
     expect(screen.getByText(/^Last refreshed:/)).toBeVisible();
     expect(screen.getByText("Filters")).toBeVisible();

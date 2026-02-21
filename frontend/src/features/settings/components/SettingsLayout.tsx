@@ -1,4 +1,4 @@
-import { Box, Button, Paper, Stack, Typography } from "@mui/material";
+import { Box, Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 
 type SettingsSectionId = "general" | "feed-health" | "monitoring" | "help";
@@ -13,15 +13,8 @@ type SettingsLayoutProps = {
   maxWidth?: number;
 };
 
-const SETTINGS_NAV_ITEMS: Array<{ id: SettingsSectionId; label: string; href: string }> = [
-  { id: "general", label: "General", href: "/account" },
-  { id: "feed-health", label: "Feed health", href: "/account/feed-health" },
-  { id: "monitoring", label: "Monitoring feeds", href: "/account/monitoring" },
-  { id: "help", label: "Help", href: "/help" },
-];
-
 export function SettingsLayout({
-  activeSection,
+  activeSection: _activeSection,
   title,
   description,
   actions,
@@ -30,39 +23,10 @@ export function SettingsLayout({
   maxWidth = 1200,
 }: SettingsLayoutProps) {
   const resolvedHeadingId = headingId ?? "settings-page-heading";
+  void _activeSection;
 
   return (
-    <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ maxWidth, mx: "auto", width: "100%" }}>
-      <Paper
-        component="aside"
-        variant="outlined"
-        sx={{
-          p: 1.2,
-          alignSelf: { xs: "stretch", md: "flex-start" },
-          flex: "0 0 220px",
-        }}
-        aria-label="Settings navigation"
-      >
-        <Stack spacing={0.8}>
-          <Typography component="p" variant="subtitle2" color="text.secondary" sx={{ px: 0.5 }}>
-            Settings
-          </Typography>
-          {SETTINGS_NAV_ITEMS.map((item) => (
-            <Button
-              key={item.id}
-              component="a"
-              href={item.href}
-              fullWidth
-              size="small"
-              variant={activeSection === item.id ? "contained" : "text"}
-              sx={{ justifyContent: "flex-start" }}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </Stack>
-      </Paper>
-
+    <Stack sx={{ maxWidth, mx: "auto", width: "100%" }}>
       <Paper
         component="section"
         className="panel settings-panel"
