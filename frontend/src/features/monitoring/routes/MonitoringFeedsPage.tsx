@@ -1,5 +1,4 @@
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import {
   Alert,
@@ -687,19 +686,27 @@ export function MonitoringFeedsPage() {
                   direction="row"
                   alignItems="center"
                   spacing={1}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Select monitoring feed ${stream.name}`}
+                  onClick={() => startEdit(stream)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      startEdit(stream);
+                    }
+                  }}
                   sx={{
                     px: 1,
                     py: 0.55,
                     borderRadius: 1,
                     backgroundColor: isEditingRow ? "action.selected" : "transparent",
+                    cursor: "pointer",
                   }}
                 >
                   <Box sx={{ flex: 2.2, minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                       {stream.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      {stream.description || "No description"}
                     </Typography>
                   </Box>
                   <Typography variant="body2" sx={{ flex: 1 }} noWrap>
@@ -714,26 +721,26 @@ export function MonitoringFeedsPage() {
                   <Typography variant="body2" sx={{ width: 72 }}>
                     {stream.match_query ? "Yes" : "No"}
                   </Typography>
-                  <FormControlLabel
-                    sx={{ width: 66, m: 0 }}
-                    control={<Switch size="small" checked={stream.is_active} onChange={() => void toggleActive(stream)} />}
-                    label=""
-                  />
+                  <Box sx={{ width: 66 }}>
+                    <Switch
+                      size="small"
+                      checked={stream.is_active}
+                      inputProps={{ "aria-label": `Toggle active for ${stream.name}` }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      onChange={() => void toggleActive(stream)}
+                    />
+                  </Box>
                   <Stack direction="row" spacing={0.2} sx={{ width: 114, justifyContent: "flex-end" }}>
-                    <Tooltip title="Edit">
-                      <IconButton
-                        size="small"
-                        aria-label={`Edit ${stream.name}`}
-                        onClick={() => startEdit(stream)}
-                      >
-                        <EditRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
                     <Tooltip title="Run backfill">
                       <IconButton
                         size="small"
                         aria-label={`Run backfill for ${stream.name}`}
-                        onClick={() => void runBackfill(stream.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void runBackfill(stream.id);
+                        }}
                         disabled={runBackfillMutation.isPending}
                       >
                         <PlayArrowRoundedIcon fontSize="small" />
@@ -744,7 +751,10 @@ export function MonitoringFeedsPage() {
                         size="small"
                         color="error"
                         aria-label={`Delete ${stream.name}`}
-                        onClick={() => void deleteStreamById(stream.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void deleteStreamById(stream.id);
+                        }}
                         disabled={deleteStreamMutation.isPending}
                       >
                         <DeleteOutlineRoundedIcon fontSize="small" />

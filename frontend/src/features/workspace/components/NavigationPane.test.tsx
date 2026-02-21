@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -124,10 +124,12 @@ function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = 
     onSelectFeed: vi.fn(),
     onSelectStream: vi.fn(),
     onCreateFolder: vi.fn(async () => {}),
+    onCreateFeed: vi.fn(async () => {}),
     onRenameFolder: vi.fn(async () => {}),
     onDeleteFolder: vi.fn(async () => {}),
     onAssignFeedFolder: vi.fn(async () => {}),
     isFolderMutationPending: false,
+    isFeedMutationPending: false,
     isAssignPending: false,
   };
 
@@ -146,10 +148,34 @@ describe("NavigationPane", () => {
     const onSelectFolder = vi.fn();
     renderPane({ onSelectFolder });
 
+    expect(screen.getByRole("button", { name: "Add feed" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add folder" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Folder Security" }));
     expect(onSelectFolder).toHaveBeenCalledWith("ef1ecd29-2f93-49d6-ae70-c989df4da59f");
     expect(screen.getByText("Alpha Feed")).toBeVisible();
+  });
+
+  it("creates feed from toolbar add feed dialog", async () => {
+    const onCreateFeed = vi.fn(async () => {});
+    renderPane({ onCreateFeed });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add feed" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByRole("textbox", { name: /Feed URL/i }), {
+      target: { value: "https://example.com/rss.xml" },
+    });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: /Title \(optional\)/i }), {
+      target: { value: "Example Feed" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add feed" }));
+
+    await waitFor(() => {
+      expect(onCreateFeed).toHaveBeenCalledWith({
+        title: "Example Feed",
+        url: "https://example.com/rss.xml",
+        folderId: null,
+      });
+    });
   });
 
   it("toggles folder collapse with one chevron click", async () => {
@@ -249,10 +275,12 @@ describe("NavigationPane", () => {
         onSelectFeed={vi.fn()}
         onSelectStream={vi.fn()}
         onCreateFolder={vi.fn(async () => {})}
+        onCreateFeed={vi.fn(async () => {})}
         onRenameFolder={vi.fn(async () => {})}
         onDeleteFolder={vi.fn(async () => {})}
         onAssignFeedFolder={vi.fn(async () => {})}
         isFolderMutationPending={false}
+        isFeedMutationPending={false}
         isAssignPending={false}
       />
     );

@@ -12,6 +12,7 @@ import type {
   ArticleScopeMarkReadResponse,
   ArticleStateBulkPatchRequest,
   Feed,
+  FeedCreateRequest,
   FeedFolder,
   FeedFolderAssignmentRequest,
   FeedFolderCreateRequest,
@@ -100,6 +101,10 @@ export async function deleteFolder(folderId: string): Promise<void> {
 
 export async function getFeeds(): Promise<Feed[]> {
   return apiClient.get<Feed[]>(FEEDS_ENDPOINT);
+}
+
+export async function createFeed(payload: FeedCreateRequest): Promise<Feed> {
+  return apiClient.post<FeedCreateRequest, Feed>(FEEDS_ENDPOINT, payload);
 }
 
 export async function assignFeedFolder(feedId: string, payload: FeedFolderAssignmentRequest): Promise<Feed> {

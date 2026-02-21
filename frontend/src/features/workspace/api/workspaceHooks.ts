@@ -4,6 +4,7 @@ import { queryKeys } from "../../../shared/api/queryKeys";
 import {
   assignFeedFolder,
   bulkPatchArticleState,
+  createFeed,
   createFolder,
   deleteFolder,
   getArticleDetail,
@@ -20,6 +21,7 @@ import type {
   ArticleStateBulkPatchRequest,
   ArticleListResponse,
   FeedFolderAssignmentRequest,
+  FeedCreateRequest,
   FeedFolderCreateRequest,
   FeedFolderUpdateRequest,
   PatchArticleStateRequest,
@@ -163,6 +165,19 @@ export function useCreateFolderMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.folders() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
+      ]);
+    },
+  });
+}
+
+export function useCreateFeedMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: FeedCreateRequest) => createFeed(payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.feeds() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
       ]);
     },

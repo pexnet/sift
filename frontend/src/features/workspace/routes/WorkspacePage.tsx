@@ -21,6 +21,7 @@ import {
   useArticleDetailQuery,
   useArticlesQuery,
   useAssignFeedFolderMutation,
+  useCreateFeedMutation,
   useCreateFolderMutation,
   useDeleteFolderMutation,
   useFeedsQuery,
@@ -103,6 +104,7 @@ export function WorkspacePage({
   const patchArticleStateMutation = usePatchArticleStateMutation(selectedArticleId);
   const markScopeAsReadMutation = useMarkScopeAsReadMutation();
   const createFolderMutation = useCreateFolderMutation();
+  const createFeedMutation = useCreateFeedMutation();
   const updateFolderMutation = useUpdateFolderMutation();
   const deleteFolderMutation = useDeleteFolderMutation();
   const assignFeedFolderMutation = useAssignFeedFolderMutation();
@@ -230,6 +232,13 @@ export function WorkspacePage({
       onCreateFolder={async (name) => {
         await createFolderMutation.mutateAsync(toCreateFolderRequest(name));
       }}
+      onCreateFeed={async ({ title, url, folderId }) => {
+        await createFeedMutation.mutateAsync({
+          title,
+          url,
+          folder_id: folderId,
+        });
+      }}
       onRenameFolder={async (folderId, name) => {
         await updateFolderMutation.mutateAsync({ folderId, payload: toUpdateFolderRequest(name) });
       }}
@@ -246,6 +255,7 @@ export function WorkspacePage({
         });
       }}
       isFolderMutationPending={createFolderMutation.isPending || updateFolderMutation.isPending || deleteFolderMutation.isPending}
+      isFeedMutationPending={createFeedMutation.isPending}
       isAssignPending={assignFeedFolderMutation.isPending}
     />
   );

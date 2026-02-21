@@ -34,7 +34,7 @@ import { useMemo, useState } from "react";
 
 import { useFoldersQuery } from "../../workspace/api/workspaceHooks";
 import { SettingsLayout } from "../../settings/components/SettingsLayout";
-import type { FeedHealthLifecycleFilter } from "../../../shared/types/contracts";
+import type { FeedHealthItem, FeedHealthLifecycleFilter } from "../../../shared/types/contracts";
 import {
   useCreateFeedMutation,
   useFeedHealthQuery,
@@ -68,6 +68,7 @@ export function FeedHealthPage() {
   const [query, setQuery] = useState("");
   const [staleOnly, setStaleOnly] = useState(false);
   const [errorOnly, setErrorOnly] = useState(false);
+  const [selectedFeed, setSelectedFeed] = useState<FeedHealthItem | null>(null);
   const [intervalByFeedId, setIntervalByFeedId] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
@@ -93,6 +94,10 @@ export function FeedHealthPage() {
 
   const items = healthQuery.data?.items;
   const summary = healthQuery.data?.summary;
+  const folderNameById = useMemo(
+    () => new Map((foldersQuery.data ?? []).map((folder) => [folder.id, folder.name] as const)),
+    [foldersQuery.data]
+  );
 
   const isLoading = healthQuery.isLoading;
   const isMutating = updateSettingsMutation.isPending || lifecycleMutation.isPending;
@@ -312,7 +317,7 @@ export function FeedHealthPage() {
             spacing={1}
             sx={{ px: 1, py: 0.7, borderBottom: "1px solid", borderColor: "divider" }}
           >
-            <Typography variant="caption" sx={{ flex: 2.2, fontWeight: 700 }}>
+            <Typography variant="caption" sx={{ flex: 2, fontWeight: 700 }}>
               Feed
             </Typography>
             <Typography variant="caption" sx={{ flex: 1.1, fontWeight: 700 }}>
@@ -324,10 +329,10 @@ export function FeedHealthPage() {
             <Typography variant="caption" sx={{ width: 92, fontWeight: 700 }}>
               7d cadence
             </Typography>
-            <Typography variant="caption" sx={{ width: 170, fontWeight: 700 }}>
+            <Typography variant="caption" sx={{ width: 152, fontWeight: 700 }}>
               Last success
             </Typography>
-            <Typography variant="caption" sx={{ width: 170, fontWeight: 700 }}>
+            <Typography variant="caption" sx={{ width: 152, fontWeight: 700 }}>
               Last error
             </Typography>
             <Typography variant="caption" sx={{ width: 138, fontWeight: 700 }}>
@@ -340,13 +345,18 @@ export function FeedHealthPage() {
 
           {(items ?? []).map((item) => (
             <Stack key={item.feed_id} direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 0.6 }}>
-              <Box sx={{ flex: 2.2, minWidth: 0 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
-                  {item.title}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {item.url}
-                </Typography>
+              <Box sx={{ flex: 2, minWidth: 0 }}>
+                <Button
+                  size="small"
+                  variant="text"
+                  sx={{ px: 0, justifyContent: "flex-start", minWidth: 0, textTransform: "none", fontWeight: 600 }}
+                  aria-label={`Open details for ${item.title}`}
+                  onClick={() => setSelectedFeed(item)}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                    {item.title}
+                  </Typography>
+                </Button>
               </Box>
 
               <Stack direction="row" spacing={0.4} sx={{ flex: 1.1 }}>
@@ -377,10 +387,10 @@ export function FeedHealthPage() {
               <Typography variant="body2" sx={{ width: 92 }}>
                 {formatPerDay(item.estimated_articles_per_day_7d)}
               </Typography>
-              <Typography variant="caption" sx={{ width: 170 }} noWrap>
+              <Typography variant="caption" sx={{ width: 152 }} noWrap>
                 {formatDateTime(item.last_fetch_success_at)}
               </Typography>
-              <Typography variant="caption" sx={{ width: 170 }} noWrap>
+              <Typography variant="caption" sx={{ width: 152 }} noWrap>
                 {formatDateTime(item.last_fetch_error_at)}
               </Typography>
 
@@ -473,6 +483,47 @@ export function FeedHealthPage() {
           ))}
         </Stack>
       </Paper>
+
+      <Dialog open={selectedFeed !== null} onClose={() => setSelectedFeed(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{selectedFeed?.title ?? "Feed details"}</DialogTitle>
+        <DialogContent>
+          {selectedFeed ? (
+            <Stack spacing={1.1}>
+              <Typography variant="body2">
+                URL: {selectedFeed.url}
+              </Typography>
+              <Typography variant="body2">
+                Website: {selectedFeed.site_url ?? "Unknown"}
+              </Typography>
+              <Typography variant="body2">
+                Lifecycle: {selectedFeed.lifecycle_status}
+              </Typography>
+              <Typography variant="body2">
+                Folder:{" "}
+                {selectedFeed.folder_id ? (folderNameById.get(selectedFeed.folder_id) ?? "Folder") : "Unfiled"}
+              </Typography>
+              <Typography variant="body2">
+                Interval: {selectedFeed.fetch_interval_minutes} minutes
+              </Typography>
+              <Typography variant="body2">
+                Last fetched: {formatDateTime(selectedFeed.last_fetched_at)}
+              </Typography>
+              <Typography variant="body2">
+                Last success: {formatDateTime(selectedFeed.last_fetch_success_at)}
+              </Typography>
+              <Typography variant="body2">
+                Last error time: {formatDateTime(selectedFeed.last_fetch_error_at)}
+              </Typography>
+              <Typography variant="body2" color={selectedFeed.last_fetch_error ? "error.main" : "text.secondary"}>
+                Last error: {selectedFeed.last_fetch_error ?? "None"}
+              </Typography>
+            </Stack>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedFeed(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={createOpen} onClose={closeCreateDialog}>
         <DialogTitle>Add feed</DialogTitle>

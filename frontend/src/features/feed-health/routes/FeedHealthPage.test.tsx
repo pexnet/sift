@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../../app/providers";
@@ -125,11 +125,23 @@ describe("FeedHealthPage", () => {
     expect(screen.getByRole("button", { name: "Add feed" })).toBeVisible();
     expect(screen.getByText(/^Last refreshed:/)).toBeVisible();
     expect(screen.getByText("Filters")).toBeVisible();
-    expect(screen.getByText("Threat feed")).toBeVisible();
-    expect(screen.getByText("https://example.com/threat.xml")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Open details for Threat feed" })).toBeVisible();
+    expect(screen.queryByText("https://example.com/threat.xml")).toBeNull();
     expect(screen.getByText("2.00/day")).toBeVisible();
     expect(screen.getByText("Total 2")).toBeVisible();
     expect(screen.getByText("Errors 1")).toBeVisible();
+  });
+
+  it("opens feed details dialog when feed name is clicked", async () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open details for Threat feed" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeVisible();
+    expect(within(dialog).getByRole("heading", { name: "Threat feed" })).toBeVisible();
+    expect(within(dialog).getByText(/URL: https:\/\/example.com\/threat.xml/)).toBeVisible();
+    expect(within(dialog).getByRole("button", { name: "Close" })).toBeVisible();
   });
 
   it("updates feed interval from row control", async () => {

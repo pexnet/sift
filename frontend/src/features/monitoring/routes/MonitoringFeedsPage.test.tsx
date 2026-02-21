@@ -104,7 +104,7 @@ describe("MonitoringFeedsPage", () => {
 
     expect(screen.getByRole("heading", { name: "Monitoring feeds" })).toBeVisible();
     expect(screen.getByText("Threat watch")).toBeVisible();
-    expect(screen.getByRole("button", { name: /Edit Threat watch/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Select monitoring feed Threat watch/i })).toBeVisible();
     expect(screen.getByRole("link", { name: "General" })).toHaveAttribute("href", "/account");
     expect(screen.getByRole("link", { name: "Help" })).toHaveAttribute("href", "/help");
   });
@@ -153,7 +153,7 @@ describe("MonitoringFeedsPage", () => {
 
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: /Edit Threat watch/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Select monitoring feed Threat watch/i }));
     fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
       target: { value: "edited stream" },
     });

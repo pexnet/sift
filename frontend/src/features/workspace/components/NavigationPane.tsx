@@ -1,3 +1,4 @@
+import AddLinkRoundedIcon from "@mui/icons-material/AddLinkRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import CreateNewFolderRoundedIcon from "@mui/icons-material/CreateNewFolderRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
@@ -12,13 +13,16 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
   List,
   ListItemButton,
   ListItemText,
   Menu,
   MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Tooltip,
@@ -51,10 +55,12 @@ type NavigationPaneProps = {
   onSelectFeed: (feedId: string) => void;
   onSelectStream: (streamId: string) => void;
   onCreateFolder: (name: string) => Promise<void>;
+  onCreateFeed: (payload: { title: string; url: string; folderId: string | null }) => Promise<void>;
   onRenameFolder: (folderId: string, name: string) => Promise<void>;
   onDeleteFolder: (folderId: string) => Promise<void>;
   onAssignFeedFolder: (feedId: string, folderId: string | null) => Promise<void>;
   isFolderMutationPending: boolean;
+  isFeedMutationPending: boolean;
   isAssignPending: boolean;
 };
 
@@ -99,10 +105,12 @@ export function NavigationPane({
   onSelectFeed,
   onSelectStream,
   onCreateFolder,
+  onCreateFeed,
   onRenameFolder,
   onDeleteFolder,
   onAssignFeedFolder,
   isFolderMutationPending,
+  isFeedMutationPending,
   isAssignPending,
 }: NavigationPaneProps) {
   const [initialFolderState] = useState(getInitialFolderState);
@@ -120,6 +128,11 @@ export function NavigationPane({
   const [monitoringExpanded, setMonitoringExpanded] = useState(() => loadMonitoringExpanded() ?? true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [expandedMonitoringFolders, setExpandedMonitoringFolders] = useState<Record<string, boolean>>({});
+  const [createFeedOpen, setCreateFeedOpen] = useState(false);
+  const [feedUrlInput, setFeedUrlInput] = useState("");
+  const [feedTitleInput, setFeedTitleInput] = useState("");
+  const [feedFolderIdInput, setFeedFolderIdInput] = useState("");
+  const [feedCreateError, setFeedCreateError] = useState<string | null>(null);
 
   const folderOptions = useMemo(
     () => [{ id: null, name: "Unfiled" }, ...folders.map((folder) => ({ id: folder.id, name: folder.name }))],
@@ -191,12 +204,47 @@ export function NavigationPane({
     setLocalError(null);
   };
 
+  const closeCreateFeedDialog = () => {
+    setCreateFeedOpen(false);
+    setFeedUrlInput("");
+    setFeedTitleInput("");
+    setFeedFolderIdInput("");
+    setFeedCreateError(null);
+  };
+
   const submitCreate = async () => {
     try {
       await onCreateFolder(folderNameInput);
       closeDialogs();
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Failed to create folder.");
+    }
+  };
+
+  const submitCreateFeed = async () => {
+    setFeedCreateError(null);
+
+    const url = feedUrlInput.trim();
+    if (!url) {
+      setFeedCreateError("Feed URL is required.");
+      return;
+    }
+    try {
+      new URL(url);
+    } catch {
+      setFeedCreateError("Feed URL must be a valid URL.");
+      return;
+    }
+
+    try {
+      await onCreateFeed({
+        title: feedTitleInput.trim() || url,
+        url,
+        folderId: feedFolderIdInput.length > 0 ? feedFolderIdInput : null,
+      });
+      closeCreateFeedDialog();
+    } catch (error) {
+      setFeedCreateError(error instanceof Error ? error.message : "Failed to create feed.");
     }
   };
 
@@ -223,11 +271,18 @@ export function NavigationPane({
       <Stack sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Feeds</Typography>
-          <Tooltip title="Add folder">
-            <IconButton size="small" aria-label="Add folder" onClick={() => setCreateOpen(true)}>
-              <CreateNewFolderRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={0.4}>
+            <Tooltip title="Add feed">
+              <IconButton size="small" aria-label="Add feed" onClick={() => setCreateFeedOpen(true)}>
+                <AddLinkRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Add folder">
+              <IconButton size="small" aria-label="Add folder" onClick={() => setCreateOpen(true)}>
+                <CreateNewFolderRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
         </Stack>
       </Stack>
 
@@ -506,6 +561,54 @@ export function NavigationPane({
           <Button onClick={closeDialogs}>Cancel</Button>
           <Button onClick={() => void submitCreate()} disabled={isFolderMutationPending}>
             Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={createFeedOpen} onClose={closeCreateFeedDialog}>
+        <DialogTitle>Add feed</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.2} sx={{ mt: 0.4, minWidth: { xs: 260, sm: 380 } }}>
+            {feedCreateError ? <Alert severity="error">{feedCreateError}</Alert> : null}
+            <TextField
+              margin="dense"
+              autoFocus
+              fullWidth
+              required
+              label="Feed URL"
+              value={feedUrlInput}
+              onChange={(event) => setFeedUrlInput(event.target.value)}
+              placeholder="https://example.com/rss"
+            />
+            <TextField
+              margin="dense"
+              fullWidth
+              label="Title (optional)"
+              value={feedTitleInput}
+              onChange={(event) => setFeedTitleInput(event.target.value)}
+            />
+            <FormControl size="small">
+              <InputLabel id="nav-create-feed-folder-label">Folder</InputLabel>
+              <Select
+                labelId="nav-create-feed-folder-label"
+                label="Folder"
+                value={feedFolderIdInput}
+                onChange={(event) => setFeedFolderIdInput(event.target.value)}
+              >
+                <MenuItem value="">Unfiled</MenuItem>
+                {folders.map((folder) => (
+                  <MenuItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeCreateFeedDialog}>Cancel</Button>
+          <Button variant="contained" onClick={() => void submitCreateFeed()} disabled={isFeedMutationPending}>
+            Add feed
           </Button>
         </DialogActions>
       </Dialog>
