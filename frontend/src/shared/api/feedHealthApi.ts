@@ -1,4 +1,5 @@
 import type {
+  FeedCreateRequest,
   Feed,
   FeedHealthListResponse,
   FeedHealthQueryParams,
@@ -25,6 +26,9 @@ function toFeedHealthSearchParams(params: FeedHealthQueryParams): URLSearchParam
   if (params.error_only !== undefined) {
     searchParams.set("error_only", String(params.error_only));
   }
+  if (params.all !== undefined) {
+    searchParams.set("all", String(params.all));
+  }
   if (params.limit !== undefined) {
     searchParams.set("limit", String(params.limit));
   }
@@ -43,6 +47,10 @@ export async function getFeedHealth(params: FeedHealthQueryParams): Promise<Feed
 
 export async function updateFeedSettings(feedId: string, payload: FeedSettingsUpdateRequest): Promise<Feed> {
   return apiClient.patch<FeedSettingsUpdateRequest, Feed>(`${FEEDS_ENDPOINT}/${feedId}/settings`, payload);
+}
+
+export async function createFeed(payload: FeedCreateRequest): Promise<Feed> {
+  return apiClient.post<FeedCreateRequest, Feed>(FEEDS_ENDPOINT, payload);
 }
 
 export async function updateFeedLifecycle(feedId: string, payload: FeedLifecycleUpdateRequest): Promise<FeedLifecycleResult> {

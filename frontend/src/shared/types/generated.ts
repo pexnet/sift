@@ -723,6 +723,8 @@ export interface components {
             url: string;
             /** Site Url */
             site_url?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
         };
         /** FeedFolderAssignmentUpdate */
         FeedFolderAssignmentUpdate: {
@@ -1077,6 +1079,8 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
             /**
              * Is Active
              * @default true
@@ -1135,6 +1139,8 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+            /** Folder Id */
+            folder_id: string | null;
             /** Is Active */
             is_active: boolean;
             /** Priority */
@@ -1183,6 +1189,8 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
             /** Priority */
@@ -1244,6 +1252,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Folder Id */
+            folder_id?: string | null;
             /** Unread Count */
             unread_count: number;
         };
@@ -1656,6 +1666,7 @@ export interface operations {
                 q?: string | null;
                 stale_only?: boolean;
                 error_only?: boolean;
+                all?: boolean;
                 limit?: number;
                 offset?: number;
             };

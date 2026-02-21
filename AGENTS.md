@@ -172,6 +172,15 @@ This file stores persistent project context for future Codex sessions.
     `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
   - feeds now support lifecycle metadata (`is_archived`, `archived_at`, `last_fetch_success_at`, `last_fetch_error_at`)
   - archiving a feed bulk-marks existing unread articles from that feed as read
+- Workspace + settings management UI touchups v1 are implemented:
+  - navigation add-folder action is icon-only (`folder-plus`) and section expand/collapse controls are chevron-first
+  - monitoring streams now support folder assignment (`keyword_streams.folder_id`) and are grouped by folder in workspace
+    navigation
+  - settings routes now use a shared side-menu shell across `/account`, `/account/monitoring`, `/account/feed-health`,
+    and `/help`
+  - monitoring feed management list is condensed to one-row-per-stream with icon actions and edit-to-left-form behavior
+  - feed health is condensed to one-row-per-feed with icon actions, `all=true` full-list loading, and add-feed dialog
+  - feed create now accepts optional folder assignment at creation time (`folder_id`)
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -188,9 +197,11 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next UI Slice (Prioritized)
 
-1. Active prioritized UI slice: workspace + settings management UI touchups v1 (spec:
-   `docs/specs/workspace-settings-management-ui-touchups-v1.md`).
-2. Most recently completed: feed health + edit surface v1 (2026-02-19; spec archived at
+1. No active prioritized UI slice is currently queued.
+2. Most recently completed:
+   - workspace + settings management UI touchups v1 (2026-02-21; spec archived at
+     `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
+   - feed health + edit surface v1 (2026-02-19; spec archived at
    `docs/specs/done/feed-health-edit-surface-v1.md`).
 
 ## Deferred

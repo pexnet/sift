@@ -11,6 +11,7 @@ export type ArticleDetail = components["schemas"]["ArticleDetailOut"];
 export type PatchArticleStateRequest = components["schemas"]["ArticleStatePatch"];
 export type ArticleStateBulkPatchRequest = components["schemas"]["ArticleStateBulkPatch"];
 export type Feed = components["schemas"]["FeedOut"];
+export type FeedCreateRequest = components["schemas"]["FeedCreate"];
 export type FeedSettingsUpdateRequest = components["schemas"]["FeedSettingsUpdate"];
 export type FeedLifecycleUpdateRequest = components["schemas"]["FeedLifecycleUpdate"];
 export type FeedLifecycleResult = components["schemas"]["FeedLifecycleResultOut"];
@@ -23,6 +24,7 @@ export type FeedHealthQueryParams = {
   q?: string;
   stale_only?: boolean;
   error_only?: boolean;
+  all?: boolean;
   limit?: number;
   offset?: number;
 };

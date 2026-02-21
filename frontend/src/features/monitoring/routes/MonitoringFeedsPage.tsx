@@ -1,13 +1,16 @@
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import {
   Alert,
   Box,
   Button,
-  Chip,
   Collapse,
   CircularProgress,
   Divider,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Paper,
@@ -15,10 +18,13 @@ import {
   Stack,
   Switch,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMemo, useState, type FormEvent } from "react";
 
+import { useFoldersQuery } from "../../workspace/api/workspaceHooks";
+import { SettingsLayout } from "../../settings/components/SettingsLayout";
 import { ApiError } from "../../../shared/api/client";
 import type {
   KeywordStream,
@@ -38,6 +44,7 @@ type ClassifierMode = "rules_only" | "classifier_only" | "hybrid";
 type StreamFormState = {
   name: string;
   description: string;
+  folderId: string;
   isActive: boolean;
   priority: string;
   matchQuery: string;
@@ -56,6 +63,7 @@ type StreamFormState = {
 const DEFAULT_FORM_STATE: StreamFormState = {
   name: "",
   description: "",
+  folderId: "",
   isActive: true,
   priority: "100",
   matchQuery: "",
@@ -122,6 +130,7 @@ function toFormState(stream: KeywordStream): StreamFormState {
   return {
     name: stream.name,
     description: stream.description ?? "",
+    folderId: stream.folder_id ?? "",
     isActive: stream.is_active,
     priority: String(stream.priority),
     matchQuery: stream.match_query ?? "",
@@ -174,6 +183,7 @@ type Feedback = {
 
 export function MonitoringFeedsPage() {
   const streamsQuery = useStreamsQuery();
+  const foldersQuery = useFoldersQuery();
   const createStreamMutation = useCreateStreamMutation();
   const updateStreamMutation = useUpdateStreamMutation();
   const deleteStreamMutation = useDeleteStreamMutation();
@@ -187,6 +197,11 @@ export function MonitoringFeedsPage() {
 
   const streams = streamsQuery.data;
   const streamItems = streams ?? [];
+  const folderOptions = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
+  const folderNameById = useMemo(
+    () => new Map(folderOptions.map((folder) => [folder.id, folder.name] as const)),
+    [folderOptions]
+  );
   const editingStream = useMemo(
     () => (streams ?? []).find((stream) => stream.id === editingStreamId) ?? null,
     [editingStreamId, streams]
@@ -272,6 +287,7 @@ export function MonitoringFeedsPage() {
         const payload: KeywordStreamUpdateRequest = {
           name,
           description: description.length > 0 ? description : null,
+          folder_id: form.folderId.length > 0 ? form.folderId : null,
           is_active: form.isActive,
           priority,
           match_query: matchQuery.length > 0 ? matchQuery : null,
@@ -292,6 +308,7 @@ export function MonitoringFeedsPage() {
         const payload: KeywordStreamCreateRequest = {
           name,
           description: description.length > 0 ? description : null,
+          folder_id: form.folderId.length > 0 ? form.folderId : null,
           is_active: form.isActive,
           priority,
           match_query: matchQuery.length > 0 ? matchQuery : null,
@@ -370,43 +387,20 @@ export function MonitoringFeedsPage() {
   };
 
   return (
-    <Paper
-      component="section"
-      className="panel settings-panel"
-      sx={{ maxWidth: 1100, mx: "auto" }}
-      aria-labelledby="monitoring-heading"
+    <SettingsLayout
+      activeSection="monitoring"
+      title="Monitoring feeds"
+      headingId="monitoring-heading"
+      maxWidth={1260}
+      description="Manage monitoring definitions, matching configuration, and backfill execution."
     >
-      <Stack spacing={2.2}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          alignItems={{ xs: "flex-start", md: "center" }}
-          justifyContent="space-between"
-          spacing={1}
-        >
-          <Box>
-            <Typography id="monitoring-heading" variant="h4" component="h1">
-              Monitoring feeds
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Manage monitoring definitions, matching configuration, and backfill execution.
-            </Typography>
-          </Box>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <Button component="a" href="/help" size="small" variant="outlined">
-              Help
-            </Button>
-            <Button component="a" href="/account" size="small" variant="outlined">
-              Back to settings
-            </Button>
-          </Stack>
-        </Stack>
 
-        {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
-        {streamsQuery.isError ? (
-          <Alert severity="error">Failed to load monitoring feeds.</Alert>
-        ) : null}
+      {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
+      {streamsQuery.isError ? (
+        <Alert severity="error">Failed to load monitoring feeds.</Alert>
+      ) : null}
 
-        <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={2}>
           <Paper variant="outlined" sx={{ flex: "0 0 420px", p: 2 }}>
             <Typography variant="h6" component="h2">
               {isEditing ? "Edit monitoring feed" : "Create monitoring feed"}
@@ -434,6 +428,24 @@ export function MonitoringFeedsPage() {
                     setForm((previous) => ({ ...previous, description: event.target.value }))
                   }
                 />
+                <FormControl size="small">
+                  <InputLabel id="monitoring-folder-label">Folder</InputLabel>
+                  <Select
+                    labelId="monitoring-folder-label"
+                    label="Folder"
+                    value={form.folderId}
+                    onChange={(event) =>
+                      setForm((previous) => ({ ...previous, folderId: event.target.value }))
+                    }
+                  >
+                    <MenuItem value="">Unfiled</MenuItem>
+                    {folderOptions.map((folder) => (
+                      <MenuItem key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <FormControlLabel
                   control={
                     <Switch
@@ -625,112 +637,126 @@ export function MonitoringFeedsPage() {
             </Box>
           </Paper>
 
-          <Paper variant="outlined" sx={{ flex: "1 1 auto", p: 2 }}>
-            <Typography variant="h6" component="h2">
-              Existing monitoring feeds
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6, mb: 1.1 }}>
-              Each definition maps to a stream scope in the workspace navigation.
-            </Typography>
+        <Paper variant="outlined" sx={{ flex: "1 1 auto", p: 1.2 }}>
+          <Stack spacing={0.4}>
+            <Stack
+              direction="row"
+              sx={{ px: 1, py: 0.7, borderBottom: "1px solid", borderColor: "divider" }}
+              alignItems="center"
+              spacing={1}
+            >
+              <Typography variant="caption" sx={{ flex: 2.2, fontWeight: 700 }}>
+                Name
+              </Typography>
+              <Typography variant="caption" sx={{ flex: 1, fontWeight: 700 }}>
+                Folder
+              </Typography>
+              <Typography variant="caption" sx={{ flex: 1, fontWeight: 700 }}>
+                Mode
+              </Typography>
+              <Typography variant="caption" sx={{ width: 72, fontWeight: 700 }}>
+                Priority
+              </Typography>
+              <Typography variant="caption" sx={{ width: 72, fontWeight: 700 }}>
+                Query
+              </Typography>
+              <Typography variant="caption" sx={{ width: 66, fontWeight: 700 }}>
+                Active
+              </Typography>
+              <Typography variant="caption" sx={{ width: 114, fontWeight: 700, textAlign: "right" }}>
+                Actions
+              </Typography>
+            </Stack>
 
-            {streamsQuery.isLoading ? <CircularProgress size={22} /> : null}
+            {streamsQuery.isLoading ? (
+              <Box sx={{ py: 2, px: 1 }}>
+                <CircularProgress size={22} />
+              </Box>
+            ) : null}
             {!streamsQuery.isLoading && streamItems.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ px: 1, py: 1.2 }}>
                 No monitoring feeds yet.
               </Typography>
             ) : null}
 
-            <Stack spacing={1.1}>
-              {streamItems.map((stream) => (
-                <Paper key={stream.id} variant="outlined" sx={{ p: 1.2 }}>
-                  <Stack spacing={1}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ lineHeight: 1.2 }}>
-                          {stream.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {stream.description || "No description"}
-                        </Typography>
-                      </Box>
-                      <FormControlLabel
-                        sx={{ mr: 0 }}
-                        control={
-                          <Switch
-                            size="small"
-                            checked={stream.is_active}
-                            onChange={() => void toggleActive(stream)}
-                          />
-                        }
-                        label={stream.is_active ? "Active" : "Inactive"}
-                      />
-                    </Stack>
-
-                    <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
-                      <Chip label={`Priority ${stream.priority}`} size="small" />
-                      <Chip label={formatMode(stream.classifier_mode)} size="small" />
-                      {stream.match_query ? <Chip label="Query enabled" size="small" /> : null}
-                      {stream.classifier_plugin ? (
-                        <Chip label={`Plugin: ${stream.classifier_plugin}`} size="small" />
-                      ) : null}
-                      {Object.keys(stream.classifier_config || {}).length > 0 ? (
-                        <Chip label="Plugin config" size="small" />
-                      ) : null}
-                    </Stack>
-
-                    <Divider />
-
-                    <Typography variant="caption" color="text.secondary">
-                      Query: {stream.match_query || "none"}
+            {streamItems.map((stream) => {
+              const isEditingRow = editingStreamId === stream.id;
+              return (
+                <Stack
+                  key={stream.id}
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  sx={{
+                    px: 1,
+                    py: 0.55,
+                    borderRadius: 1,
+                    backgroundColor: isEditingRow ? "action.selected" : "transparent",
+                  }}
+                >
+                  <Box sx={{ flex: 2.2, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                      {stream.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Include: {stream.include_keywords.length > 0 ? stream.include_keywords.join(", ") : "none"}
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {stream.description || "No description"}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Exclude: {stream.exclude_keywords.length > 0 ? stream.exclude_keywords.join(", ") : "none"}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Include regex: {stream.include_regex.length > 0 ? stream.include_regex.join(" | ") : "none"}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Exclude regex: {stream.exclude_regex.length > 0 ? stream.exclude_regex.join(" | ") : "none"}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Source URL contains: {stream.source_contains || "any"}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Language: {stream.language_equals || "any"}
-                    </Typography>
-
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Button size="small" variant="text" onClick={() => startEdit(stream)}>
-                        Edit
-                      </Button>
-                      <Button
+                  </Box>
+                  <Typography variant="body2" sx={{ flex: 1 }} noWrap>
+                    {stream.folder_id ? (folderNameById.get(stream.folder_id) ?? "Folder") : "Unfiled"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ flex: 1 }} noWrap>
+                    {formatMode(stream.classifier_mode)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ width: 72 }}>
+                    {stream.priority}
+                  </Typography>
+                  <Typography variant="body2" sx={{ width: 72 }}>
+                    {stream.match_query ? "Yes" : "No"}
+                  </Typography>
+                  <FormControlLabel
+                    sx={{ width: 66, m: 0 }}
+                    control={<Switch size="small" checked={stream.is_active} onChange={() => void toggleActive(stream)} />}
+                    label=""
+                  />
+                  <Stack direction="row" spacing={0.2} sx={{ width: 114, justifyContent: "flex-end" }}>
+                    <Tooltip title="Edit">
+                      <IconButton
                         size="small"
-                        variant="text"
+                        aria-label={`Edit ${stream.name}`}
+                        onClick={() => startEdit(stream)}
+                      >
+                        <EditRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Run backfill">
+                      <IconButton
+                        size="small"
+                        aria-label={`Run backfill for ${stream.name}`}
                         onClick={() => void runBackfill(stream.id)}
                         disabled={runBackfillMutation.isPending}
                       >
-                        Run backfill
-                      </Button>
-                      <Button
+                        <PlayArrowRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
                         size="small"
                         color="error"
-                        variant="text"
+                        aria-label={`Delete ${stream.name}`}
                         onClick={() => void deleteStreamById(stream.id)}
                         disabled={deleteStreamMutation.isPending}
                       >
-                        Delete
-                      </Button>
-                    </Stack>
+                        <DeleteOutlineRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Stack>
-                </Paper>
-              ))}
-            </Stack>
-          </Paper>
+                </Stack>
+              );
+            })}
+          </Stack>
+        </Paper>
         </Stack>
-      </Stack>
-    </Paper>
+    </SettingsLayout>
   );
 }

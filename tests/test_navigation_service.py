@@ -30,7 +30,13 @@ async def test_navigation_tree_counts() -> None:
         session.add(article)
         await session.flush()
 
-        stream = KeywordStream(user_id=user.id, name="monitor", include_keywords_json='["alert"]', exclude_keywords_json="[]")
+        stream = KeywordStream(
+            user_id=user.id,
+            folder_id=folder.id,
+            name="monitor",
+            include_keywords_json='["alert"]',
+            exclude_keywords_json="[]",
+        )
         session.add(stream)
         await session.flush()
         session.add(KeywordStreamMatch(stream_id=stream.id, article_id=article.id))
@@ -51,6 +57,7 @@ async def test_navigation_tree_counts() -> None:
         assert tree.folders[0].feeds[0].unread_count == 1
 
         assert len(tree.streams) == 1
+        assert tree.streams[0].folder_id == folder.id
         assert tree.streams[0].unread_count == 1
 
     await engine.dispose()
@@ -79,6 +86,7 @@ async def test_navigation_stream_unread_count_is_zero_without_matches() -> None:
 
         tree = await navigation_service.get_navigation_tree(session=session, user_id=user.id)
         assert len(tree.streams) == 1
+        assert tree.streams[0].folder_id is None
         assert tree.streams[0].unread_count == 0
 
     await engine.dispose()

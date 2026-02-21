@@ -15,7 +15,13 @@ from sift.domain.schemas import (
     StreamBackfillResultOut,
     StreamClassifierRunOut,
 )
-from sift.services.stream_service import StreamConflictError, StreamNotFoundError, StreamValidationError, stream_service
+from sift.services.stream_service import (
+    StreamConflictError,
+    StreamFolderNotFoundError,
+    StreamNotFoundError,
+    StreamValidationError,
+    stream_service,
+)
 
 router = APIRouter()
 
@@ -39,6 +45,8 @@ async def create_stream(
         stream = await stream_service.create_stream(session=session, user_id=current_user.id, payload=payload)
     except StreamConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except StreamFolderNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except StreamValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return stream_service.to_out(stream)
@@ -62,6 +70,8 @@ async def update_stream(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except StreamConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except StreamFolderNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except StreamValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return stream_service.to_out(stream)

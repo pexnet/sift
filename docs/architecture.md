@@ -384,6 +384,12 @@ Design goals:
    - archived feeds are excluded from scheduler candidate selection and navigation feed-tree rendering
    - archive lifecycle action bulk-marks existing unread articles from that feed as read
    - settings UI route `/account/feed-health` supports feed-level lifecycle and interval controls
+18. Workspace/settings management touchups v1 backend contracts:
+   - `keyword_streams` now support optional folder assignment (`folder_id`)
+   - stream create/update/out contracts now include `folder_id`
+   - navigation stream payload now includes `folder_id` so monitoring streams can be grouped by folders in UI
+   - `GET /api/v1/feeds/health` now supports `all=true` for full filtered list retrieval
+   - `POST /api/v1/feeds` now supports optional `folder_id` for one-step feed create + folder assignment
 
 ## Frontend Delivery Standard
 
@@ -414,9 +420,14 @@ Design goals:
 
 ## Next UI Slice (Prioritized)
 
-1. Active prioritized UI slice: workspace + settings management UI touchups v1 (spec:
-   `docs/specs/workspace-settings-management-ui-touchups-v1.md`).
-2. Most recently completed: feed health + edit surface v1 on 2026-02-19:
+1. No active prioritized UI slice is currently queued.
+2. Most recently completed: workspace + settings management UI touchups v1 on 2026-02-21:
+   - workspace navigation now uses icon-first folder creation and chevron-first section/folder controls
+   - monitoring streams now support folder assignment and are grouped by folder in navigation
+   - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
+   - monitoring feed management list is now condensed to one-row-per-stream with iconized actions
+   - feed health is now condensed to one-row-per-feed with iconized actions and add-feed dialog
+3. Previously completed: feed health + edit surface v1 on 2026-02-19:
    - `/account/feed-health` route is implemented for lifecycle/freshness management
    - feed health APIs are implemented (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
      `PATCH /api/v1/feeds/{feed_id}/lifecycle`)

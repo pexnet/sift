@@ -10,6 +10,7 @@ export const queryKeys = {
     q: string;
     stale_only: boolean;
     error_only: boolean;
+    all: boolean;
     limit: number;
     offset: number;
   }) =>
@@ -19,6 +20,7 @@ export const queryKeys = {
       filters.q,
       filters.stale_only,
       filters.error_only,
+      filters.all,
       filters.limit,
       filters.offset,
     ] as const,

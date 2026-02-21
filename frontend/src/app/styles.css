@@ -604,8 +604,13 @@ body {
   opacity: 1;
 }
 
+.workspace-nav__folder-inline-icon {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .workspace-nav__folder-toggle:focus-visible,
-.workspace-nav__section-action:focus-visible {
+.workspace-nav__section-header .MuiIconButton-root:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -618,13 +623,17 @@ body {
   transform: rotate(90deg);
 }
 
-.workspace-nav__section-action {
-  margin-right: 0.2rem;
-  min-height: 24px;
-  font-size: 0.72rem;
+.workspace-nav__section-header .MuiIconButton-root {
+  margin-right: 0.14rem;
+  width: 22px;
+  height: 22px;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  opacity: 0.74;
+}
+
+.workspace-nav__section-header .MuiIconButton-root:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--surface-muted) 64%, var(--bg) 36%);
 }
 
 .workspace-nav__section-chevron {

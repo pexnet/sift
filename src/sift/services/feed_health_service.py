@@ -61,6 +61,7 @@ class FeedHealthService:
         error_only: bool,
         limit: int,
         offset: int,
+        include_all: bool = False,
     ) -> FeedHealthListResponse:
         now = datetime.now(UTC)
         summary = await self._summary(session=session, user_id=user_id, now=now)
@@ -121,12 +122,14 @@ class FeedHealthService:
             )
 
         total = len(items)
-        paged_items = items[offset : offset + limit]
+        paged_items = items if include_all else items[offset : offset + limit]
+        response_limit = total if include_all else limit
+        response_offset = 0 if include_all else offset
         return FeedHealthListResponse(
             items=paged_items,
             total=total,
-            limit=limit,
-            offset=offset,
+            limit=response_limit,
+            offset=response_offset,
             summary=summary,
             last_updated_at=now,
         )

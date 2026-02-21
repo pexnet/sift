@@ -1,5 +1,6 @@
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import CreateNewFolderRoundedIcon from "@mui/icons-material/CreateNewFolderRounded";
+import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import {
   Alert,
@@ -20,6 +21,7 @@ import {
   Paper,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMemo, useState } from "react";
@@ -117,6 +119,7 @@ export function NavigationPane({
   const [failedFeedIcons, setFailedFeedIcons] = useState<Record<string, true>>({});
   const [monitoringExpanded, setMonitoringExpanded] = useState(() => loadMonitoringExpanded() ?? true);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [expandedMonitoringFolders, setExpandedMonitoringFolders] = useState<Record<string, boolean>>({});
 
   const folderOptions = useMemo(
     () => [{ id: null, name: "Unfiled" }, ...folders.map((folder) => ({ id: folder.id, name: folder.name }))],
@@ -169,6 +172,15 @@ export function NavigationPane({
     });
   };
 
+  const isMonitoringFolderOpen = (folderKey: string): boolean => expandedMonitoringFolders[folderKey] ?? true;
+
+  const toggleMonitoringFolder = (folderKey: string) => {
+    setExpandedMonitoringFolders((previous) => ({
+      ...previous,
+      [folderKey]: !isMonitoringFolderOpen(folderKey),
+    }));
+  };
+
   const closeDialogs = () => {
     setCreateOpen(false);
     setRenameOpen(false);
@@ -211,11 +223,11 @@ export function NavigationPane({
       <Stack sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Feeds</Typography>
-          <Stack direction="row" spacing={0.5}>
-            <Button size="small" variant="outlined" onClick={() => setCreateOpen(true)} startIcon={<AddRoundedIcon />}>
-              Folder
-            </Button>
-          </Stack>
+          <Tooltip title="Add folder">
+            <IconButton size="small" aria-label="Add folder" onClick={() => setCreateOpen(true)}>
+              <CreateNewFolderRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Stack>
 
@@ -246,54 +258,89 @@ export function NavigationPane({
           <Box className="workspace-nav__section">
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">
               <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
-              <Button
+              <IconButton
                 size="small"
-                variant="text"
-                className="workspace-nav__section-action"
                 aria-label={`${monitoringExpanded ? "Collapse" : "Expand"} monitoring feeds`}
-                startIcon={
-                  <ChevronRightRoundedIcon
-                    className={`workspace-nav__section-chevron${
-                      monitoringExpanded ? " workspace-nav__section-chevron--open" : ""
-                    }`}
-                    fontSize="small"
-                  />
-                }
                 onClick={toggleMonitoringSection}
               >
-                {monitoringExpanded ? "Collapse" : "Expand"}
-              </Button>
+                <ChevronRightRoundedIcon
+                  className={`workspace-nav__section-chevron${monitoringExpanded ? " workspace-nav__section-chevron--open" : ""}`}
+                  fontSize="small"
+                />
+              </IconButton>
             </Stack>
             <Collapse in={monitoringExpanded} timeout="auto" unmountOnExit>
-              <List dense={density === "compact"} disablePadding>
-                {hierarchy.streams.map((stream) => (
-                  <ListItemButton
-                    key={stream.scope_id}
-                    selected={selectedScopeType === "stream" && selectedScopeKey === stream.scope_id}
-                    onClick={() => onSelectStream(stream.scope_id)}
-                    className="workspace-nav__row"
-                  >
-                    <ListItemText primary={stream.name} />
-                    <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
-                      {stream.unread_count}
-                    </Typography>
-                  </ListItemButton>
-                ))}
-              </List>
+              <Stack spacing={0.2}>
+                {hierarchy.monitoring_folders
+                  .filter((monitoringFolder) => monitoringFolder.streams.length > 0)
+                  .map((monitoringFolder) => {
+                    const folderKey = monitoringFolder.id ?? "unfiled-monitoring";
+                    const open = isMonitoringFolderOpen(folderKey);
+                    return (
+                      <Box key={folderKey}>
+                        <Stack direction="row" alignItems="center" className="workspace-nav__item-group">
+                          <IconButton
+                            size="small"
+                            aria-label={`${open ? "Collapse" : "Expand"} monitoring folder ${monitoringFolder.name}`}
+                            className="workspace-nav__folder-toggle"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              toggleMonitoringFolder(folderKey);
+                            }}
+                          >
+                            <ChevronRightRoundedIcon
+                              className={`workspace-nav__folder-icon${open ? " workspace-nav__folder-icon--open" : ""}`}
+                              fontSize="small"
+                            />
+                          </IconButton>
+                          <Stack direction="row" alignItems="center" className="workspace-nav__row workspace-nav__row--folder">
+                            <Box className="workspace-nav__folder-label">
+                              <FolderRoundedIcon fontSize="inherit" className="workspace-nav__folder-inline-icon" />
+                              <ListItemText primary={monitoringFolder.name} />
+                            </Box>
+                            <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
+                              {monitoringFolder.unread_count}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                        <Collapse in={open} timeout="auto" unmountOnExit>
+                          <List dense={density === "compact"} disablePadding className="workspace-nav__children">
+                            {monitoringFolder.streams.map((stream) => (
+                              <ListItemButton
+                                key={stream.scope_id}
+                                selected={selectedScopeType === "stream" && selectedScopeKey === stream.scope_id}
+                                onClick={() => onSelectStream(stream.scope_id)}
+                                className="workspace-nav__row"
+                              >
+                                <ListItemText primary={stream.name} />
+                                <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
+                                  {stream.unread_count}
+                                </Typography>
+                              </ListItemButton>
+                            ))}
+                          </List>
+                        </Collapse>
+                      </Box>
+                    );
+                  })}
+              </Stack>
             </Collapse>
           </Box>
 
           <Box className="workspace-nav__section">
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">
               <Typography className="workspace-nav__section-title">Folders</Typography>
-              <Button
+              <IconButton
                 size="small"
-                variant="text"
-                className="workspace-nav__section-action"
+                aria-label={allFoldersExpanded ? "Collapse all folders" : "Expand all folders"}
                 onClick={allFoldersExpanded ? collapseAllFolders : expandAllFolders}
               >
-                {allFoldersExpanded ? "Collapse all" : "Expand all"}
-              </Button>
+                <ChevronRightRoundedIcon
+                  className={`workspace-nav__section-chevron${allFoldersExpanded ? " workspace-nav__section-chevron--open" : ""}`}
+                  fontSize="small"
+                />
+              </IconButton>
             </Stack>
             <List dense={density === "compact"} disablePadding>
               {hierarchy.folders.map((folder) => {
@@ -328,6 +375,7 @@ export function NavigationPane({
                       </IconButton>
                       <ListItemButton
                         selected={folderSelected}
+                        aria-label={`Folder ${folder.name}`}
                         onClick={() => {
                           if (selectable) {
                             onSelectFolder(folder.scope_id);

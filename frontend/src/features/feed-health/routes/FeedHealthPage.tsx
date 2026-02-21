@@ -1,11 +1,25 @@
+import AddLinkRoundedIcon from "@mui/icons-material/AddLinkRounded";
+import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
+import PauseCircleRoundedIcon from "@mui/icons-material/PauseCircleRounded";
+import PlayCircleRoundedIcon from "@mui/icons-material/PlayCircleRounded";
+import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
+import UnarchiveRoundedIcon from "@mui/icons-material/UnarchiveRounded";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import {
   Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Paper,
@@ -13,12 +27,20 @@ import {
   Stack,
   Switch,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMemo, useState } from "react";
 
+import { useFoldersQuery } from "../../workspace/api/workspaceHooks";
+import { SettingsLayout } from "../../settings/components/SettingsLayout";
 import type { FeedHealthLifecycleFilter } from "../../../shared/types/contracts";
-import { useFeedHealthQuery, useUpdateFeedLifecycleMutation, useUpdateFeedSettingsMutation } from "../api/feedHealthHooks";
+import {
+  useCreateFeedMutation,
+  useFeedHealthQuery,
+  useUpdateFeedLifecycleMutation,
+  useUpdateFeedSettingsMutation,
+} from "../api/feedHealthHooks";
 
 type Feedback = {
   severity: "success" | "error";
@@ -49,16 +71,25 @@ export function FeedHealthPage() {
   const [intervalByFeedId, setIntervalByFeedId] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createUrl, setCreateUrl] = useState("");
+  const [createTitle, setCreateTitle] = useState("");
+  const [createFolderId, setCreateFolderId] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const foldersQuery = useFoldersQuery();
   const healthQuery = useFeedHealthQuery({
     lifecycle,
     q: query,
     stale_only: staleOnly,
     error_only: errorOnly,
-    limit: 50,
+    all: true,
+    limit: 200,
     offset: 0,
   });
   const updateSettingsMutation = useUpdateFeedSettingsMutation();
   const lifecycleMutation = useUpdateFeedLifecycleMutation();
+  const createFeedMutation = useCreateFeedMutation();
 
   const items = healthQuery.data?.items;
   const summary = healthQuery.data?.summary;
@@ -85,6 +116,44 @@ export function FeedHealthPage() {
     setQuery("");
     setStaleOnly(false);
     setErrorOnly(false);
+  };
+
+  const closeCreateDialog = () => {
+    setCreateOpen(false);
+    setCreateUrl("");
+    setCreateTitle("");
+    setCreateFolderId("");
+    setCreateError(null);
+  };
+
+  const submitCreateFeed = async () => {
+    setCreateError(null);
+    setFeedback(null);
+
+    const url = createUrl.trim();
+    if (!url) {
+      setCreateError("Feed URL is required.");
+      return;
+    }
+    try {
+      new URL(url);
+    } catch {
+      setCreateError("Feed URL must be a valid URL.");
+      return;
+    }
+
+    try {
+      await createFeedMutation.mutateAsync({
+        title: createTitle.trim() || url,
+        url,
+        folder_id: createFolderId.length > 0 ? createFolderId : null,
+      });
+      closeCreateDialog();
+      setFeedback({ severity: "success", message: "Feed created." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create feed.";
+      setCreateError(message);
+    }
   };
 
   const updateInterval = async (feedId: string) => {
@@ -140,237 +209,316 @@ export function FeedHealthPage() {
   };
 
   return (
-    <Paper
-      component="section"
-      className="panel settings-panel"
-      sx={{ maxWidth: 1200, mx: "auto" }}
-      aria-labelledby="feed-health-heading"
+    <SettingsLayout
+      activeSection="feed-health"
+      title="Feed health"
+      headingId="feed-health-heading"
+      maxWidth={1300}
+      description="Review freshness and ingest failures, then adjust lifecycle state and polling cadence per feed."
+      actions={
+        <Button size="small" variant="contained" startIcon={<AddLinkRoundedIcon />} onClick={() => setCreateOpen(true)}>
+          Add feed
+        </Button>
+      }
     >
-      <Stack spacing={2}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "stretch", sm: "center" }}
-          spacing={1}
-        >
-          <Typography id="feed-health-heading" variant="h4" component="h1">
-            Feed health
-          </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <Button component="a" href="/account" size="small" variant="outlined">
-              Back to settings
-            </Button>
-          </Stack>
-        </Stack>
-        <Typography variant="body2" color="text.secondary">
-          Review freshness and ingest failures, then adjust lifecycle state and polling cadence per feed.
+      {healthQuery.data?.last_updated_at ? (
+        <Typography variant="caption" color="text.secondary">
+          Last refreshed: {formatDateTime(healthQuery.data.last_updated_at)}
         </Typography>
-        {healthQuery.data?.last_updated_at ? (
-          <Typography variant="caption" color="text.secondary">
-            Last refreshed: {formatDateTime(healthQuery.data.last_updated_at)}
-          </Typography>
-        ) : null}
+      ) : null}
 
-        {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
-        {healthQuery.isError ? <Alert severity="error">Failed to load feed health.</Alert> : null}
+      {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
+      {healthQuery.isError ? <Alert severity="error">Failed to load feed health.</Alert> : null}
 
-        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 1.5 }}>
-          <Stack spacing={1.2}>
-            <Typography variant="subtitle2">Filters</Typography>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-              <FormControl size="small" sx={{ minWidth: 180 }}>
-                <InputLabel id="feed-health-lifecycle-label">Lifecycle</InputLabel>
-                <Select
-                  labelId="feed-health-lifecycle-label"
-                  label="Lifecycle"
-                  value={lifecycle}
-                  onChange={(event) => setLifecycle(event.target.value as FeedHealthLifecycleFilter)}
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="paused">Paused</MenuItem>
-                  <MenuItem value="archived">Archived</MenuItem>
-                </Select>
-              </FormControl>
+      <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, p: 1.5 }}>
+        <Stack spacing={1.2}>
+          <Typography variant="subtitle2">Filters</Typography>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel id="feed-health-lifecycle-label">Lifecycle</InputLabel>
+              <Select
+                labelId="feed-health-lifecycle-label"
+                label="Lifecycle"
+                value={lifecycle}
+                onChange={(event) => setLifecycle(event.target.value as FeedHealthLifecycleFilter)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="paused">Paused</MenuItem>
+                <MenuItem value="archived">Archived</MenuItem>
+              </Select>
+            </FormControl>
 
-              <FormControlLabel
-                control={<Switch checked={staleOnly} onChange={(event) => setStaleOnly(event.target.checked)} />}
-                label="Stale only"
-              />
-              <FormControlLabel
-                control={<Switch checked={errorOnly} onChange={(event) => setErrorOnly(event.target.checked)} />}
-                label="Error only"
-              />
+            <FormControlLabel
+              control={<Switch checked={staleOnly} onChange={(event) => setStaleOnly(event.target.checked)} />}
+              label="Stale only"
+            />
+            <FormControlLabel
+              control={<Switch checked={errorOnly} onChange={(event) => setErrorOnly(event.target.checked)} />}
+              label="Error only"
+            />
 
-              <TextField
-                size="small"
-                label="Title or URL"
-                value={queryInput}
-                onChange={(event) => setQueryInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    onApplySearch();
-                  }
-                }}
-                sx={{ flex: 1, minWidth: 220 }}
-              />
-              <Stack direction="row" spacing={1}>
-                <Button variant="outlined" onClick={onApplySearch}>
-                  Apply filters
-                </Button>
-                <Button variant="text" onClick={resetFilters}>
-                  Reset
-                </Button>
-              </Stack>
+            <TextField
+              size="small"
+              label="Title or URL"
+              value={queryInput}
+              onChange={(event) => setQueryInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onApplySearch();
+                }
+              }}
+              sx={{ flex: 1, minWidth: 220 }}
+            />
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" onClick={onApplySearch}>
+                Apply filters
+              </Button>
+              <Button variant="text" onClick={resetFilters}>
+                Reset
+              </Button>
             </Stack>
           </Stack>
+        </Stack>
+      </Box>
+
+      {summary ? (
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Chip label={`Total ${summary.total_feed_count}`} size="small" />
+          <Chip label={`Active ${summary.active_feed_count}`} size="small" />
+          <Chip label={`Paused ${summary.paused_feed_count}`} size="small" />
+          <Chip label={`Archived ${summary.archived_feed_count}`} size="small" />
+          <Chip label={`Stale ${summary.stale_feed_count}`} size="small" color="warning" />
+          <Chip label={`Errors ${summary.error_feed_count}`} size="small" color="error" />
+        </Stack>
+      ) : null}
+
+      {isLoading ? (
+        <Box sx={{ py: 3, display: "flex", justifyContent: "center" }}>
+          <CircularProgress size={24} />
         </Box>
+      ) : null}
 
-        {summary ? (
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip label={`Total ${summary.total_feed_count}`} size="small" />
-            <Chip label={`Active ${summary.active_feed_count}`} size="small" />
-            <Chip label={`Paused ${summary.paused_feed_count}`} size="small" />
-            <Chip label={`Archived ${summary.archived_feed_count}`} size="small" />
-            <Chip label={`Stale ${summary.stale_feed_count}`} size="small" color="warning" />
-            <Chip label={`Errors ${summary.error_feed_count}`} size="small" color="error" />
+      {!isLoading && (items ?? []).length === 0 ? (
+        <Alert severity="info">No feeds matched the selected filters.</Alert>
+      ) : null}
+
+      <Paper variant="outlined" sx={{ p: 1.1 }}>
+        <Stack spacing={0.45}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ px: 1, py: 0.7, borderBottom: "1px solid", borderColor: "divider" }}
+          >
+            <Typography variant="caption" sx={{ flex: 2.2, fontWeight: 700 }}>
+              Feed
+            </Typography>
+            <Typography variant="caption" sx={{ flex: 1.1, fontWeight: 700 }}>
+              Health
+            </Typography>
+            <Typography variant="caption" sx={{ width: 72, fontWeight: 700 }}>
+              Unread
+            </Typography>
+            <Typography variant="caption" sx={{ width: 92, fontWeight: 700 }}>
+              7d cadence
+            </Typography>
+            <Typography variant="caption" sx={{ width: 170, fontWeight: 700 }}>
+              Last success
+            </Typography>
+            <Typography variant="caption" sx={{ width: 170, fontWeight: 700 }}>
+              Last error
+            </Typography>
+            <Typography variant="caption" sx={{ width: 138, fontWeight: 700 }}>
+              Interval
+            </Typography>
+            <Typography variant="caption" sx={{ width: 136, fontWeight: 700, textAlign: "right" }}>
+              Actions
+            </Typography>
           </Stack>
-        ) : null}
 
-        {isLoading ? (
-          <Box sx={{ py: 3, display: "flex", justifyContent: "center" }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : null}
-
-        {!isLoading && (items ?? []).length === 0 ? (
-          <Alert severity="info">No feeds matched the selected filters.</Alert>
-        ) : null}
-
-        <Stack spacing={1.2}>
           {(items ?? []).map((item) => (
-            <Box
-              key={item.feed_id}
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 1,
-                p: 1.5,
-              }}
-            >
-              <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} justifyContent="space-between">
-                <Box sx={{ minWidth: 0 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                    <Typography variant="h6" component="h2">
-                      {item.title}
-                    </Typography>
-                    <Chip label={item.lifecycle_status} size="small" />
-                    {item.is_stale ? <Chip label="stale" color="warning" size="small" /> : null}
-                    {item.last_fetch_error ? <Chip label="error" color="error" size="small" /> : null}
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-all" }}>
-                    {item.url}
-                  </Typography>
-                  {item.site_url ? (
-                    <Typography variant="caption" color="text.secondary" sx={{ wordBreak: "break-all", display: "block" }}>
-                      Site: {item.site_url}
-                    </Typography>
-                  ) : null}
-                  <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 0.8 }}>
-                    <Typography variant="caption">Interval: {item.fetch_interval_minutes}m</Typography>
-                    <Typography variant="caption">Unread: {item.unread_count}</Typography>
-                    <Typography variant="caption">Articles (7d): {item.articles_last_7d}</Typography>
-                    <Typography variant="caption">Cadence: {formatPerDay(item.estimated_articles_per_day_7d)}</Typography>
-                    <Typography variant="caption">Last success: {formatDateTime(item.last_fetch_success_at)}</Typography>
-                    <Typography variant="caption">Last error: {formatDateTime(item.last_fetch_error_at)}</Typography>
-                  </Stack>
-                  {item.is_stale && item.stale_age_hours !== null ? (
-                    <Typography variant="caption" color="warning.main" sx={{ display: "block", mt: 0.6 }}>
-                      Stale age: {item.stale_age_hours.toFixed(1)}h
-                    </Typography>
-                  ) : null}
-                  {item.last_fetch_error ? (
-                    <Typography variant="caption" color="error" sx={{ display: "block", mt: 0.6 }}>
-                      {item.last_fetch_error}
-                    </Typography>
-                  ) : null}
-                </Box>
+            <Stack key={item.feed_id} direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 0.6 }}>
+              <Box sx={{ flex: 2.2, minWidth: 0 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                  {item.title}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {item.url}
+                </Typography>
+              </Box>
 
-                <Stack spacing={1} sx={{ minWidth: { xs: "100%", md: 260 } }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <TextField
+              <Stack direction="row" spacing={0.4} sx={{ flex: 1.1 }}>
+                <Tooltip title={item.lifecycle_status}>
+                  {item.lifecycle_status === "active" ? (
+                    <CheckCircleRoundedIcon color="success" fontSize="small" />
+                  ) : item.lifecycle_status === "paused" ? (
+                    <PauseCircleRoundedIcon color="warning" fontSize="small" />
+                  ) : (
+                    <ArchiveRoundedIcon color="disabled" fontSize="small" />
+                  )}
+                </Tooltip>
+                {item.is_stale ? (
+                  <Tooltip title={item.stale_age_hours !== null ? `Stale ${item.stale_age_hours.toFixed(1)}h` : "Stale"}>
+                    <WarningAmberRoundedIcon color="warning" fontSize="small" />
+                  </Tooltip>
+                ) : null}
+                {item.last_fetch_error ? (
+                  <Tooltip title={item.last_fetch_error}>
+                    <ErrorOutlineRoundedIcon color="error" fontSize="small" />
+                  </Tooltip>
+                ) : null}
+              </Stack>
+
+              <Typography variant="body2" sx={{ width: 72 }}>
+                {item.unread_count}
+              </Typography>
+              <Typography variant="body2" sx={{ width: 92 }}>
+                {formatPerDay(item.estimated_articles_per_day_7d)}
+              </Typography>
+              <Typography variant="caption" sx={{ width: 170 }} noWrap>
+                {formatDateTime(item.last_fetch_success_at)}
+              </Typography>
+              <Typography variant="caption" sx={{ width: 170 }} noWrap>
+                {formatDateTime(item.last_fetch_error_at)}
+              </Typography>
+
+              <Stack direction="row" spacing={0.5} sx={{ width: 138 }}>
+                <TextField
+                  size="small"
+                  value={intervalValueByFeedId[item.feed_id] ?? ""}
+                  onChange={(event) =>
+                    setIntervalByFeedId((previous) => ({
+                      ...previous,
+                      [item.feed_id]: event.target.value,
+                    }))
+                  }
+                  type="number"
+                  slotProps={{ htmlInput: { min: 1, max: 10080, "aria-label": "Fetch interval (minutes)" } }}
+                  sx={{ width: 76 }}
+                />
+                <Tooltip title="Save interval">
+                  <span>
+                    <IconButton
                       size="small"
-                      label="Fetch interval (minutes)"
-                      value={intervalValueByFeedId[item.feed_id] ?? ""}
-                      onChange={(event) =>
-                        setIntervalByFeedId((previous) => ({
-                          ...previous,
-                          [item.feed_id]: event.target.value,
-                        }))
-                      }
-                      type="number"
-                      slotProps={{ htmlInput: { min: 1, max: 10080 } }}
-                      fullWidth
-                    />
-                    <Button
-                      size="small"
-                      variant="outlined"
+                      aria-label={`Save interval for ${item.title}`}
                       disabled={isMutating}
                       onClick={() => void updateInterval(item.feed_id)}
                     >
-                      Save interval
-                    </Button>
-                  </Stack>
+                      <SaveRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Stack>
 
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {item.lifecycle_status === "active" ? (
-                      <Button
+              <Stack direction="row" spacing={0.1} sx={{ width: 136, justifyContent: "flex-end" }}>
+                {item.lifecycle_status === "active" ? (
+                  <Tooltip title="Pause updates">
+                    <span>
+                      <IconButton
                         size="small"
-                        variant="outlined"
+                        aria-label={`Pause updates for ${item.title}`}
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "pause")}
                       >
-                        Pause updates
-                      </Button>
-                    ) : null}
-                    {item.lifecycle_status === "paused" ? (
-                      <Button
+                        <PauseCircleRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                ) : null}
+                {item.lifecycle_status === "paused" ? (
+                  <Tooltip title="Resume updates">
+                    <span>
+                      <IconButton
                         size="small"
-                        variant="outlined"
+                        aria-label={`Resume updates for ${item.title}`}
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "resume")}
                       >
-                        Resume updates
-                      </Button>
-                    ) : null}
-                    {item.lifecycle_status === "archived" ? (
-                      <Button
+                        <PlayCircleRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                ) : null}
+                {item.lifecycle_status === "archived" ? (
+                  <Tooltip title="Unarchive feed">
+                    <span>
+                      <IconButton
                         size="small"
-                        variant="outlined"
+                        aria-label={`Unarchive ${item.title}`}
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "unarchive")}
                       >
-                        Unarchive feed
-                      </Button>
-                    ) : (
-                      <Button
+                        <UnarchiveRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Archive feed">
+                    <span>
+                      <IconButton
                         size="small"
-                        color="warning"
-                        variant="outlined"
+                        aria-label={`Archive ${item.title}`}
                         disabled={isMutating}
                         onClick={() => void updateLifecycle(item.feed_id, "archive")}
                       >
-                        Archive feed
-                      </Button>
-                    )}
-                  </Stack>
-                </Stack>
+                        <ArchiveRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
               </Stack>
-            </Box>
+            </Stack>
           ))}
         </Stack>
-      </Stack>
-    </Paper>
+      </Paper>
+
+      <Dialog open={createOpen} onClose={closeCreateDialog}>
+        <DialogTitle>Add feed</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.2} sx={{ mt: 0.4, minWidth: { xs: 280, sm: 420 } }}>
+            {createError ? <Alert severity="error">{createError}</Alert> : null}
+            <TextField
+              label="Feed URL"
+              value={createUrl}
+              onChange={(event) => setCreateUrl(event.target.value)}
+              placeholder="https://example.com/rss"
+              autoFocus
+              required
+              size="small"
+            />
+            <TextField
+              label="Title (optional)"
+              value={createTitle}
+              onChange={(event) => setCreateTitle(event.target.value)}
+              size="small"
+            />
+            <FormControl size="small">
+              <InputLabel id="create-feed-folder-label">Folder</InputLabel>
+              <Select
+                labelId="create-feed-folder-label"
+                label="Folder"
+                value={createFolderId}
+                onChange={(event) => setCreateFolderId(event.target.value)}
+              >
+                <MenuItem value="">Unfiled</MenuItem>
+                {(foldersQuery.data ?? []).map((folder) => (
+                  <MenuItem key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeCreateDialog}>Cancel</Button>
+          <Button variant="contained" onClick={() => void submitCreateFeed()} disabled={createFeedMutation.isPending}>
+            Add feed
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </SettingsLayout>
   );
 }

@@ -25,8 +25,15 @@ class FeedService:
         return result.scalar_one_or_none()
 
     async def create_feed(self, session: AsyncSession, data: FeedCreate, user_id: UUID) -> Feed:
+        if data.folder_id is not None:
+            folder_query = select(FeedFolder.id).where(FeedFolder.id == data.folder_id, FeedFolder.user_id == user_id)
+            folder_result = await session.execute(folder_query)
+            if folder_result.scalar_one_or_none() is None:
+                raise FeedFolderNotFoundError(f"Folder {data.folder_id} not found")
+
         feed = Feed(
             owner_id=user_id,
+            folder_id=data.folder_id,
             title=data.title.strip(),
             url=str(data.url),
             site_url=str(data.site_url) if data.site_url else None,

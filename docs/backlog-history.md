@@ -152,6 +152,12 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - left rail now includes a direct Help action (`/help`)
    - article list action now supports scope-aware mark-read execution with confirmation
    - action copy clarified to `Mark all in scope as read`
+15. Workspace + settings management UI touchups v1 completed on 2026-02-21:
+   - navigation add-folder action is now icon-only (`folder-plus`) and expand/collapse controls are chevron-first
+   - monitoring streams now support folder assignment and folder-grouped navigation rendering
+   - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
+   - monitoring management list is now one-row-per-stream with icon actions and edit-to-left-form behavior
+   - feed health list is now one-row-per-feed with icon actions, `all=true` load mode, and add-feed dialog
 
 ### Completed Session Index (Chronological)
 

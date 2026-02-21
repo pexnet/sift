@@ -69,10 +69,37 @@ const hierarchy: NavigationHierarchy = {
     {
       id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
       name: "[Global] darktrace",
+      folder_id: "ef1ecd29-2f93-49d6-ae70-c989df4da59f",
       unread_count: 9,
       kind: "stream",
       scope_type: "stream",
       scope_id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+    },
+  ],
+  monitoring_folders: [
+    {
+      id: "ef1ecd29-2f93-49d6-ae70-c989df4da59f",
+      name: "Security",
+      is_unfiled: false,
+      unread_count: 9,
+      streams: [
+        {
+          id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+          name: "[Global] darktrace",
+          folder_id: "ef1ecd29-2f93-49d6-ae70-c989df4da59f",
+          unread_count: 9,
+          kind: "stream",
+          scope_type: "stream",
+          scope_id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+        },
+      ],
+    },
+    {
+      id: null,
+      name: "Unfiled",
+      is_unfiled: true,
+      unread_count: 0,
+      streams: [],
     },
   ],
   feeds: [],
@@ -119,7 +146,8 @@ describe("NavigationPane", () => {
     const onSelectFolder = vi.fn();
     renderPane({ onSelectFolder });
 
-    fireEvent.click(screen.getByText("Security"));
+    expect(screen.getByRole("button", { name: "Add folder" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Folder Security" }));
     expect(onSelectFolder).toHaveBeenCalledWith("ef1ecd29-2f93-49d6-ae70-c989df4da59f");
     expect(screen.getByText("Alpha Feed")).toBeVisible();
   });
@@ -138,13 +166,13 @@ describe("NavigationPane", () => {
     storage.removeItem(NAV_FOLDERS_EXPANDED_KEY);
     renderPane();
 
-    fireEvent.click(screen.getByRole("button", { name: /Collapse all/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Collapse all folders/i }));
     await waitFor(() => {
       expect(screen.queryByText("Alpha Feed")).toBeNull();
       expect(screen.queryByText("Bravo Feed")).toBeNull();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Expand all/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Expand all folders/i }));
     await waitFor(() => {
       expect(screen.getByText("Alpha Feed")).toBeVisible();
       expect(screen.getByText("Bravo Feed")).toBeVisible();
@@ -165,13 +193,11 @@ describe("NavigationPane", () => {
   it("collapses and expands monitoring section", async () => {
     renderPane();
     expect(screen.getByText("[Global] darktrace")).toBeVisible();
-    expect(screen.getByText("Collapse")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /Collapse monitoring feeds/i }));
     await waitFor(() => {
       expect(screen.queryByText("[Global] darktrace")).toBeNull();
     });
-    expect(screen.getByText("Expand")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /Expand monitoring feeds/i }));
     await waitFor(() => {

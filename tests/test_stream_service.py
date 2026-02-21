@@ -6,13 +6,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
-from sift.db.models import Article, Feed, KeywordStreamMatch, StreamClassifierRun, User
+from sift.db.models import Article, Feed, FeedFolder, KeywordStreamMatch, StreamClassifierRun, User
 from sift.domain.schemas import KeywordStreamCreate, KeywordStreamUpdate
 from sift.plugins.base import StreamClassificationDecision
 from sift.search.query_language import parse_search_query
 from sift.services.stream_service import (
     CompiledKeywordStream,
     StreamConflictError,
+    StreamFolderNotFoundError,
     StreamMatchDecision,
     StreamValidationError,
     stream_matches,
@@ -123,6 +124,51 @@ async def test_create_update_and_conflict_stream() -> None:
                 session=session,
                 user_id=user.id,
                 payload=KeywordStreamCreate(name="ai-news", include_keywords=["llm"]),
+            )
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_create_and_update_stream_folder_assignment() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-folder@example.com")
+        other_user = User(email="streams-folder-other@example.com")
+        session.add_all([user, other_user])
+        await session.flush()
+
+        folder = FeedFolder(user_id=user.id, name="Monitoring")
+        other_folder = FeedFolder(user_id=other_user.id, name="Other")
+        session.add_all([folder, other_folder])
+        await session.flush()
+        await session.commit()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="foldered", include_keywords=["ioc"], folder_id=folder.id),
+        )
+        assert stream.folder_id == folder.id
+
+        cleared = await stream_service.update_stream(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            payload=KeywordStreamUpdate(folder_id=None),
+        )
+        assert cleared.folder_id is None
+
+        with pytest.raises(StreamFolderNotFoundError):
+            await stream_service.update_stream(
+                session=session,
+                user_id=user.id,
+                stream_id=stream.id,
+                payload=KeywordStreamUpdate(folder_id=other_folder.id),
             )
 
     await engine.dispose()

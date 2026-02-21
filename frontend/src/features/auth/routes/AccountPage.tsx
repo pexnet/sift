@@ -5,7 +5,6 @@ import {
   FormControl,
   FormHelperText,
   FormLabel,
-  Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -15,6 +14,7 @@ import type { KeyboardEvent } from "react";
 
 import { useAppUiState } from "../../../app/providers";
 import { NAV_PRESET_OPTIONS, THEME_PRESET_OPTIONS, type DensityMode } from "../../../app/uiPreferences";
+import { SettingsLayout } from "../../settings/components/SettingsLayout";
 import { useCurrentUser } from "../api/authHooks";
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -93,29 +93,18 @@ export function AccountPage() {
   const currentUserQuery = useCurrentUser();
 
   return (
-    <Paper component="section" className="panel settings-panel" sx={{ maxWidth: 860, mx: "auto" }} aria-labelledby="settings-heading">
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
-        <Typography id="settings-heading" variant="h4" component="h1" sx={{ mb: { xs: 0, sm: 1 } }}>
-          Settings
-        </Typography>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <Button component="a" href="/account/feed-health" size="small" variant="outlined">
-            Manage feed health
-          </Button>
-          <Button component="a" href="/account/monitoring" size="small" variant="outlined">
-            Manage monitoring feeds
-          </Button>
-          <Button component="a" href="/help" size="small" variant="outlined">
-            Help
-          </Button>
-          <Button className="settings-reset-button" size="small" variant="outlined" onClick={resetUiPreferences}>
-            Reset to defaults
-          </Button>
-        </Stack>
-      </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-        Appearance and layout preferences, plus account identity summary.
-      </Typography>
+    <SettingsLayout
+      activeSection="general"
+      title="Settings"
+      headingId="settings-heading"
+      maxWidth={1100}
+      description="Appearance and layout preferences, plus account identity summary."
+      actions={
+        <Button className="settings-reset-button" size="small" variant="outlined" onClick={resetUiPreferences}>
+          Reset to defaults
+        </Button>
+      }
+    >
       <Typography className="settings-status-note" role="status" aria-live="polite">
         Changes are saved automatically.
       </Typography>
@@ -271,6 +260,6 @@ export function AccountPage() {
           ) : null}
         </Stack>
       </Stack>
-    </Paper>
+    </SettingsLayout>
   );
 }

@@ -2,9 +2,9 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- State: Implemented (2026-02-21)
+- Scope: Completed backend + frontend vertical slice
+- Backlog reference: [docs/backlog-history.md](../../backlog-history.md)
 - UI reference direction: Inoreader-inspired dense operations layout (per user request, 2026-02-21)
 
 ## Context
@@ -263,7 +263,19 @@ Use existing feed-folder objects for v1 to minimize surface area:
 3. Existing clients remain functional when new fields are ignored.
 4. Ship behind normal `develop` integration flow; no feature flag required for v1.
 
+## Implementation Summary
+
+1. Added `keyword_streams.folder_id` persistence with migration and stream contract/service validation.
+2. Extended navigation stream payloads with `folder_id` and grouped monitoring stream rendering in workspace nav.
+3. Delivered icon-first navigation controls (`Add folder` icon + chevron-first section controls).
+4. Added shared settings side-menu shell across `/account`, `/account/monitoring`, `/account/feed-health`, and `/help`.
+5. Refactored monitoring management list to a dense one-row-per-stream surface with icon actions and edit-left form flow.
+6. Refactored feed health to a dense one-row-per-feed surface with icon actions and add-feed dialog.
+7. Added feed-health `all=true` request flow and backend support.
+8. Added feed create support for optional `folder_id` assignment.
+
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
-- Most recent completed related spec: [docs/specs/done/feed-health-edit-surface-v1.md](done/feed-health-edit-surface-v1.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
+- Backlog history: [docs/backlog-history.md](../../backlog-history.md)
+- Most recent completed related spec: [docs/specs/done/feed-health-edit-surface-v1.md](feed-health-edit-surface-v1.md)

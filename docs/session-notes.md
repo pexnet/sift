@@ -1,11 +1,47 @@
 # Session Notes
 
+## 2026-02-21 (Workspace + Settings Management UI Touchups v1 Delivered)
+
+### Implemented This Session
+
+- Delivered backend + frontend implementation for workspace/settings management touchups v1:
+  - backend:
+    - added migration `alembic/versions/20260221_0015_keyword_stream_folder.py`
+    - added `keyword_streams.folder_id` persistence and validation
+    - stream contracts now support `folder_id` on create/update/out
+    - navigation stream payload now includes `folder_id`
+    - `GET /api/v1/feeds/health` now supports `all=true`
+    - `POST /api/v1/feeds` now supports optional `folder_id`
+  - frontend:
+    - workspace nav add-folder is now icon-only (`folder-plus`)
+    - monitoring/folder expand-collapse controls now use chevrons
+    - monitoring streams are grouped by folders in workspace navigation
+    - settings routes now use a shared side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
+    - monitoring management list is now one-row-per-feed definition with icon actions and edit-left form population
+    - feed health list is now one-row-per-feed with icon actions and add-feed dialog
+    - feed health uses `all=true` query mode by default
+- Synced planning/backlog/spec governance:
+  - moved implemented spec to `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`
+  - updated `docs/backlog.md`, `docs/backlog-history.md`, `AGENTS.md`, and `docs/architecture.md` to reflect completion
+
+### Verification
+
+- Backend:
+  - `python -m pytest tests/test_stream_service.py tests/test_navigation_service.py tests/test_feed_health_service.py tests/test_feed_health_api.py`
+- Frontend:
+  - `pnpm --dir frontend run gen:openapi`
+  - `pnpm --dir frontend run test -- src/entities/navigation/model.test.ts src/features/workspace/components/NavigationPane.test.tsx src/features/auth/routes/AccountPage.test.tsx src/features/monitoring/routes/MonitoringFeedsPage.test.tsx src/features/feed-health/routes/FeedHealthPage.test.tsx src/features/help/routes/HelpPage.test.tsx`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run lint`
+  - `pnpm --dir frontend run build`
+
 ## 2026-02-21 (UI Touchups Planning Spec Captured)
 
 ### Implemented This Session
 
 - Added a new implementation-ready UI planning spec:
-  - `docs/specs/workspace-settings-management-ui-touchups-v1.md`
+  - `docs/specs/workspace-settings-management-ui-touchups-v1.md` (now archived at
+    `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
   - scope includes:
     - icon/chevron navigation touchups
     - monitoring feed folders

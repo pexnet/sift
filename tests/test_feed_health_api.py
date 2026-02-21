@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.api.deps.auth import get_current_user
 from sift.db.base import Base
-from sift.db.models import Article, ArticleState, Feed, User
+from sift.db.models import Article, ArticleState, Feed, FeedFolder, User
 from sift.db.session import get_db_session
 from sift.main import app
 
@@ -80,6 +81,48 @@ def test_feed_health_api_lifecycle_and_settings_flow() -> None:
             assert health_payload["items"][0]["is_stale"] is True
             assert health_payload["summary"]["total_feed_count"] == 1
 
+            health_all_response = client.get(
+                "/api/v1/feeds/health",
+                params={"all": "true", "limit": "1", "offset": "0"},
+            )
+            assert health_all_response.status_code == 200
+            health_all_payload = health_all_response.json()
+            assert health_all_payload["total"] == 1
+            assert len(health_all_payload["items"]) == 1
+            assert health_all_payload["limit"] == 1
+            assert health_all_payload["offset"] == 0
+
+            async def create_folder() -> FeedFolder:
+                async with session_maker() as session:
+                    folder = FeedFolder(user_id=user.id, name="Feeds API Folder")
+                    session.add(folder)
+                    await session.commit()
+                    await session.refresh(folder)
+                    return folder
+
+            folder = asyncio.run(create_folder())
+
+            create_feed_response = client.post(
+                "/api/v1/feeds",
+                json={
+                    "title": "Foldered feed",
+                    "url": "https://feed-health-api.example.com/foldered.xml",
+                    "folder_id": str(folder.id),
+                },
+            )
+            assert create_feed_response.status_code == 201
+            assert create_feed_response.json()["folder_id"] == str(folder.id)
+
+            create_feed_invalid_folder_response = client.post(
+                "/api/v1/feeds",
+                json={
+                    "title": "Invalid folder feed",
+                    "url": "https://feed-health-api.example.com/invalid-folder.xml",
+                    "folder_id": str(uuid4()),
+                },
+            )
+            assert create_feed_invalid_folder_response.status_code == 404
+
             settings_response = client.patch(
                 f"/api/v1/feeds/{feed.id}/settings",
                 json={"fetch_interval_minutes": 120},
@@ -105,11 +148,12 @@ def test_feed_health_api_lifecycle_and_settings_flow() -> None:
 
             feeds_response = client.get("/api/v1/feeds")
             assert feeds_response.status_code == 200
-            assert feeds_response.json() == []
+            assert len(feeds_response.json()) == 1
+            assert feeds_response.json()[0]["title"] == "Foldered feed"
 
             include_archived_response = client.get("/api/v1/feeds", params={"include_archived": "true"})
             assert include_archived_response.status_code == 200
-            assert len(include_archived_response.json()) == 1
+            assert len(include_archived_response.json()) == 2
 
             unarchive_response = client.patch(
                 f"/api/v1/feeds/{feed.id}/lifecycle",

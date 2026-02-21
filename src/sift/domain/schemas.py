@@ -9,6 +9,7 @@ class FeedCreate(BaseModel):
     title: str
     url: HttpUrl
     site_url: HttpUrl | None = None
+    folder_id: UUID | None = None
 
 
 class FeedOut(BaseModel):
@@ -226,6 +227,7 @@ class NavigationFolderNodeOut(BaseModel):
 class NavigationStreamNodeOut(BaseModel):
     id: UUID
     name: str
+    folder_id: UUID | None = None
     unread_count: int
 
 
@@ -329,6 +331,7 @@ class IngestRuleOut(BaseModel):
 class KeywordStreamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
+    folder_id: UUID | None = None
     is_active: bool = True
     priority: int = Field(default=100, ge=0, le=10000)
     match_query: str | None = Field(default=None, max_length=5000)
@@ -347,6 +350,7 @@ class KeywordStreamCreate(BaseModel):
 class KeywordStreamUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
+    folder_id: UUID | None = None
     is_active: bool | None = None
     priority: int | None = Field(default=None, ge=0, le=10000)
     match_query: str | None = Field(default=None, max_length=5000)
@@ -367,6 +371,7 @@ class KeywordStreamOut(BaseModel):
     user_id: UUID
     name: str
     description: str | None
+    folder_id: UUID | None
     is_active: bool
     priority: int
     match_query: str | None

@@ -51,6 +51,7 @@ async def list_feed_health(
     q: str | None = Query(default=None),
     stale_only: bool = Query(default=False),
     error_only: bool = Query(default=False),
+    all: bool = Query(default=False),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     session: AsyncSession = Depends(get_db_session),
@@ -63,6 +64,7 @@ async def list_feed_health(
         q=q,
         stale_only=stale_only,
         error_only=error_only,
+        include_all=all,
         limit=limit,
         offset=offset,
     )
@@ -78,6 +80,8 @@ async def create_feed(
         feed = await feed_service.create_feed(session=session, data=payload, user_id=current_user.id)
     except FeedAlreadyExistsError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except FeedFolderNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return FeedOut.model_validate(feed)
 
 

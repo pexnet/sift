@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../../app/providers";
+import { useFoldersQuery } from "../../workspace/api/workspaceHooks";
 import {
+  useCreateFeedMutation,
   useFeedHealthQuery,
   useUpdateFeedLifecycleMutation,
   useUpdateFeedSettingsMutation,
@@ -11,16 +13,23 @@ import { FeedHealthPage } from "./FeedHealthPage";
 
 vi.mock("../api/feedHealthHooks", () => ({
   useFeedHealthQuery: vi.fn(),
+  useCreateFeedMutation: vi.fn(),
   useUpdateFeedSettingsMutation: vi.fn(),
   useUpdateFeedLifecycleMutation: vi.fn(),
 }));
+vi.mock("../../workspace/api/workspaceHooks", () => ({
+  useFoldersQuery: vi.fn(),
+}));
 
 const useFeedHealthQueryMock = vi.mocked(useFeedHealthQuery);
+const useCreateFeedMutationMock = vi.mocked(useCreateFeedMutation);
 const useUpdateFeedSettingsMutationMock = vi.mocked(useUpdateFeedSettingsMutation);
 const useUpdateFeedLifecycleMutationMock = vi.mocked(useUpdateFeedLifecycleMutation);
+const useFoldersQueryMock = vi.mocked(useFoldersQuery);
 
 const settingsMutateAsync = vi.fn();
 const lifecycleMutateAsync = vi.fn();
+const createFeedMutateAsync = vi.fn();
 
 function renderPage() {
   return render(
@@ -35,6 +44,7 @@ describe("FeedHealthPage", () => {
     useFeedHealthQueryMock.mockClear();
     settingsMutateAsync.mockReset();
     lifecycleMutateAsync.mockReset();
+    createFeedMutateAsync.mockReset();
     settingsMutateAsync.mockResolvedValue({
       id: "feed-1",
       title: "Threat feed",
@@ -43,13 +53,17 @@ describe("FeedHealthPage", () => {
       feed: { id: "feed-1" },
       marked_read_count: 2,
     });
+    createFeedMutateAsync.mockResolvedValue({
+      id: "feed-new",
+      title: "New feed",
+    });
 
     useFeedHealthQueryMock.mockReturnValue({
       isLoading: false,
       isError: false,
       data: {
         total: 1,
-        limit: 50,
+        limit: 1,
         offset: 0,
         last_updated_at: "2026-02-19T12:00:00Z",
         summary: {
@@ -92,21 +106,28 @@ describe("FeedHealthPage", () => {
       isPending: false,
       mutateAsync: lifecycleMutateAsync,
     } as unknown as ReturnType<typeof useUpdateFeedLifecycleMutation>);
+    useCreateFeedMutationMock.mockReturnValue({
+      isPending: false,
+      mutateAsync: createFeedMutateAsync,
+    } as unknown as ReturnType<typeof useCreateFeedMutation>);
+    useFoldersQueryMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useFoldersQuery>);
   });
 
   it("renders feed health data and settings links", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { name: "Feed health" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Back to settings" })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("link", { name: "General" })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("button", { name: "Add feed" })).toBeVisible();
     expect(screen.getByText(/^Last refreshed:/)).toBeVisible();
     expect(screen.getByText("Filters")).toBeVisible();
     expect(screen.getByText("Threat feed")).toBeVisible();
     expect(screen.getByText("https://example.com/threat.xml")).toBeVisible();
-    expect(screen.getByText("Interval: 30m")).toBeVisible();
-    expect(screen.getByText("Unread: 4")).toBeVisible();
-    expect(screen.getByText("Articles (7d): 14")).toBeVisible();
-    expect(screen.getByText("Cadence: 2.00/day")).toBeVisible();
+    expect(screen.getByText("2.00/day")).toBeVisible();
     expect(screen.getByText("Total 2")).toBeVisible();
     expect(screen.getByText("Errors 1")).toBeVisible();
   });
@@ -116,7 +137,7 @@ describe("FeedHealthPage", () => {
 
     const intervalInput = screen.getByLabelText("Fetch interval (minutes)");
     fireEvent.change(intervalInput, { target: { value: "120" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save interval" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save interval for Threat feed" }));
 
     await waitFor(() => {
       expect(settingsMutateAsync).toHaveBeenCalledWith({
@@ -131,7 +152,7 @@ describe("FeedHealthPage", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Archive feed" }));
+    fireEvent.click(screen.getByRole("button", { name: "Archive Threat feed" }));
 
     await waitFor(() => {
       expect(lifecycleMutateAsync).toHaveBeenCalledWith({
@@ -156,7 +177,8 @@ describe("FeedHealthPage", () => {
         q: "threat",
         stale_only: true,
         error_only: false,
-        limit: 50,
+        all: true,
+        limit: 200,
         offset: 0,
       });
     });
@@ -168,7 +190,8 @@ describe("FeedHealthPage", () => {
         q: "",
         stale_only: false,
         error_only: false,
-        limit: 50,
+        all: true,
+        limit: 200,
         offset: 0,
       });
     });

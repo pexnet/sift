@@ -24,6 +24,7 @@ const navigationFolderSchema = z.object({
 const navigationStreamSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  folder_id: z.string().uuid().nullable().default(null),
   unread_count: z.number(),
 });
 
@@ -67,10 +68,19 @@ export type NavigationFolderItem = {
 export type NavigationStreamItem = {
   id: string;
   name: string;
+  folder_id: string | null;
   unread_count: number;
   kind: "stream";
   scope_type: "stream";
   scope_id: string;
+};
+
+export type NavigationMonitoringFolderItem = {
+  id: string | null;
+  name: string;
+  is_unfiled: boolean;
+  unread_count: number;
+  streams: NavigationStreamItem[];
 };
 
 export type NavigationSection =
@@ -95,6 +105,7 @@ export type NavigationHierarchy = {
   systems: NavigationSystemItem[];
   folders: NavigationFolderItem[];
   streams: NavigationStreamItem[];
+  monitoring_folders: NavigationMonitoringFolderItem[];
   feeds: NavigationFeedItem[];
 };
 
@@ -137,10 +148,36 @@ export function toNavigationHierarchy(tree: NavigationResponse): NavigationHiera
 
   const streams: NavigationStreamItem[] = tree.streams.map((streamNode) => ({
     ...streamNode,
+    folder_id: streamNode.folder_id ?? null,
     kind: "stream",
     scope_type: "stream",
     scope_id: streamNode.id,
   }));
+
+  const streamsByFolderId = new Map<string | null, NavigationStreamItem[]>();
+  for (const stream of streams) {
+    const current = streamsByFolderId.get(stream.folder_id) ?? [];
+    current.push(stream);
+    streamsByFolderId.set(stream.folder_id, current);
+  }
+  const monitoringFolders: NavigationMonitoringFolderItem[] = [
+    ...folders
+      .filter((folder) => !folder.is_unfiled)
+      .map((folder) => ({
+        id: folder.id,
+        name: folder.name,
+        is_unfiled: false,
+        unread_count: (streamsByFolderId.get(folder.id) ?? []).reduce((sum, stream) => sum + stream.unread_count, 0),
+        streams: streamsByFolderId.get(folder.id) ?? [],
+      })),
+    {
+      id: null,
+      name: "Unfiled",
+      is_unfiled: true,
+      unread_count: (streamsByFolderId.get(null) ?? []).reduce((sum, stream) => sum + stream.unread_count, 0),
+      streams: streamsByFolderId.get(null) ?? [],
+    },
+  ];
 
   const feeds = folders.flatMap((folderNode) => folderNode.feeds);
 
@@ -153,6 +190,7 @@ export function toNavigationHierarchy(tree: NavigationResponse): NavigationHiera
     systems,
     folders,
     streams,
+    monitoring_folders: monitoringFolders,
     feeds,
   };
 }
