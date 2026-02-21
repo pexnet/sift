@@ -414,7 +414,8 @@ Design goals:
 
 ## Next UI Slice (Prioritized)
 
-1. No active prioritized UI slice is currently queued.
+1. Active prioritized UI slice: workspace + settings management UI touchups v1 (spec:
+   `docs/specs/workspace-settings-management-ui-touchups-v1.md`).
 2. Most recently completed: feed health + edit surface v1 on 2026-02-19:
    - `/account/feed-health` route is implemented for lifecycle/freshness management
    - feed health APIs are implemented (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,

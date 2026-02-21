@@ -1,5 +1,34 @@
 # Session Notes
 
+## 2026-02-21 (UI Touchups Planning Spec Captured)
+
+### Implemented This Session
+
+- Added a new implementation-ready UI planning spec:
+  - `docs/specs/workspace-settings-management-ui-touchups-v1.md`
+  - scope includes:
+    - icon/chevron navigation touchups
+    - monitoring feed folders
+    - settings side-menu shell
+    - condensed monitoring management rows
+    - condensed feed-health rows
+    - add-feed flow and all-feeds default loading in feed health
+- Updated active backlog tracking:
+  - `docs/backlog.md` `Next UI Slice` now points to the new touchups spec
+  - `docs/backlog.md` linked specifications now include the new spec
+- Updated planning alignment docs:
+  - `AGENTS.md` `Next UI Slice (Prioritized)` now points to the new touchups spec
+  - `docs/architecture.md` `Next UI Slice (Prioritized)` now points to the new touchups spec
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency checks:
+  - `Get-ChildItem docs/specs`
+  - `rg -n "workspace-settings-management-ui-touchups-v1|Next UI Slice|Linked Specifications" docs/backlog.md AGENTS.md docs/architecture.md docs/session-notes.md docs/specs`
+
 ## 2026-02-19 (Observability Planning Spec Captured)
 
 ### Implemented This Session

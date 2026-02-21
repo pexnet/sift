@@ -188,7 +188,8 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next UI Slice (Prioritized)
 
-1. No active prioritized UI slice is currently queued.
+1. Active prioritized UI slice: workspace + settings management UI touchups v1 (spec:
+   `docs/specs/workspace-settings-management-ui-touchups-v1.md`).
 2. Most recently completed: feed health + edit surface v1 (2026-02-19; spec archived at
    `docs/specs/done/feed-health-edit-surface-v1.md`).
 

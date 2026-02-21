@@ -19,7 +19,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Next UI Slice
 
-- No active prioritized UI slice is currently queued.
+- Active prioritized UI slice: workspace + settings management UI touchups v1 (spec:
+  [docs/specs/workspace-settings-management-ui-touchups-v1.md](specs/workspace-settings-management-ui-touchups-v1.md)).
 - Most recently completed: feed health + edit surface v1 (completed on 2026-02-19; archived in
   `docs/backlog-history.md`; spec archived in `docs/specs/done/feed-health-edit-surface-v1.md`).
 
@@ -38,6 +39,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)
 - Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
 - Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
+- Workspace + settings management UI touchups v1:
+  [docs/specs/workspace-settings-management-ui-touchups-v1.md](specs/workspace-settings-management-ui-touchups-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
   use saved/starred article seeds in v1.
 - Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
