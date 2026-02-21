@@ -636,8 +636,12 @@ export function MonitoringFeedsPage() {
             </Box>
           </Paper>
 
-        <Paper variant="outlined" sx={{ flex: "1 1 auto", p: 1.2 }}>
-          <Stack spacing={0.4}>
+        <Typography variant="caption" className="table-scroll-hint">
+          Tip: scroll horizontally to see query, active, and action columns.
+        </Typography>
+
+        <Paper variant="outlined" sx={{ flex: "1 1 auto", p: 1.2 }} className="monitoring-table">
+          <Stack spacing={0.4} className="monitoring-table__rows">
             <Stack
               direction="row"
               sx={{ px: 1, py: 0.7, borderBottom: "1px solid", borderColor: "divider" }}
@@ -703,9 +707,18 @@ export function MonitoringFeedsPage() {
                     backgroundColor: isEditingRow ? "action.selected" : "transparent",
                     cursor: "pointer",
                   }}
+                  className="monitoring-table__row"
                 >
-                  <Box sx={{ flex: 2.2, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                  <Box sx={{ flex: 2.2, minWidth: 0 }} className="monitoring-table__name-cell">
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                        lineHeight: 1.25,
+                      }}
+                    >
                       {stream.name}
                     </Typography>
                   </Box>

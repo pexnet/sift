@@ -266,4 +266,38 @@ describe("ArticlesPane", () => {
     fireEvent.click(markAllButton);
     expect(onMarkScopeRead).toHaveBeenCalledTimes(1);
   });
+
+  it("shows back-to-nav action when mobile nav callback is provided", () => {
+    const onBackToNav = vi.fn();
+    render(
+      <ArticlesPane
+        density="compact"
+        search={{
+          scope_type: "system",
+          scope_id: "",
+          state: "all",
+          sort: "newest",
+          q: "",
+          article_id: "",
+        }}
+        scopeLabel="All articles"
+        streamNameById={{}}
+        articleItems={[]}
+        articleTotal={0}
+        selectedArticleId=""
+        isLoading={false}
+        isError={false}
+        searchInputRef={{ current: null }}
+        isMarkAllReadPending={false}
+        onSearchChange={vi.fn()}
+        onStateChange={vi.fn()}
+        onArticleSelect={vi.fn()}
+        onBackToNav={onBackToNav}
+        onMarkScopeRead={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Back to nav/i }));
+    expect(onBackToNav).toHaveBeenCalledTimes(1);
+  });
 });

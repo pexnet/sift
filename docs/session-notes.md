@@ -1,5 +1,69 @@
 # Session Notes
 
+## 2026-02-21 (Viewport Balance Polish Pass)
+
+### Implemented This Session
+
+- Applied a visual-balance-only responsive polish pass in `frontend/src/app/styles.css` for target viewports:
+  - `1920x1080` / `1366x768`:
+    - tightened list/reader spacing and row rhythm
+    - normalized panel shell spacing for settings routes
+  - `768x1024`:
+    - tuned rail sizing and typography
+    - made tablet workspace composition read as two-pane (`list + reader`) while nav remains drawer-based
+  - `390x844` / `320x480`:
+    - compacted top rail into icon-first mobile strip
+    - improved list header/control stacking and sticky offsets
+    - enabled two-line mobile article titles and tighter reader typography/padding
+  - feed health and monitoring tables:
+    - added controlled horizontal overflow behavior with stable minimum row-content width
+    - preserved one-row operational density without destructive text clipping
+
+### Verification
+
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
+## 2026-02-21 (Workspace/UI Alignment + Responsive Single-Route Pass)
+
+### Implemented This Session
+
+- Delivered phased UI touch-up implementation for workspace and settings surfaces:
+  - tokenized alignment pass in `frontend/src/app/styles.css`:
+    - normalized layout tokens (`--rail-width`, `--nav-width`, `--list-width`, splitter/control/rhythm tokens)
+    - unified control sizing/radius and baseline line-height rhythm
+    - added table row/name-cell style hooks for condensed feed-health/monitoring rows
+  - workspace responsive mode contract in `frontend/src/features/workspace/routes/WorkspacePage.tsx`:
+    - explicit breakpoint-driven layout modes (`desktop`, `tablet`, `mobile`)
+    - desktop: 3-pane with splitters and resizable panes
+    - tablet: 2-pane with collapsible nav drawer
+    - mobile: single active pane flow with nav drawer + list/reader transitions
+    - mobile default is now list when `article_id` is unset
+  - mobile navigation affordances:
+    - `Back to nav` action in list header (`ArticlesPane`)
+    - `Back to nav` + `Back to list` actions in reader (`ReaderPane`)
+  - settings shell alignment:
+    - settings/workspace nav breakpoint parity moved to `1200px` in `SettingsWorkspaceShell`
+  - long-name handling:
+    - monitoring feed name cells now wrap (no forced `noWrap`)
+    - feed-health and monitoring rows now use condensed row class hooks for consistency
+- Added/updated test coverage:
+  - new route-level responsive behavior tests:
+    - `frontend/src/features/workspace/routes/WorkspacePage.test.tsx`
+  - component interaction tests:
+    - `frontend/src/features/workspace/components/ArticlesPane.test.tsx` (mobile back-to-nav)
+    - `frontend/src/features/workspace/components/ReaderPane.test.tsx` (back-to-nav)
+  - monitoring table wrapping regression:
+    - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
+### Verification
+
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
 ## 2026-02-21 (Workspace + Settings Management UI Touchups v1 Delivered)
 
 ### Implemented This Session

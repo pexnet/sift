@@ -26,19 +26,20 @@ export function SettingsLayout({
   void _activeSection;
 
   return (
-    <Stack sx={{ maxWidth, mx: "auto", width: "100%" }}>
+    <Stack sx={{ maxWidth, mx: "auto", width: "100%" }} className="settings-page-shell">
       <Paper
         component="section"
-        className="panel settings-panel"
+        className="panel settings-panel settings-page-panel"
         sx={{ flex: "1 1 auto", maxWidth: "unset" }}
         aria-labelledby={resolvedHeadingId}
       >
-        <Stack spacing={2.2}>
+        <Stack spacing={2.2} className="settings-page-content">
           <Stack
             direction={{ xs: "column", sm: "row" }}
             justifyContent="space-between"
             alignItems={{ xs: "stretch", sm: "center" }}
             spacing={1}
+            className="settings-page-header"
           >
             <Box>
               <Typography id={resolvedHeadingId} variant="h4" component="h1">

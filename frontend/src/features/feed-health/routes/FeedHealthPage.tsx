@@ -309,8 +309,12 @@ export function FeedHealthPage() {
         <Alert severity="info">No feeds matched the selected filters.</Alert>
       ) : null}
 
-      <Paper variant="outlined" sx={{ p: 1.1 }}>
-        <Stack spacing={0.45}>
+      <Typography variant="caption" className="table-scroll-hint">
+        Tip: scroll horizontally to view interval and action columns.
+      </Typography>
+
+      <Paper variant="outlined" sx={{ p: 1.1 }} className="feed-health-table">
+        <Stack spacing={0.45} className="feed-health-table__rows">
           <Stack
             direction="row"
             alignItems="center"
@@ -344,8 +348,15 @@ export function FeedHealthPage() {
           </Stack>
 
           {(items ?? []).map((item) => (
-            <Stack key={item.feed_id} direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 0.6 }}>
-              <Box sx={{ flex: 2, minWidth: 0 }}>
+            <Stack
+              key={item.feed_id}
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ px: 1, py: 0.6 }}
+              className="feed-health-table__row"
+            >
+              <Box sx={{ flex: 2, minWidth: 0 }} className="feed-health-table__name-cell">
                 <Button
                   size="small"
                   variant="text"

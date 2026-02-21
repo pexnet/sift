@@ -213,6 +213,7 @@ __marimo__/
 dev-data/local-seed.opml
 .pnpm-store/
 pnpm-debug.log*
+frontend/artifacts/
 
 # Local VS Code developer overrides (personal machine only)
 .vscode/extensions.local.json

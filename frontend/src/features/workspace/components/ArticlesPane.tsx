@@ -1,5 +1,5 @@
 import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
-import { Alert, IconButton, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import { Alert, Button, IconButton, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import type { RefObject } from "react";
 
 import { formatRelativeTime } from "../lib/time";
@@ -21,6 +21,7 @@ type ArticlesPaneProps = {
   onSearchChange: (value: string) => void;
   onStateChange: (state: WorkspaceSearch["state"]) => void;
   onArticleSelect: (articleId: string) => void;
+  onBackToNav?: () => void;
   onMarkScopeRead: () => void;
 };
 
@@ -38,6 +39,7 @@ export function ArticlesPane({
   onSearchChange,
   onStateChange,
   onArticleSelect,
+  onBackToNav,
   onMarkScopeRead,
 }: ArticlesPaneProps) {
   const formatMatchedStreams = (streamIds: string[]): string | null => {
@@ -80,9 +82,21 @@ export function ArticlesPane({
   return (
     <Paper className="workspace-list" component="section" elevation={0}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }} className="workspace-list__header">
-        <Typography variant="h4" className="workspace-list__title">
-          {scopeLabel}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+          {onBackToNav ? (
+            <Button
+              size="small"
+              variant="text"
+              className="workspace-mobile-nav-button"
+              onClick={onBackToNav}
+            >
+              Back to nav
+            </Button>
+          ) : null}
+          <Typography variant="h4" className="workspace-list__title">
+            {scopeLabel}
+          </Typography>
+        </Stack>
         <Stack direction="row" spacing={1}>
           <TextField
             size="small"
@@ -90,7 +104,7 @@ export function ArticlesPane({
             label="State"
             value={search.state}
             onChange={(event) => onStateChange(event.target.value as WorkspaceSearch["state"])}
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: { xs: 120, sm: 160 } }}
           >
             <MenuItem value="all">All</MenuItem>
             <MenuItem value="unread">Unread</MenuItem>
@@ -118,7 +132,6 @@ export function ArticlesPane({
               aria-label={markScopeReadAriaLabel}
               onClick={onMarkScopeRead}
               disabled={isLoading || isMarkAllReadPending || articleTotal === 0}
-              sx={{ width: 40, height: 40 }}
             >
               <DoneAllRoundedIcon fontSize="small" />
             </IconButton>

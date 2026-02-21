@@ -1,13 +1,13 @@
 import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
-import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import SpaceDashboardRoundedIcon from "@mui/icons-material/SpaceDashboardRounded";
 import { useNavigate } from "@tanstack/react-router";
-import { Box, Drawer, IconButton, Tooltip, useMediaQuery } from "@mui/material";
+import { Box, Drawer, useMediaQuery } from "@mui/material";
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { findArticleById, getSelectedArticleId } from "../../../entities/article/model";
@@ -47,6 +47,9 @@ type WorkspacePageProps = {
   setSearch: (patch: Partial<WorkspaceSearch>) => void;
 };
 
+type WorkspaceLayoutMode = "desktop" | "tablet" | "mobile";
+type MobilePaneState = "nav" | "list" | "reader";
+
 export function WorkspacePage({
   search,
   density,
@@ -58,15 +61,17 @@ export function WorkspacePage({
   const navigate = useNavigate({ from: "/app" });
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const isTabletOrMobile = useMediaQuery("(max-width: 980px)");
   const isMobile = useMediaQuery("(max-width: 760px)");
+  const isTablet = useMediaQuery("(max-width: 1200px)");
+  const layoutMode: WorkspaceLayoutMode = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
+  const usesDrawerNav = layoutMode !== "desktop";
   const {
     layout,
     navSplitterProps,
     listSplitterProps,
     isNavDragging,
     isListDragging,
-  } = usePaneResizing({ enabled: !isTabletOrMobile });
+  } = usePaneResizing({ enabled: layoutMode === "desktop" });
 
   const navigationQuery = useNavigationQuery();
   const foldersQuery = useFoldersQuery();
@@ -93,7 +98,9 @@ export function WorkspacePage({
   const articlesQuery = useArticlesQuery(search);
   const articles = articlesQuery.data?.items ?? [];
 
-  const selectedArticleId = getSelectedArticleId(articles, search.article_id);
+  const inferredSelectedArticleId = getSelectedArticleId(articles, search.article_id);
+  const selectedArticleId =
+    layoutMode === "mobile" && !search.article_id ? "" : inferredSelectedArticleId;
   const selectedArticle = findArticleById(articles, selectedArticleId);
 
   const articleDetailQuery = useArticleDetailQuery(selectedArticleId);
@@ -174,11 +181,19 @@ export function WorkspacePage({
 
   const systemAllCount = hierarchy?.systems.find((system) => system.scope_id === "all")?.unread_count ?? 0;
   const systemSavedCount = hierarchy?.systems.find((system) => system.scope_id === "saved")?.unread_count ?? 0;
-  const navOpen = isTabletOrMobile && isNavOpen;
-  const showArticlesPane = !isMobile || !selectedArticleId;
-  const showReaderPane = !isMobile || Boolean(selectedArticleId);
-  const showListReaderSplitter = !isTabletOrMobile && showArticlesPane && showReaderPane;
-  const desktopShellStyle = !isTabletOrMobile
+  const navOpen = usesDrawerNav && isNavOpen;
+  const showArticlesPane = layoutMode !== "mobile" || !selectedArticleId;
+  const showReaderPane = layoutMode !== "mobile" || Boolean(selectedArticleId);
+  const showListReaderSplitter = layoutMode === "desktop" && showArticlesPane && showReaderPane;
+  const mobilePaneState: MobilePaneState = navOpen ? "nav" : selectedArticleId ? "reader" : "list";
+  const shellClassName = [
+    `workspace-shell react-density-${density}`,
+    `workspace-shell--${layoutMode}`,
+    layoutMode === "mobile" ? `workspace-shell--mobile-pane-${mobilePaneState}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const desktopShellStyle = layoutMode === "desktop"
     ? ({
         "--workspace-nav-width": `${layout.navWidth}px`,
         "--workspace-list-width": `${layout.listWidth}px`,
@@ -261,7 +276,7 @@ export function WorkspacePage({
   );
 
   return (
-    <Box className={`workspace-shell react-density-${density}`} style={desktopShellStyle}>
+    <Box className={shellClassName} style={desktopShellStyle} data-layout-mode={layoutMode}>
       <WorkspaceRail
         actions={[
           {
@@ -272,14 +287,14 @@ export function WorkspacePage({
           },
           {
             id: "feeds",
-            label: isTabletOrMobile ? "Nav" : "Feeds",
+            label: usesDrawerNav ? "Nav" : "Feeds",
             icon: <RssFeedRoundedIcon fontSize="small" />,
             badge: systemAllCount,
-            active: isTabletOrMobile
+            active: usesDrawerNav
               ? navOpen
               : search.scope_type !== "system" || search.state === "all",
             onClick: () => {
-              if (isTabletOrMobile) {
+              if (usesDrawerNav) {
                 setIsNavOpen((previous) => !previous);
                 return;
               }
@@ -301,6 +316,18 @@ export function WorkspacePage({
             onClick: () => searchInputRef.current?.focus(),
           },
           {
+            id: "settings",
+            label: "Settings",
+            icon: <SettingsRoundedIcon fontSize="small" />,
+            onClick: () => void navigate({ to: "/account" }),
+          },
+          {
+            id: "theme",
+            label: themeMode === "dark" ? "Light mode" : "Dark mode",
+            icon: themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />,
+            onClick: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+          },
+          {
             id: "help",
             label: "Help",
             icon: <HelpOutlineRoundedIcon fontSize="small" />,
@@ -309,7 +336,7 @@ export function WorkspacePage({
         ]}
       />
 
-      {isTabletOrMobile ? (
+      {usesDrawerNav ? (
         <Drawer open={navOpen} onClose={() => setIsNavOpen(false)} PaperProps={{ className: "workspace-nav-drawer" }}>
           {navigationPane}
         </Drawer>
@@ -323,27 +350,7 @@ export function WorkspacePage({
         </>
       )}
 
-      <Box className={!isTabletOrMobile ? "workspace-content workspace-content--resizable" : "workspace-content"}>
-        <Box className="workspace-topbar">
-          <Tooltip title={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-            <IconButton
-              size="small"
-              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-            >
-              {themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Settings">
-            <IconButton
-              size="small"
-              aria-label="Open settings"
-              onClick={() => void navigate({ to: "/account" })}
-            >
-              <SettingsRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
+      <Box className={layoutMode === "desktop" ? "workspace-content workspace-content--resizable" : "workspace-content"}>
         {showArticlesPane ? (
           <ArticlesPane
             density={density}
@@ -360,6 +367,11 @@ export function WorkspacePage({
             onSearchChange={(value) => setSearch({ q: value, article_id: "" })}
             onStateChange={(value) => setSearch({ state: value, article_id: "" })}
             onArticleSelect={(articleId) => setSearch({ article_id: articleId })}
+            {...(layoutMode === "mobile"
+              ? {
+                  onBackToNav: () => setIsNavOpen(true),
+                }
+              : {})}
             onMarkScopeRead={() => {
               if (
                 !window.confirm(
@@ -405,9 +417,10 @@ export function WorkspacePage({
               }
             }}
             onMoveSelection={moveSelection}
-            {...(isMobile
+            {...(layoutMode === "mobile"
               ? {
                   onBackToList: () => setSearch({ article_id: "" }),
+                  onBackToNav: () => setIsNavOpen(true),
                 }
               : {})}
           />

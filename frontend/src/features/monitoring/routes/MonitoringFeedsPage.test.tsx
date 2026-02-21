@@ -107,6 +107,20 @@ describe("MonitoringFeedsPage", () => {
     expect(screen.getByRole("button", { name: /Select monitoring feed Threat watch/i })).toBeVisible();
   });
 
+  it("allows long monitoring feed names to wrap instead of forcing ellipsis", () => {
+    const longName = "Blog by Morten Knudsen about Microsoft Security, Azure, M365 and Automation";
+    useStreamsQueryMock.mockReturnValue({
+      data: [makeStream({ name: longName })],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamsQuery>);
+
+    renderPage();
+
+    const nameNode = screen.getByText(longName);
+    expect(nameNode.className).not.toContain("MuiTypography-noWrap");
+  });
+
   it("creates a monitoring feed from form input", async () => {
     useStreamsQueryMock.mockReturnValue({
       data: [],

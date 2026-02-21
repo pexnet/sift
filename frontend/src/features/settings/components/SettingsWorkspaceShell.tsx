@@ -5,7 +5,7 @@ import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Box, Drawer, IconButton, Tooltip, useMediaQuery } from "@mui/material";
+import { Box, Drawer, useMediaQuery } from "@mui/material";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { loadPersistedWorkspaceSearch } from "../../../entities/article/model";
@@ -41,7 +41,7 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
   const navigate = useNavigate();
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const isTabletOrMobile = useMediaQuery("(max-width: 980px)");
+  const isTabletOrMobile = useMediaQuery("(max-width: 1200px)");
   const {
     layout,
     navSplitterProps,
@@ -135,6 +135,12 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
             active: isHelpRoute,
             onClick: () => void navigate({ to: "/help" }),
           },
+          {
+            id: "theme",
+            label: themeMode === "dark" ? "Light mode" : "Dark mode",
+            icon: themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />,
+            onClick: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+          },
         ]}
       />
 
@@ -153,26 +159,6 @@ export function SettingsWorkspaceShell({ children }: SettingsWorkspaceShellProps
       )}
 
       <Box className="workspace-content">
-        <Box className="workspace-topbar">
-          <Tooltip title={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-            <IconButton
-              size="small"
-              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-            >
-              {themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Open workspace">
-            <IconButton
-              size="small"
-              aria-label="Open workspace"
-              onClick={() => openWorkspace({})}
-            >
-              <RssFeedRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
         <Box className="settings-workspace-main">{children}</Box>
       </Box>
     </Box>

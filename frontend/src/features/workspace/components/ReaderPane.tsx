@@ -29,6 +29,7 @@ type ReaderPaneProps = {
   onOpenOriginal: () => void;
   onMoveSelection: (delta: number) => void;
   onBackToList?: () => void;
+  onBackToNav?: () => void;
 };
 
 type EvidenceRecord = Record<string, unknown>;
@@ -633,6 +634,7 @@ export function ReaderPane({
   onOpenOriginal,
   onMoveSelection,
   onBackToList,
+  onBackToNav,
 }: ReaderPaneProps) {
   const streamIds = detail?.stream_ids ?? selectedArticle?.stream_ids ?? [];
   const matchedStreamNames = streamIds
@@ -738,12 +740,19 @@ export function ReaderPane({
       {detail ? (
         <Stack spacing={2}>
           <Box className="workspace-reader__top">
-            {onBackToList ? (
-              <Box>
-                <Button size="small" variant="text" onClick={onBackToList}>
-                  Back to list
-                </Button>
-              </Box>
+            {onBackToList || onBackToNav ? (
+              <Stack direction="row" spacing={1} className="workspace-reader__mobile-nav">
+                {onBackToNav ? (
+                  <Button size="small" variant="text" onClick={onBackToNav}>
+                    Back to nav
+                  </Button>
+                ) : null}
+                {onBackToList ? (
+                  <Button size="small" variant="text" onClick={onBackToList}>
+                    Back to list
+                  </Button>
+                ) : null}
+              </Stack>
             ) : null}
 
             <Box>
@@ -784,7 +793,6 @@ export function ReaderPane({
                     aria-label={toggleReadLabel}
                     disabled={isMutating}
                     onClick={onToggleRead}
-                    sx={{ width: 40, height: 40 }}
                   >
                     {selectedArticle?.is_read ? (
                       <MarkEmailUnreadRoundedIcon fontSize="small" />
@@ -801,7 +809,6 @@ export function ReaderPane({
                     aria-label={toggleSavedLabel}
                     disabled={isMutating}
                     onClick={onToggleSaved}
-                    sx={{ width: 40, height: 40 }}
                   >
                     {selectedArticle?.is_starred ? (
                       <BookmarkRoundedIcon fontSize="small" />
@@ -818,7 +825,6 @@ export function ReaderPane({
                     aria-label="Open original source (o)"
                     onClick={onOpenOriginal}
                     disabled={!openOriginalAvailable}
-                    sx={{ width: 40, height: 40 }}
                   >
                     <OpenInNewRoundedIcon fontSize="small" />
                   </IconButton>
@@ -830,7 +836,6 @@ export function ReaderPane({
                     size="small"
                     aria-label={previousArticleLabel}
                     onClick={() => onMoveSelection(-1)}
-                    sx={{ width: 40, height: 40 }}
                   >
                     <NavigateBeforeRoundedIcon fontSize="small" />
                   </IconButton>
@@ -842,7 +847,6 @@ export function ReaderPane({
                     size="small"
                     aria-label={nextArticleLabel}
                     onClick={() => onMoveSelection(1)}
-                    sx={{ width: 40, height: 40 }}
                   >
                     <NavigateNextRoundedIcon fontSize="small" />
                   </IconButton>
@@ -852,11 +856,10 @@ export function ReaderPane({
                 <Tooltip title={toggleHighlightsLabel}>
                   <span>
                     <IconButton
-                      size="small"
-                      aria-label={toggleHighlightsLabel}
-                      onClick={() => setShowHighlights((current) => !current)}
-                      sx={{ width: 40, height: 40 }}
-                    >
+                    size="small"
+                    aria-label={toggleHighlightsLabel}
+                    onClick={() => setShowHighlights((current) => !current)}
+                  >
                       {showHighlights ? (
                         <VisibilityOffRoundedIcon fontSize="small" />
                       ) : (
