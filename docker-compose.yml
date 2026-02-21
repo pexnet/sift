@@ -37,7 +37,7 @@ services:
 
   worker:
     build: .
-    command: uv run sift-worker
+    command: /bin/sh -c "uv run --extra dev alembic upgrade head && uv run sift-worker"
     volumes:
       - .:/app
     env_file:
@@ -45,12 +45,13 @@ services:
     environment:
       SIFT_DATABASE_URL: postgresql+asyncpg://sift:sift@db:5432/sift
     depends_on:
+      - app
       - db
       - redis
 
   scheduler:
     build: .
-    command: uv run sift-scheduler
+    command: /bin/sh -c "uv run --extra dev alembic upgrade head && uv run sift-scheduler"
     volumes:
       - .:/app
     env_file:
@@ -58,6 +59,7 @@ services:
     environment:
       SIFT_DATABASE_URL: postgresql+asyncpg://sift:sift@db:5432/sift
     depends_on:
+      - app
       - db
       - redis
 
