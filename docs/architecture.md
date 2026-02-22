@@ -260,13 +260,14 @@ For day-to-day development, use the Dev Container stack in `.devcontainer/`:
 - `src/sift/services`: application services and use-case orchestration
 - `src/sift/domain`: domain schemas and shared contracts
 - `src/sift/db`: SQLAlchemy models and session management
-- `src/sift/plugins`: plugin protocol, loader, built-ins
+- `src/sift/plugins`: plugin protocol, registry loader/validation, runtime manager, built-ins
 - `src/sift/tasks`: worker and scheduler entrypoints
 - `frontend`: Vite + React + TypeScript source code and frontend tests
 
 ## Plugin Contract
 
-Plugins are loaded by dotted path and may implement one or more hooks:
+Plugins are now activated through centralized registry configuration (`config/plugins.yaml`) and may implement one or
+more hooks:
 
 - `on_article_ingested(article)` for ingest-time enrichment/transformation.
 - `classify_stream(article, stream)` for stream relevance decisions with confidence.
@@ -390,6 +391,11 @@ Design goals:
    - navigation stream payload now includes `folder_id` so monitoring streams can be grouped by folders in UI
    - `GET /api/v1/feeds/health` now supports `all=true` for full filtered list retrieval
    - `POST /api/v1/feeds` now supports optional `folder_id` for one-step feed create + folder assignment
+19. Plugin registry/runtime cutover baseline:
+   - plugin activation/config now loads from `config/plugins.yaml` (`SIFT_PLUGIN_REGISTRY_PATH`)
+   - runtime registry validation enforces plugin id uniqueness and allowed capability declarations
+   - legacy `plugin_paths` runtime behavior is removed from the active plugin manager initialization path
+   - plugin manager now dispatches capability-gated ingest/classifier hooks using registry plugin ids
 
 ## Frontend Delivery Standard
 
@@ -413,25 +419,34 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features (spec:
-   `docs/specs/scheduler-ingestion-observability-v1.md`).
-3. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
+1. Complete remaining plugin platform foundation v1 scope after registry/runtime cutover baseline:
+   - centralized registry-driven activation/configuration and direct cutover are now implemented
+   - finish broader capability-oriented contract coverage across backend/frontend extension points
+   - spec: `docs/specs/plugin-platform-foundation-v1.md`
+2. Harden plugin runtime execution and add plugin diagnostics/telemetry baseline.
+   - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
+3. Add frontend plugin host surfaces (workspace plugin areas + dashboard extension host).
+   - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
+4. Implement `/app/dashboard` shell with plugin-ready card contracts.
+   - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`
+5. Resume stream ranking and scheduler/ingestion observability after plugin foundation stabilizes.
 
 ## Next UI Slice (Prioritized)
 
-1. Desktop reader/workspace polish v2 (active):
-   - focus on desktop readability/alignment at `1920x1080` and `1366x768`
-   - tighten article list + reader typography rhythm and spacing consistency
-   - reduce monitoring/feed-health density friction while preserving operational scanability
-   - close with screenshot-based QA delta report
-2. Most recently completed: workspace + settings management UI touchups v1 on 2026-02-21:
+1. No additional UI-only polish slice is active; core platform priorities are now primary.
+2. Most recently completed: desktop reader/workspace polish v2 on 2026-02-22:
+   - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+   - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
+     `/account/monitoring`, and `/help`
+   - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
+     `npm --prefix frontend run test`, `npm --prefix frontend run build`
+3. Previously completed: workspace + settings management UI touchups v1 on 2026-02-21:
    - workspace navigation now uses icon-first folder creation and chevron-first section/folder controls
    - monitoring streams now support folder assignment and are grouped by folder in navigation
    - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
    - monitoring feed management list is now condensed to one-row-per-stream with iconized actions
    - feed health is now condensed to one-row-per-feed with iconized actions and add-feed dialog
-3. Previously completed: feed health + edit surface v1 on 2026-02-19:
+4. Previously completed: feed health + edit surface v1 on 2026-02-19:
    - `/account/feed-health` route is implemented for lifecycle/freshness management
    - feed health APIs are implemented (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
      `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
@@ -595,6 +610,7 @@ Architecture implications:
 - Extend existing `dashboard_card` plugin slot with source-priority context.
 - Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
 - Dashboard dependency spec gate before implementation:
+  - [docs/specs/dashboard-shell-plugin-host-v1.md](specs/dashboard-shell-plugin-host-v1.md)
   - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
@@ -682,14 +698,13 @@ Architecture implications:
 ### Deferred Delivery Sequence (Post Current Core Priorities)
 
 1. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
-2. Dashboard v1 command center (only after dashboard dependency spec gate checklist is complete).
+2. Dashboard v1 command center card/data rollout (only after dashboard dependency spec gate checklist is complete).
 3. Discover feeds v1 (discovery streams + recommendation decisions).
 4. Duplicate candidate review screen.
 5. Trends detection for selected feed folders (dashboard-oriented).
 6. Advanced search query acceleration (PostgreSQL-oriented).
-7. Plugin UI areas + centralized plugin configuration.
-8. Vector-database integration infrastructure (plugin-boundary embeddings support).
-9. Plugin implementations (LLM summary, vector similarity).
-10. Silent feeds for monitoring-only population.
-11. OIDC provider integration (Google, then Azure/Apple).
-12. Full article fetch on-demand (reader-triggered).
+7. Vector-database integration infrastructure (plugin-boundary embeddings support).
+8. Plugin implementations (LLM summary, vector similarity).
+9. Silent feeds for monitoring-only population.
+10. OIDC provider integration (Google, then Azure/Apple).
+11. Full article fetch on-demand (reader-triggered).

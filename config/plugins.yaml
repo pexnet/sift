@@ -1,0 +1,16 @@
+version: 1
+plugins:
+  - id: noop
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - ingest_hook
+    settings: {}
+  - id: keyword_heuristic_classifier
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.keyword_heuristic_classifier:KeywordHeuristicClassifierPlugin
+    capabilities:
+      - stream_classifier
+    settings: {}

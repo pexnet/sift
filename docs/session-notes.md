@@ -1,5 +1,113 @@
 # Session Notes
 
+## 2026-02-22 (Plugin Platform Foundation v1: Registry + Runtime Cutover Baseline)
+
+### Implemented This Session
+
+- Implemented centralized plugin registry loading/validation:
+  - added `src/sift/plugins/registry.py` with strict schema validation for:
+    - unique plugin ids
+    - known capability keys only
+    - strict field-set enforcement (`extra=forbid`)
+  - added default registry file `config/plugins.yaml` with first-party built-ins
+- Cut over runtime plugin initialization:
+  - `src/sift/core/runtime.py` now loads plugins from registry (`SIFT_PLUGIN_REGISTRY_PATH`)
+  - `src/sift/config.py` now uses `plugin_registry_path` and no longer relies on legacy `plugin_paths`
+  - `.env.example` now exposes `SIFT_PLUGIN_REGISTRY_PATH=config/plugins.yaml`
+- Updated plugin manager behavior to registry/capability model:
+  - `src/sift/plugins/manager.py` now loads `PluginRegistryEntry` records
+  - ingest and classifier dispatch are capability-gated by declared plugin capabilities
+- Added regression coverage:
+  - new `tests/test_plugin_registry.py` for validation, capability gating, and runtime registry-path loading
+
+### Verification
+
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `python -m pytest tests/test_plugin_registry.py tests/test_stream_service.py tests/test_ingestion_service.py`
+
+### Notes / Remaining Scope
+
+- `uv run ...` could not be used in this local environment due a `.venv\\lib64` access error; direct `python -m ...`
+  commands were used for verification.
+- Remaining plugin-platform scope stays active:
+  - runtime hardening/diagnostics (`docs/specs/plugin-runtime-hardening-diagnostics-v1.md`)
+  - frontend plugin host/workspace areas (`docs/specs/frontend-plugin-host-workspace-areas-v1.md`)
+  - dashboard shell host (`docs/specs/dashboard-shell-plugin-host-v1.md`)
+
+## 2026-02-22 (Plugin-First Planning Session: Spec Set Authored)
+
+### Implemented This Session
+
+- Authored new active planning specs for the plugin-first priority stack:
+  - `docs/specs/plugin-platform-foundation-v1.md`
+  - `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
+  - `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
+  - `docs/specs/dashboard-shell-plugin-host-v1.md`
+- Updated dashboard planning dependency wiring:
+  - `docs/specs/dashboard-command-center-v1.md` now references dashboard shell host as an explicit foundation
+    dependency/spec gate item
+- Updated source-of-truth planning docs to reference new specs and sequencing:
+  - `docs/backlog.md` core priorities now include direct spec links for each plugin-first step
+  - `AGENTS.md` `Next Delivery Sequence` now includes direct spec links
+  - `docs/architecture.md` `Planned Next Moves` now includes direct spec links
+  - dashboard spec-gate checklists in backlog/architecture/AGENTS now include
+    `docs/specs/dashboard-shell-plugin-host-v1.md`
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- Consistency checks:
+  - `rg -n "plugin-platform-foundation-v1|plugin-runtime-hardening-diagnostics-v1|frontend-plugin-host-workspace-areas-v1|dashboard-shell-plugin-host-v1|dashboard-shell-plugin-host" docs/backlog.md AGENTS.md docs/architecture.md docs/specs docs/session-notes.md`
+
+## 2026-02-22 (Planning Reprioritization: Plugin Architecture First)
+
+### Implemented This Session
+
+- Reprioritized active planning from feature-first sequencing to plugin-platform-first sequencing:
+  - `docs/backlog.md` `Core Platform Priorities` now starts with plugin registry/runtime/frontend-host/dashboard-host
+    foundation work
+  - `AGENTS.md` `Next Delivery Sequence` now mirrors the same plugin-first order
+  - `docs/architecture.md` `Planned Next Moves` now mirrors the same plugin-first order
+- Removed deferred duplicate plugin-foundation item after promotion to active priorities:
+  - removed deferred `Plugin UI Areas + Centralized Plugin Configuration` item from `docs/backlog.md`
+  - updated deferred sequence ordering in `docs/backlog.md` and `docs/architecture.md`
+- Locked planning decision for plugin configuration migration:
+  - direct cutover to centralized plugin registry
+  - no legacy `plugin_paths` compatibility mode
+  - updated `docs/specs/plugin-configuration-registry-v1.md` rollout notes accordingly
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- Consistency checks:
+  - `rg -n "Core Platform Priorities|Next Delivery Sequence|Planned Next Moves|plugin_paths|Deferred Delivery Sequence" docs/backlog.md AGENTS.md docs/architecture.md docs/specs/plugin-configuration-registry-v1.md`
+
+## 2026-02-22 (Desktop Reader/Workspace Polish v2 Closure Verification)
+
+### Implemented This Session
+
+- Verified closure criteria for `Desktop reader/workspace polish v2` and aligned planning docs:
+  - updated `docs/backlog.md` to remove active UI-only polish scope and mark the slice closed
+  - updated `AGENTS.md` and `docs/architecture.md` to reflect the same closed status and evidence
+- Verified screenshot gate evidence from:
+  - `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+  - capture set includes `1920x1080` and `1366x768` screenshots for `/app`, `/account`, `/account/feed-health`,
+    `/account/monitoring`, and `/help`
+
+### Verification
+
+- frontend quality gates (rerun at close):
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run test`
+  - `npm --prefix frontend run build`
+- screenshot dimensions check:
+  - verified PNG dimensions in `artifacts/desktop-review-2026-02-21T23-27-06-123Z` match target viewports
+    (`1920x1080`, `1366x768`)
+
 ## 2026-02-22 (Session Close Consolidation / Next-Session Handoff)
 
 ### Session Close State

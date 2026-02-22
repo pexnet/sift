@@ -181,6 +181,12 @@ This file stores persistent project context for future Codex sessions.
   - monitoring feed management list is condensed to one-row-per-stream with icon actions and edit-to-left-form behavior
   - feed health is condensed to one-row-per-feed with icon actions, `all=true` full-list loading, and add-feed dialog
   - feed create now accepts optional folder assignment at creation time (`folder_id`)
+- Plugin registry/runtime cutover baseline is implemented:
+  - plugin activation/config now loads from centralized registry (`config/plugins.yaml`) via
+    `SIFT_PLUGIN_REGISTRY_PATH`
+  - runtime validation enforces plugin id uniqueness and strict capability declarations
+  - active runtime path no longer uses legacy `plugin_paths`
+  - plugin manager dispatch is capability-gated for ingest and stream classifier hooks
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -190,19 +196,28 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features (spec:
-   `docs/specs/scheduler-ingestion-observability-v1.md`).
-3. Keep vector-database integration deferred until current core priorities are complete.
+1. Complete remaining plugin platform foundation v1 scope:
+   - registry source-of-truth and direct runtime cutover are already implemented
+   - finish broader capability contract coverage across backend/frontend extension points
+   - spec: `docs/specs/plugin-platform-foundation-v1.md`
+2. Harden plugin runtime and add plugin diagnostics/telemetry baseline.
+   - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
+3. Add frontend plugin host surfaces (workspace plugin areas + dashboard extension host).
+   - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
+4. Implement `/app/dashboard` shell on top of plugin-ready card contracts.
+   - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`
+5. Resume ranking/observability feature slices after plugin foundation is stable.
 
 ## Next UI Slice (Prioritized)
 
-1. Desktop reader/workspace polish v2:
-   - focus strictly on desktop readability/alignment (`1920x1080`, `1366x768`)
-   - tighten article-list and reader typography rhythm
-   - reduce monitoring/feed-health density friction while preserving scanability
-   - complete with screenshot-based QA delta report
+1. No additional UI-only polish slice is active; core platform priorities are now primary.
 2. Most recently completed:
+   - desktop reader/workspace polish v2 (closed on 2026-02-22):
+     - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+     - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
+       `/account/monitoring`, and `/help`
+     - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
+       `npm --prefix frontend run test`, `npm --prefix frontend run build`
    - workspace + settings management UI touchups v1 (2026-02-21; spec archived at
      `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
    - feed health + edit surface v1 (2026-02-19; spec archived at
@@ -214,8 +229,8 @@ This file stores persistent project context for future Codex sessions.
 2. Add reader-triggered full article fetch on demand (later priority).
 3. Add on-demand article LLM summary feature (later priority; spec:
    `docs/specs/article-llm-summary-on-demand-v1.md`).
-4. Add dashboard command center v1 (`/app/dashboard`) as deferred command-center planning/implementation with spec gate
-   dependencies:
+4. Complete dashboard command center v1 card/data rollout on top of `/app/dashboard` after spec-gate dependencies:
+   - `docs/specs/dashboard-shell-plugin-host-v1.md`
    - `docs/specs/dashboard-command-center-v1.md`
    - `docs/specs/stream-ranking-prioritization-controls-v1.md`
    - `docs/specs/feed-health-ops-panel-v1.md`

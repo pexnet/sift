@@ -163,6 +163,9 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - mobile rail actions are restricted to reading-focused actions (`Nav`, `Saved`, `Search`)
    - mobile feed/folder management controls are hidden in read-focused mode
    - desktop readability pass tightened article/list/reader typography rhythm and table scanability
+   - closure verification rerun completed on 2026-02-22:
+     - frontend quality gates pass (`lint`, `typecheck`, `test`, `build`)
+     - desktop screenshot gate evidence confirmed in `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
 
 ### Completed Session Index (Chronological)
 

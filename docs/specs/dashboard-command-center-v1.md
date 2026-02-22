@@ -5,6 +5,7 @@
 - State: Planned
 - Scope: Specification only (no implementation in this checkpoint)
 - Backlog reference: [docs/backlog.md](../backlog.md)
+- Foundation dependency: [docs/specs/dashboard-shell-plugin-host-v1.md](dashboard-shell-plugin-host-v1.md)
 
 ## Context
 
@@ -17,7 +18,8 @@ Users need a true command center that supports daily triage and prioritization d
 
 ## Goal
 
-Deliver a dashboard planning blueprint that is implementation-ready once dependency specs are drafted:
+Deliver a dashboard planning blueprint that is implementation-ready once dependency specs are drafted and the shell host
+slice is in place:
 
 1. dedicated route at `/app/dashboard`,
 2. left workspace chrome preserved (rail + navigation tree),
@@ -98,11 +100,12 @@ Dashboard shell must render unavailable cards deterministically and keep the res
 
 Dashboard implementation is blocked until these specs are drafted and linked:
 
-1. [docs/specs/stream-ranking-prioritization-controls-v1.md](stream-ranking-prioritization-controls-v1.md)
-2. [docs/specs/feed-health-ops-panel-v1.md](feed-health-ops-panel-v1.md)
-3. [docs/specs/monitoring-signal-scoring-v1.md](monitoring-signal-scoring-v1.md)
-4. [docs/specs/trends-detection-dashboard-v1.md](trends-detection-dashboard-v1.md)
-5. [docs/specs/feed-recommendations-v1.md](feed-recommendations-v1.md)
+1. [docs/specs/dashboard-shell-plugin-host-v1.md](dashboard-shell-plugin-host-v1.md)
+2. [docs/specs/stream-ranking-prioritization-controls-v1.md](stream-ranking-prioritization-controls-v1.md)
+3. [docs/specs/feed-health-ops-panel-v1.md](feed-health-ops-panel-v1.md)
+4. [docs/specs/monitoring-signal-scoring-v1.md](monitoring-signal-scoring-v1.md)
+5. [docs/specs/trends-detection-dashboard-v1.md](trends-detection-dashboard-v1.md)
+6. [docs/specs/feed-recommendations-v1.md](feed-recommendations-v1.md)
 
 ## Frontend Plan (for later implementation)
 

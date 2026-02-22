@@ -2,8 +2,8 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
+- State: In Progress
+- Scope: Backend file-driven registry baseline implemented; diagnostics/admin surface remains planned
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -26,9 +26,9 @@ Provide one source of truth for plugin configuration that includes:
 2. No per-user plugin toggle model (v1 is system-level/global).
 3. No runtime hot-reload guarantee for all plugins.
 
-## Proposed Configuration Shape
+## Implemented Baseline Configuration Shape
 
-Primary file (proposed path): `config/plugins.yaml` (or equivalent JSON/TOML if stack constraints require).
+Primary file: `config/plugins.yaml` (runtime override: `SIFT_PLUGIN_REGISTRY_PATH`).
 
 Top-level structure:
 
@@ -37,6 +37,7 @@ Top-level structure:
    - `id` (stable key)
    - `enabled` (boolean)
    - `backend.class_path` (plugin loader target)
+   - `capabilities` (validated capability list)
    - `ui.area` metadata (title/icon/order/route key)
    - `settings` (plugin-specific object)
 
@@ -59,16 +60,16 @@ Example logical entries:
    - auth/api parameters
    - UI area label `Bluesky`
 
-## Runtime Behavior (Planned)
+## Runtime Behavior
 
-1. App startup loads centralized plugin config.
-2. Only enabled plugins are instantiated/registered.
+1. [x] App startup loads centralized plugin config.
+2. [x] Only enabled plugins are instantiated/registered.
 3. Disabled plugins:
-   - backend hooks are skipped
-   - UI areas are hidden
-4. Validation errors should fail with actionable messages (plugin id + field path).
-5. Discovery provider wrappers enforce configured per-provider budgets/rate limits before external calls.
-6. Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
+   - [x] backend hooks are skipped
+   - [ ] UI areas are hidden (frontend host slice pending)
+4. [x] Validation errors fail with actionable messages (field-path details; plugin id included where applicable).
+5. [ ] Discovery provider wrappers enforce configured per-provider budgets/rate limits before external calls.
+6. [ ] Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
 
 ## API and Admin Surface (Future Direction)
 
@@ -87,27 +88,28 @@ Future phase:
 2. Config parser must enforce allowed fields and reject unknown critical keys in strict mode.
 3. Plugin ids must be unique and immutable once created.
 
-## Acceptance Criteria (for later implementation)
+## Acceptance Criteria
 
-1. Plugin registry is loaded from one configuration file.
-2. Enabling/disabling a plugin changes both backend activation and UI visibility.
-3. Discover feeds and Bluesky plugin entries can be toggled independently.
-4. Invalid registry entries produce clear startup/validation errors.
-5. Discovery plugin config can enforce free-tier-safe request budgets without code changes.
+1. [x] Plugin registry is loaded from one configuration file.
+2. [ ] Enabling/disabling a plugin changes both backend activation and UI visibility.
+3. [ ] Discover feeds and Bluesky plugin entries can be toggled independently.
+4. [x] Invalid registry entries produce clear startup/validation errors.
+5. [ ] Discovery plugin config can enforce free-tier-safe request budgets without code changes.
 
-## Test Plan (for later implementation)
+## Test Plan
 
-1. Config schema validation tests (valid/invalid files).
-2. Runtime tests for enabled vs disabled plugin registration.
-3. UI navigation tests confirming hidden/visible plugin areas based on toggles.
-4. Regression tests for existing plugin manager behavior.
-5. Discovery budget/rate-limit config tests (cap enforcement and partial-result warning behavior).
+1. [x] Config schema validation tests (valid/invalid files).
+2. [x] Runtime tests for enabled vs disabled plugin registration.
+3. [ ] UI navigation tests confirming hidden/visible plugin areas based on toggles.
+4. [x] Regression tests for existing plugin manager behavior.
+5. [ ] Discovery budget/rate-limit config tests (cap enforcement and partial-result warning behavior).
 
 ## Rollout Notes
 
-1. Start with compatibility mode: map existing `plugin_paths` settings into registry defaults.
-2. Introduce explicit deprecation window for legacy plugin path config.
-3. Migrate first-party plugins (noop/classifier/discovery/future Bluesky) to registry entries.
+1. [x] Direct cutover applied: centralized registry is now the only active plugin activation/config source.
+2. [x] Legacy `plugin_paths` activation/configuration support removed from active runtime path.
+3. [ ] Migrate all first-party plugins (built-ins completed for current scope: `noop`,
+   `keyword_heuristic_classifier`; discovery/future Bluesky entries remain future scope).
 
 ## Backlog References
 
