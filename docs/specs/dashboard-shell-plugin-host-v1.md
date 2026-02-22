@@ -87,7 +87,7 @@ Compatibility rule:
 1. [x] Router/layout behavior tests for dashboard mode in workspace shell.
 2. [x] Rail action navigation tests.
 3. [x] Card host rendering tests for `ready`/`unavailable`/`degraded`.
-4. [ ] Error-boundary tests for per-card mount failures.
+4. [x] Error-boundary tests for per-card mount failures.
 5. [x] API tests for summary endpoint auth and response contract.
 
 ## Rollout Notes

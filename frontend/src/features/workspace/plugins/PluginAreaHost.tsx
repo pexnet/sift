@@ -3,10 +3,11 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import type { PluginArea } from "../../../shared/types/contracts";
-import { createPluginAreaRegistry } from "./registry";
+import { createPluginAreaRegistry, type PluginAreaRegistration } from "./registry";
 
 type PluginAreaHostProps = {
   area: PluginArea;
+  registryById?: Record<string, PluginAreaRegistration>;
 };
 
 type PluginAreaViewProps = {
@@ -89,8 +90,8 @@ function PluginUnavailable({ areaTitle }: { areaTitle: string }) {
   );
 }
 
-export function PluginAreaHost({ area }: PluginAreaHostProps) {
-  const registration = pluginAreaRegistry.byId[area.id];
+export function PluginAreaHost({ area, registryById = pluginAreaRegistry.byId }: PluginAreaHostProps) {
+  const registration = registryById[area.id];
   if (!registration) {
     return <PluginUnavailable areaTitle={area.title} />;
   }

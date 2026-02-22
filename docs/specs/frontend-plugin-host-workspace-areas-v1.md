@@ -107,7 +107,7 @@ Note:
 1. [x] Registration validation tests (duplicate ids, invalid registration).
 2. [x] Router/route rendering tests for `/app/plugins/$areaId` behavior in workspace shell.
 3. [x] Navigation tests for plugin section ordering/visibility.
-4. [ ] Error-boundary tests for plugin failure fallback behavior.
+4. [x] Error-boundary tests for plugin failure fallback behavior.
 5. [x] Regression tests for existing workspace navigation/list/reader flows.
 
 ## Rollout Notes

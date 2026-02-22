@@ -31,7 +31,6 @@
 ### Remaining Scope
 
 - Keep `docs/specs/dashboard-shell-plugin-host-v1.md` in progress for:
-  - explicit per-card render-failure boundary tests
   - broader plugin-provided `dashboard_card` mount coverage prior to command-center card/data rollout
 
 ## 2026-02-22 (Frontend Plugin Host + Workspace Areas Baseline)
@@ -66,7 +65,6 @@
 ### Remaining Scope
 
 - Keep `docs/specs/frontend-plugin-host-workspace-areas-v1.md` in progress for:
-  - explicit plugin render-failure fallback tests
   - broader extension-point coverage beyond workspace-area baseline
 
 ## 2026-02-22 (Plugin Runtime Hardening + Diagnostics Baseline)

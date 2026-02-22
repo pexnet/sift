@@ -7,13 +7,14 @@ type DashboardHostProps = {
   summary: DashboardSummary | undefined;
   isLoading: boolean;
   isError: boolean;
+  registryById?: Record<string, DashboardCardRegistration>;
 };
 
 type DashboardCardViewProps = {
   card: DashboardCardAvailability;
 };
 
-type DashboardCardRegistration = {
+export type DashboardCardRegistration = {
   id: string;
   title: string;
   mount: (props: DashboardCardViewProps) => ReactNode;
@@ -117,8 +118,14 @@ function AvailabilityFallback({ card }: { card: DashboardCardAvailability }) {
   );
 }
 
-function ReadyCardHost({ card }: { card: DashboardCardAvailability }) {
-  const registration = dashboardCardRegistry[card.id];
+function ReadyCardHost({
+  card,
+  registryById,
+}: {
+  card: DashboardCardAvailability;
+  registryById: Record<string, DashboardCardRegistration>;
+}) {
+  const registration = registryById[card.id];
   if (!registration) {
     return (
       <Stack spacing={0.65}>
@@ -137,7 +144,12 @@ function ReadyCardHost({ card }: { card: DashboardCardAvailability }) {
   );
 }
 
-export function DashboardHost({ summary, isLoading, isError }: DashboardHostProps) {
+export function DashboardHost({
+  summary,
+  isLoading,
+  isError,
+  registryById = dashboardCardRegistry,
+}: DashboardHostProps) {
   if (isLoading) {
     return <Typography color="text.secondary">Loading dashboard…</Typography>;
   }
@@ -163,7 +175,7 @@ export function DashboardHost({ summary, isLoading, isError }: DashboardHostProp
       <Box className="dashboard-grid">
         {cards.map((card) => (
           <CardFrame key={card.id}>
-            {card.status === "ready" ? <ReadyCardHost card={card} /> : <AvailabilityFallback card={card} />}
+            {card.status === "ready" ? <ReadyCardHost card={card} registryById={registryById} /> : <AvailabilityFallback card={card} />}
           </CardFrame>
         ))}
       </Box>
