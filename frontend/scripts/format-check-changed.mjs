@@ -28,7 +28,8 @@ const checkableFiles = changedFiles
   .filter((filePath) => filePath.startsWith("frontend/"))
   .filter((filePath) => checkableExtensions.some((extension) => filePath.endsWith(extension)))
   .filter((filePath) => !filePath.startsWith("frontend/node_modules/"))
-  .filter((filePath) => !filePath.startsWith("frontend/dist/"));
+  .filter((filePath) => !filePath.startsWith("frontend/dist/"))
+  .map((filePath) => filePath.replace(/^frontend\//, ""));
 
 if (checkableFiles.length === 0) {
   console.log("No changed frontend files require Prettier check.");
