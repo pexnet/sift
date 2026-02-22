@@ -437,13 +437,16 @@ def stream_matches(
     source_url: str | None,
     language: str | None,
 ) -> bool:
-    return stream_rule_match_outcome(
-        stream,
-        title=title,
-        content_text=content_text,
-        source_url=source_url,
-        language=language,
-    )[0] is not None
+    return (
+        stream_rule_match_outcome(
+            stream,
+            title=title,
+            content_text=content_text,
+            source_url=source_url,
+            language=language,
+        )[0]
+        is not None
+    )
 
 
 def stream_rule_match_outcome(
@@ -565,9 +568,13 @@ class StreamService:
             raise StreamFolderNotFoundError(f"Folder {folder_id} not found")
 
     async def list_streams(self, session: AsyncSession, user_id: UUID) -> list[KeywordStream]:
-        query = select(KeywordStream).where(KeywordStream.user_id == user_id).order_by(
-            KeywordStream.priority.asc(),
-            KeywordStream.name.asc(),
+        query = (
+            select(KeywordStream)
+            .where(KeywordStream.user_id == user_id)
+            .order_by(
+                KeywordStream.priority.asc(),
+                KeywordStream.name.asc(),
+            )
         )
         result = await session.execute(query)
         return list(result.scalars().all())
@@ -875,9 +882,7 @@ class StreamService:
                 )
 
         previous_count_result = await session.execute(
-            select(func.count())
-            .select_from(KeywordStreamMatch)
-            .where(KeywordStreamMatch.stream_id == stream_id)
+            select(func.count()).select_from(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id)
         )
         previous_match_count = int(previous_count_result.scalar_one() or 0)
 
@@ -987,9 +992,7 @@ class StreamService:
                 duration_ms = int((perf_counter() - start_time) * 1000)
                 confidence = decision.confidence if decision else None
                 classifier_match = bool(
-                    decision
-                    and decision.matched
-                    and decision.confidence >= stream.classifier_min_confidence
+                    decision and decision.matched and decision.confidence >= stream.classifier_min_confidence
                 )
                 classifier_runs.append(
                     StreamClassifierRunDecision(

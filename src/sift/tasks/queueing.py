@@ -16,4 +16,3 @@ def get_redis_connection() -> Redis:
 def get_ingest_queue() -> Queue:
     settings = get_settings()
     return Queue(settings.ingest_queue_name, connection=get_redis_connection())
-

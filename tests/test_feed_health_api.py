@@ -167,9 +167,7 @@ def test_feed_health_api_lifecycle_and_settings_flow() -> None:
 
         async def verify_read_state() -> None:
             async with session_maker() as session:
-                state_rows = await session.execute(
-                    select(ArticleState).where(ArticleState.user_id == str(user.id))
-                )
+                state_rows = await session.execute(select(ArticleState).where(ArticleState.user_id == str(user.id)))
                 states = state_rows.scalars().all()
                 assert len(states) == 1
                 assert states[0].is_read is True

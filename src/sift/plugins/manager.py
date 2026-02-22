@@ -424,4 +424,3 @@ class PluginManager:
         if isinstance(result, StreamClassificationDecision):
             return result
         return None
-

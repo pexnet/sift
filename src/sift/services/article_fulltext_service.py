@@ -95,7 +95,9 @@ class ArticleFulltextService:
             response = await client.get(url, headers={"User-Agent": "sift-fulltext-fetch/1.0"})
 
         if response.status_code != 200:
-            raise ArticleFulltextValidationError(f"Unexpected status {response.status_code} while fetching source page.")
+            raise ArticleFulltextValidationError(
+                f"Unexpected status {response.status_code} while fetching source page."
+            )
 
         content_type = (response.headers.get("Content-Type") or "").lower()
         if content_type and "text/html" not in content_type:

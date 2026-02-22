@@ -52,8 +52,12 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("stream_id", "article_id", name="uq_keyword_stream_matches_stream_article"),
     )
-    op.create_index(op.f("ix_keyword_stream_matches_article_id"), "keyword_stream_matches", ["article_id"], unique=False)
-    op.create_index(op.f("ix_keyword_stream_matches_matched_at"), "keyword_stream_matches", ["matched_at"], unique=False)
+    op.create_index(
+        op.f("ix_keyword_stream_matches_article_id"), "keyword_stream_matches", ["article_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_keyword_stream_matches_matched_at"), "keyword_stream_matches", ["matched_at"], unique=False
+    )
     op.create_index(op.f("ix_keyword_stream_matches_stream_id"), "keyword_stream_matches", ["stream_id"], unique=False)
 
 
@@ -68,4 +72,3 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_keyword_streams_language_equals"), table_name="keyword_streams")
     op.drop_index(op.f("ix_keyword_streams_is_active"), table_name="keyword_streams")
     op.drop_table("keyword_streams")
-

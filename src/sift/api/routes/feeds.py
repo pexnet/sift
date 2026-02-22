@@ -96,7 +96,9 @@ async def ingest_feed(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Feed {feed_id} not found")
 
     try:
-        return await ingestion_service.ingest_feed(session=session, feed_id=feed.id, plugin_manager=get_plugin_manager())
+        return await ingestion_service.ingest_feed(
+            session=session, feed_id=feed.id, plugin_manager=get_plugin_manager()
+        )
     except FeedNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -163,4 +165,3 @@ async def update_feed_lifecycle(
     except FeedLifecycleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return FeedLifecycleResultOut(feed=FeedOut.model_validate(updated_feed), marked_read_count=marked_read_count)
-

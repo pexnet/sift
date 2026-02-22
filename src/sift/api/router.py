@@ -24,4 +24,3 @@ api_router.include_router(rules_router, prefix="/rules", tags=["rules"])
 api_router.include_router(streams_router, prefix="/streams", tags=["streams"])
 api_router.include_router(navigation_router, prefix="/navigation", tags=["navigation"])
 api_router.include_router(plugins_router, prefix="/plugins", tags=["plugins"])
-

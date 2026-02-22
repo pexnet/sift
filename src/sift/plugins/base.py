@@ -50,4 +50,3 @@ class StreamClassifierPlugin(Protocol):
         stream: StreamClassifierContext,
     ) -> StreamClassificationDecision | None:
         """Return optional classification decision for article/stream relevance."""
-

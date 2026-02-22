@@ -143,4 +143,3 @@ def downgrade() -> None:
 
     op.drop_index(op.f("ix_feeds_url"), table_name="feeds")
     op.drop_table("feeds")
-

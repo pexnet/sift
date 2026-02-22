@@ -83,7 +83,9 @@ class Article(TimestampMixin, Base):
     content_text: Mapped[str] = mapped_column(Text, default="")
     language: Mapped[str | None] = mapped_column(String(32), index=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
-    duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("articles.id", ondelete="SET NULL"), index=True)
+    duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("articles.id", ondelete="SET NULL"), index=True
+    )
     dedup_confidence: Mapped[float] = mapped_column(Float, default=1.0)
 
 

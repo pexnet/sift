@@ -202,7 +202,9 @@ async def test_plugin_telemetry_metrics_contract(monkeypatch: pytest.MonkeyPatch
 
 
 @pytest.mark.asyncio
-async def test_plugin_dispatch_logging_contract(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+async def test_plugin_dispatch_logging_contract(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     plugins_by_path = {
         "test.plugins:broken": _BrokenIngestPlugin(),
         "test.plugins:append": _AppendTitleIngestPlugin(),
@@ -267,7 +269,9 @@ def test_load_from_registry_marks_load_and_contract_failures(monkeypatch: pytest
     manager.load_from_registry(
         [
             _entry(plugin_id="load_error", class_path="test.plugins:load_error", capabilities=["ingest_hook"]),
-            _entry(plugin_id="missing_method", class_path="test.plugins:no_classifier", capabilities=["stream_classifier"]),
+            _entry(
+                plugin_id="missing_method", class_path="test.plugins:no_classifier", capabilities=["stream_classifier"]
+            ),
             _entry(plugin_id="ok_ingest", class_path="test.plugins:ok", capabilities=["ingest_hook"]),
         ]
     )

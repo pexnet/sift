@@ -38,4 +38,3 @@ app.include_router(api_router)
 
 def run_dev() -> None:
     uvicorn.run("sift.main:app", host=settings.host, port=settings.port, reload=True)
-

@@ -6,4 +6,3 @@ class NoopPlugin:
 
     async def on_article_ingested(self, article: ArticleContext) -> ArticleContext:
         return article
-

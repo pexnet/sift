@@ -15,4 +15,3 @@ def test_matches_keywords_requires_include() -> None:
 def test_matches_keywords_honors_exclude() -> None:
     content = "Model update and release notes."
     assert _matches_keywords(content, include_keywords=["model"], exclude_keywords=["release"]) is False
-

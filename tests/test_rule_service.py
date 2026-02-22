@@ -31,7 +31,9 @@ async def test_create_rule_requires_positive_criteria() -> None:
             await rule_service.create_rule(
                 session=session,
                 user_id=user.id,
-                payload=IngestRuleCreate(name="bad-empty", include_keywords=[], source_contains=None, language_equals=None),
+                payload=IngestRuleCreate(
+                    name="bad-empty", include_keywords=[], source_contains=None, language_equals=None
+                ),
             )
 
     await engine.dispose()
@@ -130,4 +132,3 @@ def test_rule_matches_include_exclude_source_language() -> None:
         )
         is False
     )
-
