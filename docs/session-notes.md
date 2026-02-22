@@ -1,5 +1,30 @@
 # Session Notes
 
+## 2026-02-22 (Plugin Configuration Registry Follow-Up: Security + Budget Contracts)
+
+### Implemented This Session
+
+- Added plugin registry security validation for sensitive settings keys in `src/sift/plugins/registry.py`:
+  - plaintext secret/token/password/api-key style values are rejected
+  - sensitive values must use env references (for example `${SIFT_API_KEY}`)
+- Added discover-feeds provider budget contract validation in `src/sift/plugins/registry.py`:
+  - validates provider-chain shape
+  - validates per-provider budget fields and integer bounds
+  - validates `max_requests_per_day >= max_requests_per_run`
+- Added baseline discover-feeds budget config in `config/plugins.yaml`.
+- Added registry tests in `tests/test_plugin_registry.py` for:
+  - sensitive-value rejection
+  - env-reference acceptance
+  - invalid discover budget contract rejection
+  - valid discover budget contract acceptance
+- Updated planning docs to advance active priorities to post-plugin-foundation slices.
+
+### Verification
+
+- `python -m pytest tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py`
+- `python -m ruff check src/sift/plugins/registry.py tests/test_plugin_registry.py`
+- `python -m mypy src/sift/plugins/registry.py tests/test_plugin_registry.py --no-incremental`
+
 ## 2026-02-22 (Plugin Runtime Telemetry Contract Closure)
 
 ### Implemented This Session

@@ -13,11 +13,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Plugin configuration registry v1 follow-ups:
-  - add config security enforcement/tests for env-ref secret handling
-  - add provider budget/rate-limit contract tests for discovery-oriented plugin settings
-  - spec: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
-2. Resume dependency feature slices after plugin closure:
+1. Resume dependency feature slices after plugin closure:
   - stream-level ranking/prioritization controls
   - scheduler and ingestion observability (metrics, latency, failures; spec:
     [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md))

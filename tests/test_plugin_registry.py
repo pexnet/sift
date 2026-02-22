@@ -90,6 +90,144 @@ plugins:
     assert "Duplicate plugin id 'noop'" in str(exc_info.value)
 
 
+def test_load_plugin_registry_rejects_plaintext_sensitive_settings(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - discover_feeds
+    settings:
+      discover_feeds:
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+      api_key: plaintext-value
+""".strip(),
+    )
+
+    with pytest.raises(PluginRegistryError) as exc_info:
+        load_plugin_registry(str(registry_path))
+    assert "sensitive values must reference env vars" in str(exc_info.value)
+    assert "settings.api_key" in str(exc_info.value)
+
+
+def test_load_plugin_registry_accepts_env_ref_sensitive_settings(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - discover_feeds
+    settings:
+      discover_feeds:
+        provider_chain:
+          - searxng
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+      api_key: "${DISCOVERY_API_KEY}"
+""".strip(),
+    )
+
+    registry = load_plugin_registry(str(registry_path))
+    assert [entry.id for entry in registry.plugins] == ["discover_feeds"]
+
+
+def test_load_plugin_registry_rejects_discovery_budget_contract_violations(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - discover_feeds
+    settings:
+      discover_feeds:
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 50
+            max_requests_per_day: 10
+            min_interval_ms: 0
+            max_query_variants_per_stream: 0
+            max_results_per_query: 25
+""".strip(),
+    )
+
+    with pytest.raises(PluginRegistryError) as exc_info:
+        load_plugin_registry(str(registry_path))
+    error_message = str(exc_info.value)
+    assert "settings.discover_feeds.provider_budgets.searxng.min_interval_ms: must be an integer >= 1" in error_message
+    assert (
+        "settings.discover_feeds.provider_budgets.searxng.max_query_variants_per_stream: must be an integer >= 1"
+        in error_message
+    )
+    assert "settings.discover_feeds.provider_budgets.searxng.max_requests_per_day: must be >= max_requests_per_run" in (
+        error_message
+    )
+
+
+def test_load_plugin_registry_accepts_valid_discovery_budget_contract(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - discover_feeds
+    settings:
+      discover_feeds:
+        provider_chain:
+          - searxng
+          - brave_search
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+          brave_search:
+            max_requests_per_run: 5
+            max_requests_per_day: 25
+            min_interval_ms: 400
+            max_query_variants_per_stream: 4
+            max_results_per_query: 10
+""".strip(),
+    )
+
+    registry = load_plugin_registry(str(registry_path))
+    discover_settings = registry.plugins[0].settings["discover_feeds"]
+    assert isinstance(discover_settings, dict)
+    assert discover_settings["provider_chain"] == ["searxng", "brave_search"]
+
+
 @pytest.mark.asyncio
 async def test_plugin_manager_dispatches_by_registry_capability(tmp_path: Path) -> None:
     registry_path = _write_registry(

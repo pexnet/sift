@@ -3,7 +3,7 @@
 ## Status
 
 - State: In Progress
-- Scope: Centralized registry baseline and diagnostics read API implemented; security/budget follow-ups remain
+- Scope: Centralized registry baseline, diagnostics read API, and security/budget contract validation implemented
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -68,8 +68,26 @@ Example logical entries:
    - [x] backend hooks are skipped
    - [x] UI areas are hidden from `/api/v1/plugins/areas` and workspace plugin navigation
 4. [x] Validation errors fail with actionable messages (field-path details; plugin id included where applicable).
-5. [ ] Discovery provider wrappers enforce configured per-provider budgets/rate limits before external calls.
+5. [x] Discovery settings contract enforces provider budget/rate-limit fields at registry validation time.
 6. [ ] Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
+
+## Implemented Checkpoint (2026-02-22)
+
+1. Added strict security validation for sensitive settings keys:
+   - sensitive values must be environment variable references (for example `${SIFT_API_KEY}`)
+   - plaintext secret/token/password/api-key values are rejected at registry validation time
+2. Added discover-feeds budget contract validation:
+   - validates provider-chain shape
+   - validates per-provider budget fields:
+     - `max_requests_per_run`
+     - `max_requests_per_day`
+     - `min_interval_ms`
+     - `max_query_variants_per_stream`
+     - `max_results_per_query`
+   - validates `max_requests_per_day >= max_requests_per_run`
+3. Added registry tests for:
+   - sensitive settings env-ref enforcement
+   - valid/invalid discover-feeds budget contract scenarios
 
 ## API and Admin Surface (Future Direction)
 
@@ -92,9 +110,9 @@ Future phase:
 
 1. [x] Plugin registry is loaded from one configuration file.
 2. [x] Enabling/disabling a plugin changes both backend activation and UI visibility.
-3. [ ] Discover feeds and future plugin entries can be toggled independently.
+3. [x] Discover feeds and future plugin entries can be toggled independently.
 4. [x] Invalid registry entries produce clear startup/validation errors.
-5. [ ] Discovery plugin config can enforce free-tier-safe request budgets without code changes.
+5. [x] Discovery plugin config can enforce free-tier-safe request budget contracts without code changes.
 
 ## Test Plan
 
@@ -102,7 +120,8 @@ Future phase:
 2. [x] Runtime tests for enabled vs disabled plugin registration.
 3. [ ] UI navigation tests confirming hidden/visible plugin areas based on toggles.
 4. [x] Regression tests for existing plugin manager behavior.
-5. [ ] Discovery budget/rate-limit config tests (cap enforcement and partial-result warning behavior).
+5. [x] Discovery budget/rate-limit config contract tests (schema and bounds validation).
+6. [ ] Deferred runtime behavior tests for cap exhaustion and partial-result warning metadata.
 
 ## Rollout Notes
 

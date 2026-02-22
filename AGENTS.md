@@ -216,16 +216,15 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Complete plugin configuration registry follow-ups (security and provider-budget contract coverage).
-   - spec: `docs/specs/plugin-configuration-registry-v1.md`
-2. Resume ranking/observability feature slices after plugin closure:
+1. Resume ranking/observability feature slices after plugin closure:
    - stream-level ranking/prioritization controls
    - scheduler and ingestion observability
-3. Completed and archived:
+2. Completed and archived:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
    - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+   - plugin-configuration follow-up checkpoint: `docs/specs/plugin-configuration-registry-v1.md`
 
 ## Next UI Slice (Prioritized)
 

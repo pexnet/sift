@@ -33,6 +33,12 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
      - `sift_plugin_dispatch_failures_total`
    - telemetry/logging contract tests for metric/event presence
    - archived spec: `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+5. Plugin configuration registry follow-up checkpoint completed:
+   - sensitive settings keys now require env-var references (plaintext secrets rejected)
+   - discover-feeds provider budget/rate-limit config contract validation added
+   - registry test coverage added for security and budget contract scenarios
+   - active spec remains for later discovery-runtime enforcement work:
+     `docs/specs/plugin-configuration-registry-v1.md`
 
 ### Monitoring UI Milestones (Previously in Active Next UI Slice)
 

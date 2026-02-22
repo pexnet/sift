@@ -27,4 +27,14 @@ plugins:
         icon: search
         order: 10
         route_key: discover-feeds
-    settings: {}
+    settings:
+      discover_feeds:
+        provider_chain:
+          - searxng
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25

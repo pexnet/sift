@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,23 @@ VALID_PLUGIN_CAPABILITIES = frozenset(
 )
 
 logger = logging.getLogger(__name__)
+
+_ENV_REF_PATTERN = re.compile(r"^\$\{[A-Z][A-Z0-9_]*\}$")
+_SENSITIVE_SETTING_TOKENS = (
+    "secret",
+    "token",
+    "password",
+    "apikey",
+    "accesskey",
+    "privatekey",
+)
+_DISCOVERY_BUDGET_FIELDS = (
+    "max_requests_per_run",
+    "max_requests_per_day",
+    "min_interval_ms",
+    "max_query_variants_per_stream",
+    "max_results_per_query",
+)
 
 
 class PluginRegistryError(RuntimeError):
@@ -71,6 +89,16 @@ class PluginRegistryEntry(BaseModel):
             normalized.append(item)
         return normalized
 
+    @model_validator(mode="after")
+    def validate_settings_contract(self) -> "PluginRegistryEntry":
+        errors = _collect_sensitive_settings_errors(settings=self.settings, path="settings")
+        if "discover_feeds" in self.capabilities:
+            errors.extend(_collect_discovery_settings_errors(self.settings))
+        if errors:
+            details = "; ".join(errors)
+            raise ValueError(f"plugin '{self.id}' settings validation failed: {details}")
+        return self
+
 
 class PluginRegistry(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -89,6 +117,75 @@ class PluginRegistry(BaseModel):
 
     def enabled_plugins(self) -> list[PluginRegistryEntry]:
         return [entry for entry in self.plugins if entry.enabled]
+
+
+def _collect_sensitive_settings_errors(*, settings: dict[str, Any], path: str) -> list[str]:
+    errors: list[str] = []
+    for key, value in settings.items():
+        key_path = f"{path}.{key}"
+        normalized_key = _normalize_key_token(key)
+        if _is_sensitive_key(normalized_key):
+            if not isinstance(value, str) or not _ENV_REF_PATTERN.match(value.strip()):
+                errors.append(f"{key_path}: sensitive values must reference env vars (for example '${{SIFT_API_KEY}}')")
+        if isinstance(value, dict):
+            errors.extend(_collect_sensitive_settings_errors(settings=value, path=key_path))
+            continue
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                item_path = f"{key_path}[{index}]"
+                if isinstance(item, dict):
+                    errors.extend(_collect_sensitive_settings_errors(settings=item, path=item_path))
+    return errors
+
+
+def _normalize_key_token(key: str) -> str:
+    return "".join(char for char in key.lower() if char.isalnum())
+
+
+def _is_sensitive_key(normalized_key: str) -> bool:
+    return any(token in normalized_key for token in _SENSITIVE_SETTING_TOKENS)
+
+
+def _collect_discovery_settings_errors(settings: dict[str, Any]) -> list[str]:
+    if not settings:
+        return []
+    raw_discovery = settings.get("discover_feeds")
+    if raw_discovery is None:
+        return []
+    if not isinstance(raw_discovery, dict):
+        return ["settings.discover_feeds: must be a mapping object"]
+
+    errors: list[str] = []
+    provider_chain = raw_discovery.get("provider_chain")
+    if provider_chain is not None:
+        if not isinstance(provider_chain, list) or not provider_chain:
+            errors.append("settings.discover_feeds.provider_chain: must be a non-empty list when provided")
+        elif not all(isinstance(item, str) and item.strip() for item in provider_chain):
+            errors.append("settings.discover_feeds.provider_chain: entries must be non-empty strings")
+
+    provider_budgets = raw_discovery.get("provider_budgets")
+    if provider_budgets is not None:
+        if not isinstance(provider_budgets, dict) or not provider_budgets:
+            errors.append("settings.discover_feeds.provider_budgets: must be a non-empty mapping when provided")
+            return errors
+        for provider, budget in provider_budgets.items():
+            provider_path = f"settings.discover_feeds.provider_budgets.{provider}"
+            if not isinstance(provider, str) or not provider.strip():
+                errors.append(f"{provider_path}: provider key must be a non-empty string")
+                continue
+            if not isinstance(budget, dict):
+                errors.append(f"{provider_path}: budget config must be a mapping object")
+                continue
+            for field in _DISCOVERY_BUDGET_FIELDS:
+                value = budget.get(field)
+                field_path = f"{provider_path}.{field}"
+                if not isinstance(value, int) or value < 1:
+                    errors.append(f"{field_path}: must be an integer >= 1")
+            max_per_run = budget.get("max_requests_per_run")
+            max_per_day = budget.get("max_requests_per_day")
+            if isinstance(max_per_run, int) and isinstance(max_per_day, int) and max_per_day < max_per_run:
+                errors.append(f"{provider_path}.max_requests_per_day: must be >= max_requests_per_run")
+    return errors
 
 
 def _resolve_registry_path(path: str) -> Path:

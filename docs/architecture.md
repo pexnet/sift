@@ -436,16 +436,13 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Complete plugin configuration registry v1 follow-ups:
-   - config security enforcement/tests for env-ref secret handling
-   - provider budget/rate-limit contract coverage for discovery-oriented plugin settings
-   - spec: `docs/specs/plugin-configuration-registry-v1.md`
-2. Resume stream ranking and scheduler/ingestion observability after plugin closure.
-3. Completed and archived on 2026-02-22:
+1. Resume stream ranking and scheduler/ingestion observability after plugin closure.
+2. Completed and archived on 2026-02-22:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
    - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+   - plugin-configuration follow-up checkpoint: `docs/specs/plugin-configuration-registry-v1.md`
 
 ## Next UI Slice (Prioritized)
 
