@@ -50,4 +50,3 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_ingest_rules_is_active"), table_name="ingest_rules")
     op.drop_index(op.f("ix_ingest_rules_action"), table_name="ingest_rules")
     op.drop_table("ingest_rules")
-

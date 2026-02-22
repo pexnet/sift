@@ -37,7 +37,9 @@ def upgrade() -> None:
     with op.batch_alter_table("feeds", schema=None) as batch_op:
         batch_op.add_column(sa.Column("folder_id", sa.UUID(), nullable=True))
         batch_op.create_index(batch_op.f("ix_feeds_folder_id"), ["folder_id"], unique=False)
-        batch_op.create_foreign_key("fk_feeds_folder_id_feed_folders", "feed_folders", ["folder_id"], ["id"], ondelete="SET NULL")
+        batch_op.create_foreign_key(
+            "fk_feeds_folder_id_feed_folders", "feed_folders", ["folder_id"], ["id"], ondelete="SET NULL"
+        )
 
 
 def downgrade() -> None:

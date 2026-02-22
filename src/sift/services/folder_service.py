@@ -18,9 +18,13 @@ class FolderNotFoundError(Exception):
 
 class FolderService:
     async def list_folders(self, session: AsyncSession, user_id: UUID) -> list[FeedFolder]:
-        query = select(FeedFolder).where(FeedFolder.user_id == user_id).order_by(
-            FeedFolder.sort_order.asc(),
-            FeedFolder.name.asc(),
+        query = (
+            select(FeedFolder)
+            .where(FeedFolder.user_id == user_id)
+            .order_by(
+                FeedFolder.sort_order.asc(),
+                FeedFolder.name.asc(),
+            )
         )
         result = await session.execute(query)
         return list(result.scalars().all())

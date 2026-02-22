@@ -88,17 +88,17 @@ jobs:
       - name: Sync backend dependencies (for OpenAPI generation)
         run: uv sync --extra dev --frozen
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Install frontend dependencies
         run: pnpm --dir frontend install --frozen-lockfile
@@ -134,8 +134,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check dependency graph availability
+        id: dependency-graph
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.get(context.repo);
+            const enabled = data.security_and_analysis?.dependency_graph?.status === "enabled";
+            core.setOutput("enabled", enabled ? "true" : "false");
+
+            if (!enabled) {
+              core.notice("Dependency graph is disabled for this repository; skipping dependency-review check.");
+            }
+
       - name: Dependency review
+        if: ${{ steps.dependency-graph.outputs.enabled == 'true' }}
         uses: actions/dependency-review-action@v4
+
+      - name: Dependency review skipped
+        if: ${{ steps.dependency-graph.outputs.enabled != 'true' }}
+        run: echo "Dependency graph disabled; dependency-review skipped."
 
       - name: Trivy filesystem scan (HIGH/CRITICAL)
         uses: aquasecurity/trivy-action@0.28.0

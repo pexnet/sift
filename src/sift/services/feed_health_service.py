@@ -88,7 +88,9 @@ class FeedHealthService:
         feeds_result = await session.execute(feeds_query.order_by(Feed.title.asc(), Feed.created_at.asc()))
         feeds = feeds_result.scalars().all()
         feed_ids = [feed.id for feed in feeds]
-        article_count_by_feed = await self._articles_last_7d(session=session, user_id=user_id, feed_ids=feed_ids, now=now)
+        article_count_by_feed = await self._articles_last_7d(
+            session=session, user_id=user_id, feed_ids=feed_ids, now=now
+        )
         unread_count_by_feed = await self._unread_counts(session=session, user_id=user_id, feed_ids=feed_ids)
 
         items: list[FeedHealthItemOut] = []

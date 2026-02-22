@@ -11,9 +11,7 @@ from sift.services.dev_seed_service import dev_seed_service, parse_inoreader_see
 
 
 def test_parse_monitoring_keywords() -> None:
-    assert parse_monitoring_keywords('[Global] "Network Detection and Response"') == [
-        "network detection and response"
-    ]
+    assert parse_monitoring_keywords('[Global] "Network Detection and Response"') == ["network detection and response"]
     assert parse_monitoring_keywords("microsoft AND corelight") == ["microsoft", "corelight"]
 
 

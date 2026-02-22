@@ -69,4 +69,3 @@ async def delete_rule(
         await rule_service.delete_rule(session=session, user_id=current_user.id, rule_id=rule_id)
     except RuleNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-

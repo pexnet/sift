@@ -474,4 +474,3 @@ class DashboardCardAvailabilityOut(BaseModel):
 class DashboardSummaryOut(BaseModel):
     cards: list[DashboardCardAvailabilityOut]
     last_updated_at: datetime
-
