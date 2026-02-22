@@ -92,7 +92,9 @@ def _normalize_article(entry: feedparser.FeedParserDict) -> tuple[str, str | Non
 
 
 class IngestionService:
-    async def ingest_feed(self, session: AsyncSession, feed_id: UUID, plugin_manager: PluginManager) -> FeedIngestResult:
+    async def ingest_feed(
+        self, session: AsyncSession, feed_id: UUID, plugin_manager: PluginManager
+    ) -> FeedIngestResult:
         query = select(Feed).where(Feed.id == feed_id)
         feed_result = await session.execute(query)
         feed = feed_result.scalar_one_or_none()
@@ -142,7 +144,9 @@ class IngestionService:
         entries = parsed.entries if hasattr(parsed, "entries") else []
         result.fetched_count = len(entries)
         active_rules = (
-            await rule_service.list_active_compiled_rules(session=session, user_id=feed.owner_id) if feed.owner_id else []
+            await rule_service.list_active_compiled_rules(session=session, user_id=feed.owner_id)
+            if feed.owner_id
+            else []
         )
         active_streams = (
             await stream_service.list_active_compiled_streams(session=session, user_id=feed.owner_id)
@@ -225,7 +229,10 @@ class IngestionService:
             if dedup_decision.duplicate_of_id:
                 result.canonical_duplicate_count += 1
 
-            matching_stream_decisions, classifier_runs = await stream_service.collect_matching_stream_decisions_with_classifier_runs(
+            (
+                matching_stream_decisions,
+                classifier_runs,
+            ) = await stream_service.collect_matching_stream_decisions_with_classifier_runs(
                 active_streams,
                 title=article.title,
                 content_text=article.content_text,

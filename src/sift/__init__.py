@@ -1,2 +1,1 @@
 """Sift application package."""
-

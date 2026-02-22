@@ -110,4 +110,3 @@ def test_stream_classifier_runs_api_lists_runs_for_stream() -> None:
         asyncio.run(engine.dispose())
         if db_path.exists():
             db_path.unlink()
-

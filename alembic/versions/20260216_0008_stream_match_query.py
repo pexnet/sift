@@ -23,4 +23,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("keyword_streams", "match_query")
-

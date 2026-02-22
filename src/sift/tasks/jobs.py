@@ -25,4 +25,3 @@ def ingest_feed_job(feed_id: str) -> dict[str, object]:
 
     payload["status"] = "ok"
     return payload
-

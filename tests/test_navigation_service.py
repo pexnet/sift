@@ -42,7 +42,9 @@ async def test_navigation_tree_counts() -> None:
         session.add(KeywordStreamMatch(stream_id=stream.id, article_id=article.id))
         await session.flush()
 
-        session.add(ArticleState(user_id=str(user.id), article_id=article.id, is_read=False, is_starred=True, is_archived=False))
+        session.add(
+            ArticleState(user_id=str(user.id), article_id=article.id, is_read=False, is_starred=True, is_archived=False)
+        )
         await session.commit()
 
         tree = await navigation_service.get_navigation_tree(session=session, user_id=user.id)
@@ -132,7 +134,13 @@ async def test_navigation_excludes_archived_feeds_from_folder_tree() -> None:
 
         session.add_all(
             [
-                ArticleState(user_id=str(user.id), article_id=active_article.id, is_read=False, is_starred=False, is_archived=False),
+                ArticleState(
+                    user_id=str(user.id),
+                    article_id=active_article.id,
+                    is_read=False,
+                    is_starred=False,
+                    is_archived=False,
+                ),
                 ArticleState(
                     user_id=str(user.id),
                     article_id=archived_article.id,

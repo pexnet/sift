@@ -1,2 +1,1 @@
 """Search/query language utilities."""
-

@@ -91,7 +91,7 @@ def _tokenize(value: str) -> list[_Token]:
             continue
 
         start = i
-        while i < len(value) and (not value[i].isspace()) and value[i] not in {'(', ')', '"'}:
+        while i < len(value) and (not value[i].isspace()) and value[i] not in {"(", ")", '"'}:
             i += 1
         raw = value[start:i]
         normalized = _normalize_text(raw)
@@ -189,9 +189,7 @@ class _Parser:
 
         if "*" in raw:
             if raw.count("*") > 1 or not raw.endswith("*") or len(raw) <= 1:
-                raise SearchQuerySyntaxError(
-                    f"Only suffix wildcard is supported (invalid token '{token.value}')"
-                )
+                raise SearchQuerySyntaxError(f"Only suffix wildcard is supported (invalid token '{token.value}')")
             prefix = _normalize_text(raw[:-1])
             if not prefix:
                 raise SearchQuerySyntaxError(f"Invalid wildcard token '{token.value}'")
@@ -370,7 +368,10 @@ def _find_substring_hits(
     operator_context: Literal["AND", "OR"] | None,
 ) -> list[SearchQueryHit]:
     hits: list[SearchQueryHit] = []
-    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (("title", title), ("content_text", content_text))
+    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (
+        ("title", title),
+        ("content_text", content_text),
+    )
     for field, value in fields:
         start = value.lower().find(term)
         if start < 0:
@@ -397,7 +398,10 @@ def _find_prefix_hits(
     operator_context: Literal["AND", "OR"] | None,
 ) -> list[SearchQueryHit]:
     hits: list[SearchQueryHit] = []
-    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (("title", title), ("content_text", content_text))
+    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (
+        ("title", title),
+        ("content_text", content_text),
+    )
     for field, value in fields:
         for match in re.finditer(r"\w+", value, flags=re.UNICODE):
             token = match.group(0)
@@ -424,7 +428,10 @@ def _find_fuzzy_hits(
     operator_context: Literal["AND", "OR"] | None,
 ) -> list[SearchQueryHit]:
     hits: list[SearchQueryHit] = []
-    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (("title", title), ("content_text", content_text))
+    fields: tuple[tuple[QueryHitField, str], tuple[QueryHitField, str]] = (
+        ("title", title),
+        ("content_text", content_text),
+    )
     for field, text in fields:
         for match in re.finditer(r"\w+", text, flags=re.UNICODE):
             token = match.group(0)

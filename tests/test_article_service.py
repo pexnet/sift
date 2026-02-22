@@ -93,7 +93,9 @@ async def test_list_articles_scope_stream() -> None:
         session.add(article)
         await session.flush()
 
-        stream = KeywordStream(user_id=user.id, name="monitor", include_keywords_json='["stream"]', exclude_keywords_json="[]")
+        stream = KeywordStream(
+            user_id=user.id, name="monitor", include_keywords_json='["stream"]', exclude_keywords_json="[]"
+        )
         session.add(stream)
         await session.flush()
         session.add(

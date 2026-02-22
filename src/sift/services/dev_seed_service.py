@@ -156,7 +156,9 @@ def _walk_outlines(
         )
 
 
-def parse_inoreader_seed_opml(content: bytes, *, monitoring_folder_name: str = "Monitoring feeds") -> ParsedInoreaderSeed:
+def parse_inoreader_seed_opml(
+    content: bytes, *, monitoring_folder_name: str = "Monitoring feeds"
+) -> ParsedInoreaderSeed:
     root = ElementTree.fromstring(content)
     body: ElementTree.Element | None = None
     for node in root.iter():

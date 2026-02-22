@@ -146,7 +146,13 @@ class NavigationService:
                     and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
                 )
                 .where(KeywordStream.user_id == user_id)
-                .group_by(KeywordStream.id, KeywordStream.name, KeywordStream.folder_id, FeedFolder.sort_order, FeedFolder.name)
+                .group_by(
+                    KeywordStream.id,
+                    KeywordStream.name,
+                    KeywordStream.folder_id,
+                    FeedFolder.sort_order,
+                    FeedFolder.name,
+                )
                 .order_by(
                     case((KeywordStream.folder_id.is_(None), 1), else_=0).asc(),
                     FeedFolder.sort_order.asc().nullsfirst(),

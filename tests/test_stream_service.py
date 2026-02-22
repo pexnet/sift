@@ -79,7 +79,9 @@ async def test_create_stream_requires_positive_criteria() -> None:
             await stream_service.create_stream(
                 session=session,
                 user_id=user.id,
-                payload=KeywordStreamCreate(name="empty", include_keywords=[], source_contains=None, language_equals=None),
+                payload=KeywordStreamCreate(
+                    name="empty", include_keywords=[], source_contains=None, language_equals=None
+                ),
             )
 
     await engine.dispose()

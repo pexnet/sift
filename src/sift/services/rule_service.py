@@ -124,7 +124,11 @@ def rule_matches(
 
 class RuleService:
     async def list_rules(self, session: AsyncSession, user_id: UUID) -> list[IngestRule]:
-        query = select(IngestRule).where(IngestRule.user_id == user_id).order_by(IngestRule.priority.asc(), IngestRule.name.asc())
+        query = (
+            select(IngestRule)
+            .where(IngestRule.user_id == user_id)
+            .order_by(IngestRule.priority.asc(), IngestRule.name.asc())
+        )
         result = await session.execute(query)
         return list(result.scalars().all())
 

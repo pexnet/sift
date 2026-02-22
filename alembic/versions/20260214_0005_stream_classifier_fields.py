@@ -19,7 +19,9 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     with op.batch_alter_table("keyword_streams", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("classifier_mode", sa.String(length=32), nullable=False, server_default="rules_only"))
+        batch_op.add_column(
+            sa.Column("classifier_mode", sa.String(length=32), nullable=False, server_default="rules_only")
+        )
         batch_op.add_column(sa.Column("classifier_plugin", sa.String(length=128), nullable=True))
         batch_op.add_column(
             sa.Column("classifier_min_confidence", sa.Float(), nullable=False, server_default=sa.text("0.7"))
@@ -39,4 +41,3 @@ def downgrade() -> None:
         batch_op.drop_column("classifier_min_confidence")
         batch_op.drop_column("classifier_plugin")
         batch_op.drop_column("classifier_mode")
-
