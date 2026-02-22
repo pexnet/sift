@@ -47,6 +47,8 @@ Reader UX target is a modern, responsive React workspace built with MUI componen
    - row-level read/save actions
 3. Right reader pane:
    - article detail view and open-original action
+   - on-demand full article fetch action with retry (`Fetch full article` / `Refetch full article`)
+   - content source labeling (`Source: full article` / `Source: feed excerpt`)
    - mark-read auto-advance to next article when transitioning unread -> read
    - sanitized rich HTML rendering pipeline for article body content (DOMPurify-based allowlist)
    - paper-editorial default reading surface in light mode (warm background + serif body typography)
@@ -413,6 +415,10 @@ Design goals:
    - dashboard rail action now routes to `/app/dashboard` instead of resetting workspace scope
    - dashboard host renders card availability states (`ready`, `unavailable`, `degraded`) with per-card isolation
    - summary availability API is available at `GET /api/v1/dashboard/summary`
+23. Full article fetch on-demand v1:
+   - endpoint `POST /api/v1/articles/{article_id}/fulltext/fetch` performs user-triggered fulltext fetch/extraction
+   - article detail response now includes fulltext status/content fields and `content_source`
+   - extracted fulltext is persisted in `article_fulltexts` and rendered in reader when available
 
 ## Frontend Delivery Standard
 
@@ -436,10 +442,10 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Implement full article fetch on-demand v1.
-   - spec: `docs/specs/full-article-fetch-on-demand-v1.md`
-2. Resume stream ranking and scheduler/ingestion observability after plugin closure.
+1. Stream-level ranking/prioritization controls.
+2. Scheduler and ingestion observability.
 3. Completed and archived on 2026-02-22:
+   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`

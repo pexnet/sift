@@ -7,7 +7,11 @@ export type NavigationFolderNode = components["schemas"]["NavigationFolderNodeOu
 export type NavigationStreamNode = components["schemas"]["NavigationStreamNodeOut"];
 export type ArticleListResponse = components["schemas"]["ArticleListResponse"];
 export type ArticleListItem = components["schemas"]["ArticleListItemOut"];
-export type ArticleDetail = components["schemas"]["ArticleDetailOut"];
+export type ArticleDetail = Omit<components["schemas"]["ArticleDetailOut"], "fulltext_status" | "content_source"> & {
+  fulltext_status?: "idle" | "pending" | "succeeded" | "failed";
+  content_source?: "feed_excerpt" | "full_article";
+};
+export type ArticleFulltextFetchResult = components["schemas"]["ArticleFulltextFetchOut"];
 export type PatchArticleStateRequest = components["schemas"]["ArticleStatePatch"];
 export type ArticleStateBulkPatchRequest = components["schemas"]["ArticleStateBulkPatch"];
 export type Feed = components["schemas"]["FeedOut"];

@@ -1,4 +1,5 @@
 import {
+  parseArticleFulltextFetch,
   parseBulkPatchArticleStateRequest,
   parseArticleDetail,
   parseArticleList,
@@ -9,6 +10,7 @@ import { parsePluginAreasResponse } from "../../entities/navigation/plugins";
 import { parseNavigationResponse } from "../../entities/navigation/model";
 import type {
   ArticleDetail,
+  ArticleFulltextFetchResult,
   ArticleListResponse,
   ArticleScopeMarkReadRequest,
   ArticleScopeMarkReadResponse,
@@ -75,6 +77,14 @@ export async function getArticles(search: WorkspaceSearch): Promise<ArticleListR
 export async function getArticleDetail(articleId: string): Promise<ArticleDetail> {
   const payload = await apiClient.get<unknown>(`${ARTICLES_ENDPOINT}/${articleId}`);
   return parseArticleDetail(payload);
+}
+
+export async function fetchArticleFulltext(articleId: string): Promise<ArticleFulltextFetchResult> {
+  const payload = await apiClient.post<Record<string, never>, unknown>(
+    `${ARTICLES_ENDPOINT}/${articleId}/fulltext/fetch`,
+    {}
+  );
+  return parseArticleFulltextFetch(payload);
 }
 
 export async function patchArticleState(articleId: string, payload: PatchArticleStateRequest) {

@@ -74,6 +74,7 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/articles/filter-preview`
 - `GET /api/v1/articles`
 - `GET /api/v1/articles/{article_id}`
+- `POST /api/v1/articles/{article_id}/fulltext/fetch`
 - `PATCH /api/v1/articles/{article_id}/state`
 - `POST /api/v1/articles/state/bulk`
 - `GET /api/v1/navigation`
@@ -207,6 +208,11 @@ This file stores persistent project context for future Codex sessions.
   - desktop rail `Dashboard` action now routes to `/app/dashboard`
   - dashboard host renders deterministic card states (`ready`, `unavailable`, `degraded`)
   - summary metadata endpoint is available at `GET /api/v1/dashboard/summary`
+- Full article fetch on-demand v1 is implemented:
+  - reader now supports user-triggered `Fetch full article` / `Refetch full article`
+  - backend endpoint is available at `POST /api/v1/articles/{article_id}/fulltext/fetch`
+  - article detail now includes fulltext status/content fields and `content_source`
+  - extracted fulltext is persisted separately from feed excerpt content
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -216,12 +222,11 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Implement full article fetch on-demand v1:
-   - spec: `docs/specs/full-article-fetch-on-demand-v1.md`
-2. Resume ranking/observability feature slices after plugin closure:
-   - stream-level ranking/prioritization controls
-   - scheduler and ingestion observability
-3. Completed and archived:
+1. Stream-level ranking/prioritization controls.
+2. Scheduler and ingestion observability.
+3. Recently completed and archived:
+   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
+4. Completed and archived:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
@@ -232,6 +237,8 @@ This file stores persistent project context for future Codex sessions.
 
 1. No additional UI-only polish slice is active; core platform priorities are now primary.
 2. Most recently completed:
+   - full article fetch on-demand v1 (completed on 2026-02-22; spec archived at
+     `docs/specs/done/full-article-fetch-on-demand-v1.md`)
    - desktop reader/workspace polish v2 (closed on 2026-02-22):
      - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
      - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,

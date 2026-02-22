@@ -1,5 +1,35 @@
 # Session Notes
 
+## 2026-02-22 (Full Article Fetch On-Demand v1 Implemented End-to-End)
+
+### Implemented This Session
+
+- Completed backend fulltext fetch foundation:
+  - added `article_fulltexts` model + migration (`alembic/versions/20260222_0016_article_fulltexts.py`)
+  - added fulltext fetch runtime service (`src/sift/services/article_fulltext_service.py`) with URL safety checks
+  - added endpoint `POST /api/v1/articles/{article_id}/fulltext/fetch`
+  - extended article detail projection with fulltext status/content fields and `content_source`
+- Completed frontend reader integration:
+  - added reader action (`Fetch full article` / `Refetch full article`) with pending/error behavior
+  - wired fetch mutation + detail invalidation in workspace hooks
+  - reader now renders full extracted content when available and shows source label
+  - regenerated OpenAPI frontend types for new API/schema contracts
+- Closed planning/docs for this slice:
+  - moved spec to `docs/specs/done/full-article-fetch-on-demand-v1.md`
+  - updated `docs/backlog.md`, `docs/backlog-history.md`, `docs/architecture.md`, and `AGENTS.md`
+    to mark full-article-fetch as completed and shift next priorities back to ranking/observability
+
+### Verification
+
+- backend:
+  - `python -m pytest tests/test_article_fulltext_service.py tests/test_article_fulltext_api.py`
+  - `python -m ruff check src/sift/api/routes/articles.py src/sift/services/article_fulltext_service.py src/sift/services/article_service.py src/sift/db/models.py src/sift/domain/schemas.py tests/test_article_fulltext_service.py tests/test_article_fulltext_api.py`
+  - `python -m mypy src/sift/services/article_fulltext_service.py src/sift/services/article_service.py src/sift/api/routes/articles.py src/sift/domain/schemas.py --no-incremental`
+- frontend:
+  - `npm --prefix frontend run test -- src/features/workspace/components/ReaderPane.test.tsx src/features/workspace/routes/WorkspacePage.test.tsx src/entities/article/model.test.ts`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run lint`
+
 ## 2026-02-22 (Reprioritization: Full Article Fetch On-Demand to Top Priority)
 
 ### Implemented This Session
@@ -11,7 +41,7 @@
   - `docs/architecture.md`
 - Removed stale deferred references so `full article fetch` is no longer tracked as deferred.
 - Confirmed spec already exists and remains the implementation source:
-  - `docs/specs/full-article-fetch-on-demand-v1.md`
+  - `docs/specs/done/full-article-fetch-on-demand-v1.md`
 
 ### Verification
 
@@ -779,7 +809,7 @@
 ### Implemented This Session
 
 - Added new planning spec for reader-triggered full article fetch:
-  - `docs/specs/full-article-fetch-on-demand-v1.md`
+  - `docs/specs/done/full-article-fetch-on-demand-v1.md`
   - scopes manual `Fetch full article` action from reader, persisted extracted fulltext storage, and guarded fetch
     pipeline requirements.
 - Updated active backlog deferred planning:

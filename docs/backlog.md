@@ -13,20 +13,16 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Full article fetch on-demand v1 (new top priority):
-  - add reader-level `Fetch full article` action
-  - persist extracted fulltext separately from feed excerpt content
-  - keep initial behavior manual/on-demand only
-  - spec: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
-2. Resume dependency feature slices after plugin closure:
-  - stream-level ranking/prioritization controls
-  - scheduler and ingestion observability (metrics, latency, failures; spec:
-    [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md))
+1. Stream-level ranking/prioritization controls.
+2. Scheduler and ingestion observability (metrics, latency, failures; spec:
+   [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)).
 
 ### Next UI Slice
 
 1. No additional UI-only polish slice is active; core platform priorities are now primary.
 2. Most recently completed:
+  - full article fetch on-demand v1 (completed on 2026-02-22; spec archived in
+    `docs/specs/done/full-article-fetch-on-demand-v1.md`)
   - desktop reader/workspace polish v2 (closed on 2026-02-22):
     - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
     - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
@@ -44,7 +40,6 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
-- Full article fetch on-demand v1: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
 - Dashboard command center v1: [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
 - Stream ranking/prioritization controls v1:
   [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)

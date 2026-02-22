@@ -8,6 +8,7 @@ describe("ReaderPane", () => {
     const onToggleRead = vi.fn();
     const onToggleSaved = vi.fn();
     const onOpenOriginal = vi.fn();
+    const onFetchFullArticle = vi.fn();
     const onMoveSelection = vi.fn();
 
     render(
@@ -42,6 +43,8 @@ describe("ReaderPane", () => {
           is_starred: false,
           is_archived: false,
           stream_ids: [],
+          fulltext_status: "idle",
+          content_source: "feed_excerpt",
         }}
         contentHtml="<p>Body</p>"
         isLoading={false}
@@ -51,6 +54,7 @@ describe("ReaderPane", () => {
         onToggleRead={onToggleRead}
         onToggleSaved={onToggleSaved}
         onOpenOriginal={onOpenOriginal}
+        onFetchFullArticle={onFetchFullArticle}
         onMoveSelection={onMoveSelection}
       />
     );
@@ -58,19 +62,23 @@ describe("ReaderPane", () => {
     const markReadButton = screen.getByRole("button", { name: /Mark as read \(m\)/i });
     const saveButton = screen.getByRole("button", { name: /Save article \(s\)/i });
     const openOriginalButton = screen.getByRole("button", { name: /Open original source \(o\)/i });
+    const fetchFullArticleButton = screen.getByRole("button", { name: /Fetch full article/i });
     const prevButton = screen.getByRole("button", { name: /Previous article \(k\)/i });
     const nextButton = screen.getByRole("button", { name: /Next article \(j\)/i });
 
     fireEvent.click(markReadButton);
     fireEvent.click(saveButton);
     fireEvent.click(openOriginalButton);
+    fireEvent.click(fetchFullArticleButton);
     fireEvent.click(prevButton);
     fireEvent.click(nextButton);
 
     expect(screen.getByText("Body")).toBeVisible();
+    expect(screen.getByText("Source: feed excerpt")).toBeVisible();
     expect(onToggleRead).toHaveBeenCalledTimes(1);
     expect(onToggleSaved).toHaveBeenCalledTimes(1);
     expect(onOpenOriginal).toHaveBeenCalledTimes(1);
+    expect(onFetchFullArticle).toHaveBeenCalledTimes(1);
     expect(onMoveSelection).toHaveBeenNthCalledWith(1, -1);
     expect(onMoveSelection).toHaveBeenNthCalledWith(2, 1);
   });
@@ -126,6 +134,59 @@ describe("ReaderPane", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Back to list/i }));
     expect(onBackToList).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows refetch action when full article content is active", () => {
+    render(
+      <ReaderPane
+        selectedArticle={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          title: "Reader title",
+          canonical_url: "https://example.com/article",
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: [],
+        }}
+        selectedArticleId="b67cb366-41e1-4114-8fa0-07ec799f1968"
+        streamNameById={{}}
+        detail={{
+          id: "b67cb366-41e1-4114-8fa0-07ec799f1968",
+          feed_id: null,
+          feed_title: "CyberChef",
+          source_id: "source",
+          canonical_url: "https://example.com/article",
+          title: "Reader title",
+          content_text: "Body",
+          language: null,
+          published_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_read: false,
+          is_starred: false,
+          is_archived: false,
+          stream_ids: [],
+          fulltext_status: "succeeded",
+          content_source: "full_article",
+        }}
+        contentHtml="<p>Body</p>"
+        isLoading={false}
+        isError={false}
+        isMutating={false}
+        hasMutationError={false}
+        onToggleRead={vi.fn()}
+        onToggleSaved={vi.fn()}
+        onOpenOriginal={vi.fn()}
+        onFetchFullArticle={vi.fn()}
+        onMoveSelection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /Refetch full article/i })).toBeVisible();
+    expect(screen.getByText("Source: full article")).toBeVisible();
   });
 
   it("renders back-to-nav action when provided", () => {

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type {
   ArticleDetail,
+  ArticleFulltextFetchResult,
   ArticleListItem,
   ArticleListResponse,
   ArticleStateBulkPatchRequest,
@@ -64,6 +65,20 @@ const articleDetailSchema = z.object({
   is_starred: z.boolean(),
   is_archived: z.boolean(),
   stream_ids: z.array(z.string().uuid()),
+  fulltext_status: z.enum(["idle", "pending", "succeeded", "failed"]).nullable().optional(),
+  fulltext_error: z.string().nullable().optional(),
+  fulltext_fetched_at: z.string().nullable().optional(),
+  fulltext_content_text: z.string().nullable().optional(),
+  fulltext_content_html: z.string().nullable().optional(),
+  content_source: z.enum(["feed_excerpt", "full_article"]).optional(),
+});
+
+const articleFulltextFetchSchema = z.object({
+  article_id: z.string().uuid(),
+  status: z.enum(["idle", "pending", "succeeded", "failed"]),
+  error_message: z.string().nullable().optional(),
+  fetched_at: z.string().nullable().optional(),
+  content_source: z.enum(["feed_excerpt", "full_article"]),
 });
 
 const patchArticleStateSchema = z
@@ -135,6 +150,10 @@ export function parseArticleList(payload: unknown): ArticleListResponse {
 
 export function parseArticleDetail(payload: unknown): ArticleDetail {
   return articleDetailSchema.parse(payload) as ArticleDetail;
+}
+
+export function parseArticleFulltextFetch(payload: unknown): ArticleFulltextFetchResult {
+  return articleFulltextFetchSchema.parse(payload) as ArticleFulltextFetchResult;
 }
 
 export function parsePatchArticleStateRequest(payload: PatchArticleStateRequest): PatchArticleStateRequest {

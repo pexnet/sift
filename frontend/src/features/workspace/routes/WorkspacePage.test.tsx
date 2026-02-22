@@ -13,6 +13,7 @@ const mediaState = {
 const navigateMock = vi.fn();
 const markScopeReadMutate = vi.fn();
 const patchArticleMutate = vi.fn();
+const fetchFulltextMutate = vi.fn();
 let pluginAreasData: Array<{
   id: string;
   title: string;
@@ -137,6 +138,12 @@ vi.mock("../api/workspaceHooks", () => ({
     isPending: false,
     isError: false,
   }),
+  useFetchArticleFulltextMutation: () => ({
+    mutate: fetchFulltextMutate,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
   useMarkScopeAsReadMutation: () => ({ mutate: markScopeReadMutate, isPending: false }),
   useCreateFolderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateFeedMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -180,6 +187,7 @@ describe("WorkspacePage", () => {
     navigateMock.mockReset();
     markScopeReadMutate.mockReset();
     patchArticleMutate.mockReset();
+    fetchFulltextMutate.mockReset();
     pluginAreasData = [];
     dashboardSummaryData = undefined;
   });

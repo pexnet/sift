@@ -7,6 +7,7 @@ import {
   createFeed,
   createFolder,
   deleteFolder,
+  fetchArticleFulltext,
   getArticleDetail,
   getArticles,
   getFeeds,
@@ -79,6 +80,17 @@ export function useArticleDetailQuery(articleId: string, enabled = true) {
     queryKey: queryKeys.articleDetail(articleId),
     queryFn: () => getArticleDetail(articleId),
     enabled: enabled && articleId.length > 0,
+  });
+}
+
+export function useFetchArticleFulltextMutation(articleId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => fetchArticleFulltext(articleId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.articleDetail(articleId) });
+    },
   });
 }
 

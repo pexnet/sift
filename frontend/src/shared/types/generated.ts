@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboard/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard Summary */
+        get: operations["get_dashboard_summary_api_v1_dashboard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/feeds": {
         parameters: {
             query?: never;
@@ -313,6 +330,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/articles/{article_id}/fulltext/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fetch Article Fulltext */
+        post: operations["fetch_article_fulltext_api_v1_articles__article_id__fulltext_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/articles/{article_id}/state": {
         parameters: {
             query?: never;
@@ -487,6 +521,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plugins/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plugin Areas */
+        get: operations["list_plugin_areas_api_v1_plugins_areas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plugins/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plugin Status */
+        get: operations["list_plugin_status_api_v1_plugins_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -537,6 +605,48 @@ export interface components {
                     [key: string]: unknown;
                 };
             } | null;
+            /**
+             * Fulltext Status
+             * @default idle
+             * @enum {string}
+             */
+            fulltext_status: "idle" | "pending" | "succeeded" | "failed";
+            /** Fulltext Error */
+            fulltext_error?: string | null;
+            /** Fulltext Fetched At */
+            fulltext_fetched_at?: string | null;
+            /** Fulltext Content Text */
+            fulltext_content_text?: string | null;
+            /** Fulltext Content Html */
+            fulltext_content_html?: string | null;
+            /**
+             * Content Source
+             * @default feed_excerpt
+             * @enum {string}
+             */
+            content_source: "feed_excerpt" | "full_article";
+        };
+        /** ArticleFulltextFetchOut */
+        ArticleFulltextFetchOut: {
+            /**
+             * Article Id
+             * Format: uuid
+             */
+            article_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "idle" | "pending" | "succeeded" | "failed";
+            /** Error Message */
+            error_message?: string | null;
+            /** Fetched At */
+            fetched_at?: string | null;
+            /**
+             * Content Source
+             * @enum {string}
+             */
+            content_source: "feed_excerpt" | "full_article";
         };
         /** ArticleListItemOut */
         ArticleListItemOut: {
@@ -711,6 +821,32 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /** DashboardCardAvailabilityOut */
+        DashboardCardAvailabilityOut: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "unavailable" | "degraded";
+            /** Reason */
+            reason?: string | null;
+            /** Dependency Spec */
+            dependency_spec?: string | null;
+        };
+        /** DashboardSummaryOut */
+        DashboardSummaryOut: {
+            /** Cards */
+            cards: components["schemas"]["DashboardCardAvailabilityOut"][];
+            /**
+             * Last Updated At
+             * Format: date-time
+             */
+            last_updated_at: string;
         };
         /** FeedCreate */
         FeedCreate: {
@@ -1334,6 +1470,57 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
+        /** PluginAreaOut */
+        PluginAreaOut: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Icon */
+            icon?: string | null;
+            /**
+             * Order
+             * @default 100
+             */
+            order: number;
+            /** Route Key */
+            route_key: string;
+        };
+        /** PluginCapabilityRuntimeCountersOut */
+        PluginCapabilityRuntimeCountersOut: {
+            /** Success Count */
+            success_count: number;
+            /** Failure Count */
+            failure_count: number;
+            /** Timeout Count */
+            timeout_count: number;
+        };
+        /** PluginStatusOut */
+        PluginStatusOut: {
+            /** Plugin Id */
+            plugin_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Loaded */
+            loaded: boolean;
+            /** Capabilities */
+            capabilities: string[];
+            /** Startup Validation Status */
+            startup_validation_status: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Unavailable Reason */
+            unavailable_reason: string | null;
+            /** Runtime Counters */
+            runtime_counters: {
+                [key: string]: components["schemas"]["PluginCapabilityRuntimeCountersOut"];
+            };
+            /**
+             * Last Updated At
+             * Format: date-time
+             */
+            last_updated_at: string;
+        };
         /** StreamArticleOut */
         StreamArticleOut: {
             /**
@@ -1591,6 +1778,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+        };
+    };
+    get_dashboard_summary_api_v1_dashboard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardSummaryOut"];
                 };
             };
         };
@@ -2120,6 +2327,37 @@ export interface operations {
             };
         };
     };
+    fetch_article_fulltext_api_v1_articles__article_id__fulltext_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleFulltextFetchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     patch_article_state_api_v1_articles__article_id__state_patch: {
         parameters: {
             query?: never;
@@ -2535,6 +2773,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NavigationTreeOut"];
+                };
+            };
+        };
+    };
+    list_plugin_areas_api_v1_plugins_areas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginAreaOut"][];
+                };
+            };
+        };
+    };
+    list_plugin_status_api_v1_plugins_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatusOut"][];
                 };
             };
         };

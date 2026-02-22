@@ -28,6 +28,7 @@ import {
   useDeleteFolderMutation,
   useDashboardSummaryQuery,
   useFeedsQuery,
+  useFetchArticleFulltextMutation,
   useFoldersQuery,
   useMarkScopeAsReadMutation,
   useNavigationQuery,
@@ -119,9 +120,22 @@ export function WorkspacePage({
   const selectedArticle = findArticleById(articles, selectedArticleId);
 
   const articleDetailQuery = useArticleDetailQuery(selectedArticleId, !contentIsContextView);
+  const fetchFulltextMutation = useFetchArticleFulltextMutation(selectedArticleId);
+  const rawReaderContent = useMemo(() => {
+    const detail = articleDetailQuery.data;
+    if (!detail) {
+      return "";
+    }
+
+    if (detail.content_source === "full_article") {
+      return detail.fulltext_content_html ?? detail.fulltext_content_text ?? detail.content_text ?? "";
+    }
+
+    return detail.content_text ?? "";
+  }, [articleDetailQuery.data]);
   const readerContentHtml = useMemo(
-    () => toReaderHtml(articleDetailQuery.data?.content_text ?? ""),
-    [articleDetailQuery.data?.content_text]
+    () => toReaderHtml(rawReaderContent),
+    [rawReaderContent]
   );
   const patchArticleStateMutation = usePatchArticleStateMutation(selectedArticleId);
   const markScopeAsReadMutation = useMarkScopeAsReadMutation();
@@ -462,6 +476,9 @@ export function WorkspacePage({
                 isError={articleDetailQuery.isError}
                 isMutating={patchArticleStateMutation.isPending}
                 hasMutationError={patchArticleStateMutation.isError}
+                isFulltextFetching={fetchFulltextMutation.isPending}
+                hasFulltextMutationError={fetchFulltextMutation.isError}
+                fulltextMutationErrorMessage={fetchFulltextMutation.error?.message ?? null}
                 onToggleRead={toggleRead}
                 onToggleSaved={toggleSaved}
                 onOpenOriginal={() => {
@@ -469,6 +486,9 @@ export function WorkspacePage({
                   if (targetUrl) {
                     window.open(targetUrl, "_blank", "noopener,noreferrer");
                   }
+                }}
+                onFetchFullArticle={() => {
+                  fetchFulltextMutation.mutate();
                 }}
                 onMoveSelection={moveSelection}
                 {...(layoutMode === "mobile"

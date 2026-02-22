@@ -6,6 +6,20 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Full Article Fetch On-Demand v1 (Completed on 2026-02-22)
+
+1. Reader full-article fetch action is implemented:
+   - `Fetch full article` / `Refetch full article` reader action with pending/error handling
+   - source label shown in reader metadata (`Source: full article` / `Source: feed excerpt`)
+2. Backend fulltext persistence/runtime is implemented:
+   - `article_fulltexts` model/table with one-to-one article fulltext storage
+   - on-demand extraction service with URL safety checks and bounded fetch behavior
+3. API contracts are implemented:
+   - `POST /api/v1/articles/{article_id}/fulltext/fetch`
+   - `GET /api/v1/articles/{article_id}` now includes fulltext status/content and `content_source`
+4. Spec archived:
+   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
+
 ### Plugin Platform Milestones (Completed on 2026-02-22)
 
 1. Plugin platform foundation v1 completed and archived:
