@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboard/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard Summary */
+        get: operations["get_dashboard_summary_api_v1_dashboard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/feeds": {
         parameters: {
             query?: never;
@@ -101,6 +118,23 @@ export interface paths {
         put?: never;
         /** Create Feed */
         post: operations["create_feed_api_v1_feeds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feeds/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Feed Health */
+        get: operations["list_feed_health_api_v1_feeds_health_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -139,6 +173,40 @@ export interface paths {
         head?: never;
         /** Assign Feed Folder */
         patch: operations["assign_feed_folder_api_v1_feeds__feed_id__folder_patch"];
+        trace?: never;
+    };
+    "/api/v1/feeds/{feed_id}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Feed Settings */
+        patch: operations["update_feed_settings_api_v1_feeds__feed_id__settings_patch"];
+        trace?: never;
+    };
+    "/api/v1/feeds/{feed_id}/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Feed Lifecycle */
+        patch: operations["update_feed_lifecycle_api_v1_feeds__feed_id__lifecycle_patch"];
         trace?: never;
     };
     "/api/v1/folders": {
@@ -228,6 +296,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/articles/state/mark-scope-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Scope As Read */
+        post: operations["mark_scope_as_read_api_v1_articles_state_mark_scope_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/articles/{article_id}": {
         parameters: {
             query?: never;
@@ -239,6 +324,23 @@ export interface paths {
         get: operations["get_article_api_v1_articles__article_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/articles/{article_id}/fulltext/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fetch Article Fulltext */
+        post: operations["fetch_article_fulltext_api_v1_articles__article_id__fulltext_fetch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -368,6 +470,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/streams/{stream_id}/classifier-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stream Classifier Runs */
+        get: operations["list_stream_classifier_runs_api_v1_streams__stream_id__classifier_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/streams/{stream_id}/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Stream Backfill */
+        post: operations["run_stream_backfill_api_v1_streams__stream_id__backfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/navigation": {
         parameters: {
             query?: never;
@@ -377,6 +513,40 @@ export interface paths {
         };
         /** Get Navigation */
         get: operations["get_navigation_api_v1_navigation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plugins/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plugin Areas */
+        get: operations["list_plugin_areas_api_v1_plugins_areas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plugins/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plugin Status */
+        get: operations["list_plugin_status_api_v1_plugins_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -435,6 +605,48 @@ export interface components {
                     [key: string]: unknown;
                 };
             } | null;
+            /**
+             * Fulltext Status
+             * @default idle
+             * @enum {string}
+             */
+            fulltext_status: "idle" | "pending" | "succeeded" | "failed";
+            /** Fulltext Error */
+            fulltext_error?: string | null;
+            /** Fulltext Fetched At */
+            fulltext_fetched_at?: string | null;
+            /** Fulltext Content Text */
+            fulltext_content_text?: string | null;
+            /** Fulltext Content Html */
+            fulltext_content_html?: string | null;
+            /**
+             * Content Source
+             * @default feed_excerpt
+             * @enum {string}
+             */
+            content_source: "feed_excerpt" | "full_article";
+        };
+        /** ArticleFulltextFetchOut */
+        ArticleFulltextFetchOut: {
+            /**
+             * Article Id
+             * Format: uuid
+             */
+            article_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "idle" | "pending" | "succeeded" | "failed";
+            /** Error Message */
+            error_message?: string | null;
+            /** Fetched At */
+            fetched_at?: string | null;
+            /**
+             * Content Source
+             * @enum {string}
+             */
+            content_source: "feed_excerpt" | "full_article";
         };
         /** ArticleListItemOut */
         ArticleListItemOut: {
@@ -524,6 +736,25 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ArticleScopeReadPatch */
+        ArticleScopeReadPatch: {
+            /**
+             * Scope Type
+             * @default system
+             * @enum {string}
+             */
+            scope_type: "system" | "folder" | "feed" | "stream";
+            /** Scope Id */
+            scope_id?: string | null;
+            /**
+             * State
+             * @default all
+             * @enum {string}
+             */
+            state: "all" | "unread" | "saved" | "archived" | "fresh" | "recent";
+            /** Q */
+            q?: string | null;
+        };
         /** ArticleStateBulkPatch */
         ArticleStateBulkPatch: {
             /** Article Ids */
@@ -591,6 +822,32 @@ export interface components {
              */
             file: string;
         };
+        /** DashboardCardAvailabilityOut */
+        DashboardCardAvailabilityOut: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "unavailable" | "degraded";
+            /** Reason */
+            reason?: string | null;
+            /** Dependency Spec */
+            dependency_spec?: string | null;
+        };
+        /** DashboardSummaryOut */
+        DashboardSummaryOut: {
+            /** Cards */
+            cards: components["schemas"]["DashboardCardAvailabilityOut"][];
+            /**
+             * Last Updated At
+             * Format: date-time
+             */
+            last_updated_at: string;
+        };
         /** FeedCreate */
         FeedCreate: {
             /** Title */
@@ -602,6 +859,8 @@ export interface components {
             url: string;
             /** Site Url */
             site_url?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
         };
         /** FeedFolderAssignmentUpdate */
         FeedFolderAssignmentUpdate: {
@@ -658,6 +917,79 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** FeedHealthItemOut */
+        FeedHealthItemOut: {
+            /**
+             * Feed Id
+             * Format: uuid
+             */
+            feed_id: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+            /** Site Url */
+            site_url: string | null;
+            /** Folder Id */
+            folder_id: string | null;
+            /**
+             * Lifecycle Status
+             * @enum {string}
+             */
+            lifecycle_status: "active" | "paused" | "archived";
+            /** Fetch Interval Minutes */
+            fetch_interval_minutes: number;
+            /** Last Fetched At */
+            last_fetched_at: string | null;
+            /** Last Fetch Success At */
+            last_fetch_success_at: string | null;
+            /** Last Fetch Error */
+            last_fetch_error: string | null;
+            /** Last Fetch Error At */
+            last_fetch_error_at: string | null;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Stale Age Hours */
+            stale_age_hours: number | null;
+            /** Articles Last 7D */
+            articles_last_7d: number;
+            /** Estimated Articles Per Day 7D */
+            estimated_articles_per_day_7d: number;
+            /** Unread Count */
+            unread_count: number;
+        };
+        /** FeedHealthListResponse */
+        FeedHealthListResponse: {
+            /** Items */
+            items: components["schemas"]["FeedHealthItemOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            summary: components["schemas"]["FeedHealthSummaryOut"];
+            /**
+             * Last Updated At
+             * Format: date-time
+             */
+            last_updated_at: string;
+        };
+        /** FeedHealthSummaryOut */
+        FeedHealthSummaryOut: {
+            /** Total Feed Count */
+            total_feed_count: number;
+            /** Active Feed Count */
+            active_feed_count: number;
+            /** Paused Feed Count */
+            paused_feed_count: number;
+            /** Archived Feed Count */
+            archived_feed_count: number;
+            /** Stale Feed Count */
+            stale_feed_count: number;
+            /** Error Feed Count */
+            error_feed_count: number;
+        };
         /** FeedIngestResult */
         FeedIngestResult: {
             /**
@@ -703,6 +1035,20 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
+        /** FeedLifecycleResultOut */
+        FeedLifecycleResultOut: {
+            feed: components["schemas"]["FeedOut"];
+            /** Marked Read Count */
+            marked_read_count: number;
+        };
+        /** FeedLifecycleUpdate */
+        FeedLifecycleUpdate: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "pause" | "resume" | "archive" | "unarchive";
+        };
         /** FeedOut */
         FeedOut: {
             /**
@@ -722,6 +1068,10 @@ export interface components {
             site_url: string | null;
             /** Is Active */
             is_active: boolean;
+            /** Is Archived */
+            is_archived: boolean;
+            /** Archived At */
+            archived_at: string | null;
             /** Fetch Interval Minutes */
             fetch_interval_minutes: number;
             /** Etag */
@@ -730,8 +1080,12 @@ export interface components {
             last_modified: string | null;
             /** Last Fetched At */
             last_fetched_at: string | null;
+            /** Last Fetch Success At */
+            last_fetch_success_at: string | null;
             /** Last Fetch Error */
             last_fetch_error: string | null;
+            /** Last Fetch Error At */
+            last_fetch_error_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -742,6 +1096,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** FeedSettingsUpdate */
+        FeedSettingsUpdate: {
+            /** Fetch Interval Minutes */
+            fetch_interval_minutes: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -856,6 +1215,8 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
             /**
              * Is Active
              * @default true
@@ -914,6 +1275,8 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+            /** Folder Id */
+            folder_id: string | null;
             /** Is Active */
             is_active: boolean;
             /** Priority */
@@ -962,6 +1325,8 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
             /** Priority */
@@ -1023,6 +1388,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Folder Id */
+            folder_id?: string | null;
             /** Unread Count */
             unread_count: number;
         };
@@ -1103,6 +1470,57 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
+        /** PluginAreaOut */
+        PluginAreaOut: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Icon */
+            icon?: string | null;
+            /**
+             * Order
+             * @default 100
+             */
+            order: number;
+            /** Route Key */
+            route_key: string;
+        };
+        /** PluginCapabilityRuntimeCountersOut */
+        PluginCapabilityRuntimeCountersOut: {
+            /** Success Count */
+            success_count: number;
+            /** Failure Count */
+            failure_count: number;
+            /** Timeout Count */
+            timeout_count: number;
+        };
+        /** PluginStatusOut */
+        PluginStatusOut: {
+            /** Plugin Id */
+            plugin_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Loaded */
+            loaded: boolean;
+            /** Capabilities */
+            capabilities: string[];
+            /** Startup Validation Status */
+            startup_validation_status: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Unavailable Reason */
+            unavailable_reason: string | null;
+            /** Runtime Counters */
+            runtime_counters: {
+                [key: string]: components["schemas"]["PluginCapabilityRuntimeCountersOut"];
+            };
+            /**
+             * Last Updated At
+             * Format: date-time
+             */
+            last_updated_at: string;
+        };
         /** StreamArticleOut */
         StreamArticleOut: {
             /**
@@ -1117,6 +1535,75 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             article: components["schemas"]["ArticleOut"];
+        };
+        /** StreamBackfillResultOut */
+        StreamBackfillResultOut: {
+            /**
+             * Stream Id
+             * Format: uuid
+             */
+            stream_id: string;
+            /** Scanned Count */
+            scanned_count: number;
+            /** Previous Match Count */
+            previous_match_count: number;
+            /** Matched Count */
+            matched_count: number;
+        };
+        /** StreamClassifierRunOut */
+        StreamClassifierRunOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Stream Id
+             * Format: uuid
+             */
+            stream_id: string;
+            /**
+             * Article Id
+             * Format: uuid
+             */
+            article_id: string;
+            /** Feed Id */
+            feed_id: string | null;
+            /**
+             * Classifier Mode
+             * @enum {string}
+             */
+            classifier_mode: "classifier_only" | "hybrid";
+            /** Plugin Name */
+            plugin_name: string;
+            /** Provider */
+            provider: string | null;
+            /** Model Name */
+            model_name: string | null;
+            /** Model Version */
+            model_version: string | null;
+            /** Matched */
+            matched: boolean;
+            /** Confidence */
+            confidence: number | null;
+            /** Threshold */
+            threshold: number;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Run Status
+             * @enum {string}
+             */
+            run_status: "ok" | "no_decision";
+            /** Error Message */
+            error_message: string | null;
+            /** Duration Ms */
+            duration_ms: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** UserOut */
         UserOut: {
@@ -1295,7 +1782,7 @@ export interface operations {
             };
         };
     };
-    list_feeds_api_v1_feeds_get: {
+    get_dashboard_summary_api_v1_dashboard_summary_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1310,7 +1797,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["DashboardSummaryOut"];
+                };
+            };
+        };
+    };
+    list_feeds_api_v1_feeds_get: {
+        parameters: {
+            query?: {
+                include_archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["FeedOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1335,6 +1853,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_feed_health_api_v1_feeds_health_get: {
+        parameters: {
+            query?: {
+                lifecycle?: "all" | "active" | "paused" | "archived";
+                q?: string | null;
+                stale_only?: boolean;
+                error_only?: boolean;
+                all?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedHealthListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1401,6 +1956,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_feed_settings_api_v1_feeds__feed_id__settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_feed_lifecycle_api_v1_feeds__feed_id__lifecycle_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedLifecycleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedLifecycleResultOut"];
                 };
             };
             /** @description Validation Error */
@@ -1636,6 +2261,41 @@ export interface operations {
             };
         };
     };
+    mark_scope_as_read_api_v1_articles_state_mark_scope_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArticleScopeReadPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_article_api_v1_articles__article_id__get: {
         parameters: {
             query?: never;
@@ -1654,6 +2314,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArticleDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_article_fulltext_api_v1_articles__article_id__fulltext_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                article_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleFulltextFetchOut"];
                 };
             };
             /** @description Validation Error */
@@ -2002,6 +2693,70 @@ export interface operations {
             };
         };
     };
+    list_stream_classifier_runs_api_v1_streams__stream_id__classifier_runs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                stream_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamClassifierRunOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_stream_backfill_api_v1_streams__stream_id__backfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamBackfillResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_navigation_api_v1_navigation_get: {
         parameters: {
             query?: never;
@@ -2018,6 +2773,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NavigationTreeOut"];
+                };
+            };
+        };
+    };
+    list_plugin_areas_api_v1_plugins_areas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginAreaOut"][];
+                };
+            };
+        };
+    };
+    list_plugin_status_api_v1_plugins_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginStatusOut"][];
                 };
             };
         };

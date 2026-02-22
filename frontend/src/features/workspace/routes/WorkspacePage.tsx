@@ -1,18 +1,20 @@
 import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import RssFeedRoundedIcon from "@mui/icons-material/RssFeedRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
-import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import SpaceDashboardRoundedIcon from "@mui/icons-material/SpaceDashboardRounded";
 import { useNavigate } from "@tanstack/react-router";
-import { Box, Drawer, IconButton, Tooltip, useMediaQuery } from "@mui/material";
+import { Alert, Box, Drawer, useMediaQuery } from "@mui/material";
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { findArticleById, getSelectedArticleId } from "../../../entities/article/model";
 import { getScopeLabel, toNavigationHierarchy } from "../../../entities/navigation/model";
 import type { WorkspaceSearch } from "../../../shared/types/contracts";
+import { DashboardHost } from "../../dashboard/components/DashboardHost";
+import { PluginAreaHost } from "../plugins/PluginAreaHost";
 import { ArticlesPane } from "../components/ArticlesPane";
 import { NavigationPane } from "../components/NavigationPane";
 import { ReaderPane } from "../components/ReaderPane";
@@ -21,12 +23,16 @@ import {
   useArticleDetailQuery,
   useArticlesQuery,
   useAssignFeedFolderMutation,
+  useCreateFeedMutation,
   useCreateFolderMutation,
   useDeleteFolderMutation,
+  useDashboardSummaryQuery,
   useFeedsQuery,
+  useFetchArticleFulltextMutation,
   useFoldersQuery,
   useMarkScopeAsReadMutation,
   useNavigationQuery,
+  usePluginAreasQuery,
   usePatchArticleStateMutation,
   useUpdateFolderMutation,
 } from "../api/workspaceHooks";
@@ -44,7 +50,12 @@ type WorkspacePageProps = {
   themeMode: "light" | "dark";
   setThemeMode: (mode: "light" | "dark") => void;
   setSearch: (patch: Partial<WorkspaceSearch>) => void;
+  activePluginAreaRouteKey?: string | null;
+  activeDashboard?: boolean;
 };
+
+type WorkspaceLayoutMode = "desktop" | "tablet" | "mobile";
+type MobilePaneState = "nav" | "list" | "reader";
 
 export function WorkspacePage({
   search,
@@ -53,23 +64,33 @@ export function WorkspacePage({
   themeMode,
   setThemeMode,
   setSearch,
+  activePluginAreaRouteKey = null,
+  activeDashboard = false,
 }: WorkspacePageProps) {
-  const navigate = useNavigate({ from: "/app" });
+  const navigate = useNavigate();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const isTabletOrMobile = useMediaQuery("(max-width: 980px)");
   const isMobile = useMediaQuery("(max-width: 760px)");
+  const isTablet = useMediaQuery("(max-width: 1200px)");
+  const layoutMode: WorkspaceLayoutMode = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
+  const usesDrawerNav = layoutMode !== "desktop";
   const {
     layout,
     navSplitterProps,
     listSplitterProps,
     isNavDragging,
     isListDragging,
-  } = usePaneResizing({ enabled: !isTabletOrMobile });
+  } = usePaneResizing({ enabled: layoutMode === "desktop" });
 
   const navigationQuery = useNavigationQuery();
+  const pluginAreasQuery = usePluginAreasQuery();
+  const dashboardSummaryQuery = useDashboardSummaryQuery(activeDashboard);
   const foldersQuery = useFoldersQuery();
   const feedsQuery = useFeedsQuery();
+  const pluginAreas = pluginAreasQuery.data ?? [];
+  const isDashboardView = activeDashboard;
+  const isPluginAreaView = activePluginAreaRouteKey !== null && activePluginAreaRouteKey.length > 0;
+  const activePluginArea = pluginAreas.find((pluginArea) => pluginArea.route_key === activePluginAreaRouteKey) ?? null;
   const hierarchy = useMemo(
     () => (navigationQuery.data ? toNavigationHierarchy(navigationQuery.data) : null),
     [navigationQuery.data]
@@ -89,20 +110,37 @@ export function WorkspacePage({
     return mapping;
   }, [feedsQuery.data]);
 
-  const articlesQuery = useArticlesQuery(search);
+  const contentIsContextView = isDashboardView || isPluginAreaView;
+  const articlesQuery = useArticlesQuery(search, !contentIsContextView);
   const articles = articlesQuery.data?.items ?? [];
 
-  const selectedArticleId = getSelectedArticleId(articles, search.article_id);
+  const inferredSelectedArticleId = getSelectedArticleId(articles, search.article_id);
+  const selectedArticleId =
+    layoutMode === "mobile" && !search.article_id ? "" : inferredSelectedArticleId;
   const selectedArticle = findArticleById(articles, selectedArticleId);
 
-  const articleDetailQuery = useArticleDetailQuery(selectedArticleId);
+  const articleDetailQuery = useArticleDetailQuery(selectedArticleId, !contentIsContextView);
+  const fetchFulltextMutation = useFetchArticleFulltextMutation(selectedArticleId);
+  const rawReaderContent = useMemo(() => {
+    const detail = articleDetailQuery.data;
+    if (!detail) {
+      return "";
+    }
+
+    if (detail.content_source === "full_article") {
+      return detail.fulltext_content_html ?? detail.fulltext_content_text ?? detail.content_text ?? "";
+    }
+
+    return detail.content_text ?? "";
+  }, [articleDetailQuery.data]);
   const readerContentHtml = useMemo(
-    () => toReaderHtml(articleDetailQuery.data?.content_text ?? ""),
-    [articleDetailQuery.data?.content_text]
+    () => toReaderHtml(rawReaderContent),
+    [rawReaderContent]
   );
   const patchArticleStateMutation = usePatchArticleStateMutation(selectedArticleId);
   const markScopeAsReadMutation = useMarkScopeAsReadMutation();
   const createFolderMutation = useCreateFolderMutation();
+  const createFeedMutation = useCreateFeedMutation();
   const updateFolderMutation = useUpdateFolderMutation();
   const deleteFolderMutation = useDeleteFolderMutation();
   const assignFeedFolderMutation = useAssignFeedFolderMutation();
@@ -172,11 +210,19 @@ export function WorkspacePage({
 
   const systemAllCount = hierarchy?.systems.find((system) => system.scope_id === "all")?.unread_count ?? 0;
   const systemSavedCount = hierarchy?.systems.find((system) => system.scope_id === "saved")?.unread_count ?? 0;
-  const navOpen = isTabletOrMobile && isNavOpen;
-  const showArticlesPane = !isMobile || !selectedArticleId;
-  const showReaderPane = !isMobile || Boolean(selectedArticleId);
-  const showListReaderSplitter = !isTabletOrMobile && showArticlesPane && showReaderPane;
-  const desktopShellStyle = !isTabletOrMobile
+  const navOpen = usesDrawerNav && isNavOpen;
+  const showArticlesPane = layoutMode !== "mobile" || !selectedArticleId;
+  const showReaderPane = layoutMode !== "mobile" || Boolean(selectedArticleId);
+  const showListReaderSplitter = layoutMode === "desktop" && showArticlesPane && showReaderPane;
+  const mobilePaneState: MobilePaneState = navOpen ? "nav" : selectedArticleId ? "reader" : "list";
+  const shellClassName = [
+    `workspace-shell react-density-${density}`,
+    `workspace-shell--${layoutMode}`,
+    layoutMode === "mobile" ? `workspace-shell--mobile-pane-${mobilePaneState}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const desktopShellStyle = layoutMode === "desktop"
     ? ({
         "--workspace-nav-width": `${layout.navWidth}px`,
         "--workspace-list-width": `${layout.listWidth}px`,
@@ -185,13 +231,14 @@ export function WorkspacePage({
 
   const navigationPane = (
     <NavigationPane
+      isReadOnly={layoutMode === "mobile"}
       density={density}
       navPreset={navPreset}
       hierarchy={hierarchy}
       folders={foldersQuery.data ?? []}
       feedIconByFeedId={feedIconByFeedId}
-      selectedScopeType={search.scope_type}
-      selectedScopeKey={selectedScopeKey}
+      selectedScopeType={isDashboardView ? "dashboard" : isPluginAreaView ? "plugin" : search.scope_type}
+      selectedScopeKey={isDashboardView ? "dashboard" : isPluginAreaView ? activePluginAreaRouteKey ?? "" : selectedScopeKey}
       isLoading={navigationQuery.isLoading}
       isError={navigationQuery.isError}
       onSelectSystem={(systemKey) => {
@@ -227,8 +274,24 @@ export function WorkspacePage({
         });
         setIsNavOpen(false);
       }}
+      pluginAreas={pluginAreas}
+      selectedPluginAreaRouteKey={activePluginAreaRouteKey}
+      onSelectPluginArea={(area) => {
+        setIsNavOpen(false);
+        void navigate({
+          to: "/app/plugins/$areaId",
+          params: { areaId: area.route_key },
+        });
+      }}
       onCreateFolder={async (name) => {
         await createFolderMutation.mutateAsync(toCreateFolderRequest(name));
+      }}
+      onCreateFeed={async ({ title, url, folderId }) => {
+        await createFeedMutation.mutateAsync({
+          title,
+          url,
+          folder_id: folderId,
+        });
       }}
       onRenameFolder={async (folderId, name) => {
         await updateFolderMutation.mutateAsync({ folderId, payload: toUpdateFolderRequest(name) });
@@ -246,60 +309,86 @@ export function WorkspacePage({
         });
       }}
       isFolderMutationPending={createFolderMutation.isPending || updateFolderMutation.isPending || deleteFolderMutation.isPending}
+      isFeedMutationPending={createFeedMutation.isPending}
       isAssignPending={assignFeedFolderMutation.isPending}
     />
   );
 
-  return (
-    <Box className={`workspace-shell react-density-${density}`} style={desktopShellStyle}>
-      <WorkspaceRail
-        actions={[
-          {
-            id: "dashboard",
-            label: "Dashboard",
-            icon: <SpaceDashboardRoundedIcon fontSize="small" />,
-            onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" }),
-          },
-          {
-            id: "feeds",
-            label: isTabletOrMobile ? "Nav" : "Feeds",
-            icon: <RssFeedRoundedIcon fontSize="small" />,
-            badge: systemAllCount,
-            active: isTabletOrMobile
-              ? navOpen
-              : search.scope_type !== "system" || search.state === "all",
-            onClick: () => {
-              if (isTabletOrMobile) {
-                setIsNavOpen((previous) => !previous);
-                return;
-              }
-              setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" });
-            },
-          },
-          {
-            id: "saved",
-            label: "Saved",
-            icon: <BookmarkBorderRoundedIcon fontSize="small" />,
-            badge: systemSavedCount,
-            active: search.scope_type === "system" && search.state === "saved",
-            onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "saved", article_id: "" }),
-          },
-          {
-            id: "search",
-            label: "Search",
-            icon: <SearchRoundedIcon fontSize="small" />,
-            onClick: () => searchInputRef.current?.focus(),
-          },
-          {
-            id: "help",
-            label: "Help",
-            icon: <HelpOutlineRoundedIcon fontSize="small" />,
-            onClick: () => void navigate({ to: "/help" }),
-          },
-        ]}
-      />
+  const feedsAction = {
+    id: "feeds",
+    label: usesDrawerNav ? "Nav" : "Feeds",
+    icon: <RssFeedRoundedIcon fontSize="small" />,
+    badge: systemAllCount,
+    active: usesDrawerNav
+      ? navOpen
+      : !contentIsContextView && (search.scope_type !== "system" || search.state === "all"),
+    onClick: () => {
+      if (usesDrawerNav) {
+        setIsNavOpen((previous) => !previous);
+        return;
+      }
+      setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" });
+    },
+  };
 
-      {isTabletOrMobile ? (
+  const savedAction = {
+    id: "saved",
+    label: "Saved",
+    icon: <BookmarkBorderRoundedIcon fontSize="small" />,
+    badge: systemSavedCount,
+    active: !contentIsContextView && search.scope_type === "system" && search.state === "saved",
+    onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "saved", article_id: "" }),
+  };
+
+  const searchAction = {
+    id: "search",
+    label: "Search",
+    icon: <SearchRoundedIcon fontSize="small" />,
+    onClick: () => searchInputRef.current?.focus(),
+  };
+
+  const visibleRailActions = isMobile
+    ? [
+        feedsAction,
+        savedAction,
+        searchAction,
+      ]
+    : [
+        {
+          id: "dashboard",
+          label: "Dashboard",
+          icon: <SpaceDashboardRoundedIcon fontSize="small" />,
+          active: isDashboardView,
+          onClick: () => void navigate({ to: "/app/dashboard" }),
+        },
+        feedsAction,
+        savedAction,
+        searchAction,
+        {
+          id: "settings",
+          label: "Settings",
+          icon: <SettingsRoundedIcon fontSize="small" />,
+          onClick: () => void navigate({ to: "/account" }),
+        },
+        {
+          id: "theme",
+          label: themeMode === "dark" ? "Light mode" : "Dark mode",
+          icon: themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />,
+          onClick: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+        },
+        {
+          id: "help",
+          label: "Help",
+          icon: <HelpOutlineRoundedIcon fontSize="small" />,
+          onClick: () => void navigate({ to: "/help" }),
+        },
+      ];
+
+  return (
+    <Box className={shellClassName} style={desktopShellStyle} data-layout-mode={layoutMode}>
+      <WorkspaceRail actions={visibleRailActions} />
+
+      {usesDrawerNav ? (
         <Drawer open={navOpen} onClose={() => setIsNavOpen(false)} PaperProps={{ className: "workspace-nav-drawer" }}>
           {navigationPane}
         </Drawer>
@@ -313,95 +402,105 @@ export function WorkspacePage({
         </>
       )}
 
-      <Box className={!isTabletOrMobile ? "workspace-content workspace-content--resizable" : "workspace-content"}>
-        <Box className="workspace-topbar">
-          <Tooltip title={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-            <IconButton
-              size="small"
-              aria-label={themeMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-            >
-              {themeMode === "dark" ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Settings">
-            <IconButton
-              size="small"
-              aria-label="Open settings"
-              onClick={() => void navigate({ to: "/account" })}
-            >
-              <SettingsRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        {showArticlesPane ? (
-          <ArticlesPane
-            density={density}
-            search={search}
-            scopeLabel={selectedScopeLabel}
-            streamNameById={streamNameById}
-            articleItems={articles}
-            articleTotal={articlesQuery.data?.total ?? 0}
-            selectedArticleId={selectedArticleId}
-            isLoading={articlesQuery.isLoading}
-            isError={articlesQuery.isError}
-            searchInputRef={searchInputRef}
-            isMarkAllReadPending={markScopeAsReadMutation.isPending}
-            onSearchChange={(value) => setSearch({ q: value, article_id: "" })}
-            onStateChange={(value) => setSearch({ state: value, article_id: "" })}
-            onArticleSelect={(articleId) => setSearch({ article_id: articleId })}
-            onMarkScopeRead={() => {
-              if (
-                !window.confirm(
-                  "Mark all articles in the current scope and filters as read?"
-                )
-              ) {
-                return;
-              }
-              markScopeAsReadMutation.mutate({
-                scope_type: search.scope_type,
-                ...(search.scope_id ? { scope_id: search.scope_id } : {}),
-                state: search.state,
-                ...(search.q ? { q: search.q } : {}),
-              });
-            }}
+      <Box className={layoutMode === "desktop" && !contentIsContextView ? "workspace-content workspace-content--resizable" : "workspace-content"}>
+        {isDashboardView ? (
+          <DashboardHost
+            summary={dashboardSummaryQuery.data}
+            isLoading={dashboardSummaryQuery.isLoading}
+            isError={dashboardSummaryQuery.isError}
           />
-        ) : null}
+        ) : isPluginAreaView ? (
+          <Box className="workspace-plugin-shell">
+            {activePluginArea ? (
+              <PluginAreaHost area={activePluginArea} />
+            ) : (
+              <Alert severity="warning">Plugin area not found or currently unavailable.</Alert>
+            )}
+          </Box>
+        ) : (
+          <>
+            {showArticlesPane ? (
+              <ArticlesPane
+                density={density}
+                search={search}
+                scopeLabel={selectedScopeLabel}
+                streamNameById={streamNameById}
+                articleItems={articles}
+                articleTotal={articlesQuery.data?.total ?? 0}
+                selectedArticleId={selectedArticleId}
+                isLoading={articlesQuery.isLoading}
+                isError={articlesQuery.isError}
+                searchInputRef={searchInputRef}
+                isMarkAllReadPending={markScopeAsReadMutation.isPending}
+                onSearchChange={(value) => setSearch({ q: value, article_id: "" })}
+                onStateChange={(value) => setSearch({ state: value, article_id: "" })}
+                onArticleSelect={(articleId) => setSearch({ article_id: articleId })}
+                {...(layoutMode === "mobile"
+                  ? {
+                      onBackToNav: () => setIsNavOpen(true),
+                    }
+                  : {})}
+                onMarkScopeRead={() => {
+                  if (
+                    !window.confirm(
+                      "Mark all articles in the current scope and filters as read?"
+                    )
+                  ) {
+                    return;
+                  }
+                  markScopeAsReadMutation.mutate({
+                    scope_type: search.scope_type,
+                    ...(search.scope_id ? { scope_id: search.scope_id } : {}),
+                    state: search.state,
+                    ...(search.q ? { q: search.q } : {}),
+                  });
+                }}
+              />
+            ) : null}
 
-        {showListReaderSplitter ? (
-          <Box
-            {...listSplitterProps}
-            className={isListDragging ? "workspace-splitter workspace-splitter--active" : "workspace-splitter"}
-          />
-        ) : null}
+            {showListReaderSplitter ? (
+              <Box
+                {...listSplitterProps}
+                className={isListDragging ? "workspace-splitter workspace-splitter--active" : "workspace-splitter"}
+              />
+            ) : null}
 
-        {showReaderPane ? (
-          <ReaderPane
-            selectedArticle={selectedArticle}
-            selectedArticleId={selectedArticleId}
-            streamNameById={streamNameById}
-            detail={articleDetailQuery.data}
-            contentHtml={readerContentHtml}
-            isLoading={articleDetailQuery.isLoading}
-            isError={articleDetailQuery.isError}
-            isMutating={patchArticleStateMutation.isPending}
-            hasMutationError={patchArticleStateMutation.isError}
-            onToggleRead={toggleRead}
-            onToggleSaved={toggleSaved}
-            onOpenOriginal={() => {
-              const targetUrl = articleDetailQuery.data?.canonical_url ?? selectedArticle?.canonical_url;
-              if (targetUrl) {
-                window.open(targetUrl, "_blank", "noopener,noreferrer");
-              }
-            }}
-            onMoveSelection={moveSelection}
-            {...(isMobile
-              ? {
-                  onBackToList: () => setSearch({ article_id: "" }),
-                }
-              : {})}
-          />
-        ) : null}
+            {showReaderPane ? (
+              <ReaderPane
+                selectedArticle={selectedArticle}
+                selectedArticleId={selectedArticleId}
+                streamNameById={streamNameById}
+                detail={articleDetailQuery.data}
+                contentHtml={readerContentHtml}
+                isLoading={articleDetailQuery.isLoading}
+                isError={articleDetailQuery.isError}
+                isMutating={patchArticleStateMutation.isPending}
+                hasMutationError={patchArticleStateMutation.isError}
+                isFulltextFetching={fetchFulltextMutation.isPending}
+                hasFulltextMutationError={fetchFulltextMutation.isError}
+                fulltextMutationErrorMessage={fetchFulltextMutation.error?.message ?? null}
+                onToggleRead={toggleRead}
+                onToggleSaved={toggleSaved}
+                onOpenOriginal={() => {
+                  const targetUrl = articleDetailQuery.data?.canonical_url ?? selectedArticle?.canonical_url;
+                  if (targetUrl) {
+                    window.open(targetUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                onFetchFullArticle={() => {
+                  fetchFulltextMutation.mutate();
+                }}
+                onMoveSelection={moveSelection}
+                {...(layoutMode === "mobile"
+                  ? {
+                      onBackToList: () => setSearch({ article_id: "" }),
+                      onBackToNav: () => setIsNavOpen(true),
+                    }
+                  : {})}
+              />
+            ) : null}
+          </>
+        )}
       </Box>
     </Box>
   );

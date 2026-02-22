@@ -6,7 +6,7 @@ import type { FormEvent } from "react";
 import { AuthCard } from "../components/AuthCard";
 import { useLoginMutation } from "../api/authHooks";
 import { validateEmail, validatePassword } from "../lib/validation";
-import { DEFAULT_WORKSPACE_SEARCH } from "../../../entities/article/model";
+import { loadPersistedWorkspaceSearch } from "../../../entities/article/model";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export function LoginPage() {
       { email, password },
       {
         onSuccess: () => {
-          void navigate({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH });
+          void navigate({ to: "/app", search: loadPersistedWorkspaceSearch() });
         },
       }
     );

@@ -1,5 +1,680 @@
 # Session Notes
 
+## 2026-02-22 (GitFlow + CI/CD + GHCR Release Pipeline Implementation)
+
+### Implemented This Session
+
+- Replaced single legacy CI workflow with split GitFlow-oriented automation:
+  - added `.github/workflows/ci-fast.yml` for PRs into `develop`
+  - added `.github/workflows/release-readiness.yml` for PRs into `main`
+  - added `.github/workflows/release-main.yml` for release/tag/image automation on `main` pushes
+  - added `.github/workflows/codeql.yml` for code scanning on `develop`/`main` PR+push and weekly schedule
+- Added security/dependency automation:
+  - added `.github/dependabot.yml`
+  - added `.github/release.yml` release notes categorization
+  - added `.github/labeler.yml` path-based auto-label mapping config
+- Added production release container topology:
+  - `docker/backend.Dockerfile`
+  - `docker/frontend.Dockerfile` (multi-stage build + Nginx runtime)
+  - `docker/nginx.conf` (SPA fallback + `/api` reverse proxy to app)
+  - `docker-compose.release.yml` for GHCR image-based upgrades
+- Added frontend formatting gate:
+  - installed `prettier` in frontend dev deps
+  - added `frontend/.prettierrc` and `frontend/.prettierignore`
+  - added `frontend` script: `format:check`
+- Updated project docs for development/deployment/release model:
+  - `README.md`
+  - `docs/development.md`
+  - `docs/deployment.md`
+  - `docs/architecture.md`
+  - new `docs/release-cycle.md`
+  - updated `AGENTS.md` branching/release working agreement notes
+
+### Notes
+
+- GitHub repository settings (default branch switch + branch protection rulesets + required checks/labels) must still be
+  applied manually in repository settings.
+
+## 2026-02-22 (Full Article Fetch On-Demand v1 Implemented End-to-End)
+
+### Implemented This Session
+
+- Completed backend fulltext fetch foundation:
+  - added `article_fulltexts` model + migration (`alembic/versions/20260222_0016_article_fulltexts.py`)
+  - added fulltext fetch runtime service (`src/sift/services/article_fulltext_service.py`) with URL safety checks
+  - added endpoint `POST /api/v1/articles/{article_id}/fulltext/fetch`
+  - extended article detail projection with fulltext status/content fields and `content_source`
+- Completed frontend reader integration:
+  - added reader action (`Fetch full article` / `Refetch full article`) with pending/error behavior
+  - wired fetch mutation + detail invalidation in workspace hooks
+  - reader now renders full extracted content when available and shows source label
+  - regenerated OpenAPI frontend types for new API/schema contracts
+- Closed planning/docs for this slice:
+  - moved spec to `docs/specs/done/full-article-fetch-on-demand-v1.md`
+  - updated `docs/backlog.md`, `docs/backlog-history.md`, `docs/architecture.md`, and `AGENTS.md`
+    to mark full-article-fetch as completed and shift next priorities back to ranking/observability
+
+### Verification
+
+- backend:
+  - `python -m pytest tests/test_article_fulltext_service.py tests/test_article_fulltext_api.py`
+  - `python -m ruff check src/sift/api/routes/articles.py src/sift/services/article_fulltext_service.py src/sift/services/article_service.py src/sift/db/models.py src/sift/domain/schemas.py tests/test_article_fulltext_service.py tests/test_article_fulltext_api.py`
+  - `python -m mypy src/sift/services/article_fulltext_service.py src/sift/services/article_service.py src/sift/api/routes/articles.py src/sift/domain/schemas.py --no-incremental`
+- frontend:
+  - `npm --prefix frontend run test -- src/features/workspace/components/ReaderPane.test.tsx src/features/workspace/routes/WorkspacePage.test.tsx src/entities/article/model.test.ts`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run lint`
+
+## 2026-02-22 (Reprioritization: Full Article Fetch On-Demand to Top Priority)
+
+### Implemented This Session
+
+- Promoted `full article fetch on-demand v1` to the top active implementation priority.
+- Updated planning docs for alignment:
+  - `docs/backlog.md`
+  - `AGENTS.md`
+  - `docs/architecture.md`
+- Removed stale deferred references so `full article fetch` is no longer tracked as deferred.
+- Confirmed spec already exists and remains the implementation source:
+  - `docs/specs/done/full-article-fetch-on-demand-v1.md`
+
+### Verification
+
+- planning/docs consistency checks:
+  - `rg -n "full article fetch|full-article-fetch-on-demand|Next Delivery Sequence|Planned Next Moves|Deferred" docs/backlog.md AGENTS.md docs/architecture.md docs/session-notes.md`
+
+## 2026-02-22 (Plugin Configuration Registry Follow-Up: Security + Budget Contracts)
+
+### Implemented This Session
+
+- Added plugin registry security validation for sensitive settings keys in `src/sift/plugins/registry.py`:
+  - plaintext secret/token/password/api-key style values are rejected
+  - sensitive values must use env references (for example `${SIFT_API_KEY}`)
+- Added discover-feeds provider budget contract validation in `src/sift/plugins/registry.py`:
+  - validates provider-chain shape
+  - validates per-provider budget fields and integer bounds
+  - validates `max_requests_per_day >= max_requests_per_run`
+- Added baseline discover-feeds budget config in `config/plugins.yaml`.
+- Added registry tests in `tests/test_plugin_registry.py` for:
+  - sensitive-value rejection
+  - env-reference acceptance
+  - invalid discover budget contract rejection
+  - valid discover budget contract acceptance
+- Updated planning docs to advance active priorities to post-plugin-foundation slices.
+
+### Verification
+
+- `python -m pytest tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py`
+- `python -m ruff check src/sift/plugins/registry.py tests/test_plugin_registry.py`
+- `python -m mypy src/sift/plugins/registry.py tests/test_plugin_registry.py --no-incremental`
+
+## 2026-02-22 (Plugin Runtime Telemetry Contract Closure)
+
+### Implemented This Session
+
+- Added runtime plugin telemetry collector wiring in `PluginManager`:
+  - `sift_plugin_invocations_total{plugin_id,capability,result}`
+  - `sift_plugin_invocation_duration_seconds{plugin_id,capability,result}`
+  - `sift_plugin_timeouts_total{plugin_id,capability}`
+  - `sift_plugin_dispatch_failures_total{capability}`
+- Added exporter surfaces for plugin metrics:
+  - in-memory typed snapshot (`get_telemetry_snapshot`)
+  - Prometheus-text rendering (`render_telemetry_prometheus`)
+- Added contract-level runtime tests in `tests/test_plugin_runtime_manager.py` for:
+  - metrics emission and label/value mapping
+  - rendered metrics name presence
+  - structured logging required field assertions
+- Marked runtime hardening spec complete and archived to:
+  - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+- Updated planning docs to remove runtime hardening from active Next priorities:
+  - `docs/backlog.md`
+  - `AGENTS.md`
+  - `docs/architecture.md`
+  - `docs/backlog-history.md`
+
+### Verification
+
+- `python -m pytest tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_plugins_api.py tests/test_dashboard_api.py`
+- `python -m ruff check src/sift/plugins tests/test_plugin_runtime_manager.py`
+- `python -m mypy src/sift/plugins tests/test_plugin_runtime_manager.py --no-incremental`
+
+## 2026-02-22 (Plugin Verification + Backlog/Spec Cleanup Pass)
+
+### Implemented This Session
+
+- Verified plugin-platform implementation status against current backend/frontend tests and static checks.
+- Archived completed plugin/dashboard foundation specs to `docs/specs/done/`:
+  - `plugin-platform-foundation-v1.md`
+  - `frontend-plugin-host-workspace-areas-v1.md`
+  - `dashboard-shell-plugin-host-v1.md`
+- Updated planning docs so active backlog reflects remaining work only:
+  - `docs/backlog.md`
+  - `AGENTS.md`
+  - `docs/architecture.md`
+  - `docs/backlog-history.md`
+- Updated spec references to use archived paths where applicable and corrected moved-spec relative links.
+- Clarified remaining plugin backlog scope:
+  - telemetry metrics export + contract assertions (`plugin-runtime-hardening-diagnostics-v1`)
+  - config security and provider-budget contract follow-ups (`plugin-configuration-registry-v1`)
+
+### Verification
+
+- backend tests:
+  - `python -m pytest tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py tests/test_dashboard_api.py`
+- frontend tests:
+  - `npm --prefix frontend run test -- --run src/features/workspace/plugins/registry.test.tsx src/features/workspace/plugins/PluginAreaHost.test.tsx src/features/workspace/components/NavigationPane.test.tsx src/features/workspace/routes/WorkspacePage.test.tsx src/features/dashboard/components/DashboardHost.test.tsx`
+- static checks:
+  - `python -m ruff check src/sift/plugins src/sift/core/runtime.py src/sift/api/routes/plugins.py src/sift/api/routes/dashboard.py tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py tests/test_dashboard_api.py`
+  - `python -m mypy src/sift/plugins src/sift/core/runtime.py src/sift/api/routes/plugins.py src/sift/api/routes/dashboard.py --no-incremental`
+
+### Notes
+
+- `uv run` remains blocked in this local environment by `.venv/lib64` access errors; direct `python -m ...` commands
+  were used for backend verification.
+
+## 2026-02-22 (Dashboard Shell + Plugin Card Host Baseline)
+
+### Implemented This Session
+
+- Added dashboard summary metadata API:
+  - new endpoint `GET /api/v1/dashboard/summary` in `src/sift/api/routes/dashboard.py`
+  - endpoint returns deterministic card availability metadata (`ready` / `unavailable` / `degraded`)
+- Added frontend dashboard shell route and host:
+  - `/app/dashboard` route in frontend router
+  - dashboard rail action now navigates to `/app/dashboard`
+  - workspace rail + navigation remain visible while dashboard host replaces list/reader panes
+- Added plugin-ready dashboard card host baseline:
+  - `frontend/src/features/dashboard/components/DashboardHost.tsx`
+  - card-level isolation boundary and deterministic fallback handling
+  - built-in baseline `saved_followup` card registration plus unavailable/degraded fallback rendering
+
+### Verification
+
+- backend:
+  - `python -m ruff check src tests`
+  - `python -m mypy src --no-incremental`
+  - `python -m pytest tests/test_dashboard_api.py tests/test_plugins_api.py tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_stream_service.py tests/test_ingestion_service.py`
+- frontend:
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run test`
+  - `npm --prefix frontend run build`
+
+### Remaining Scope
+
+- Keep `docs/specs/done/dashboard-shell-plugin-host-v1.md` in progress for:
+  - broader plugin-provided `dashboard_card` mount coverage prior to command-center card/data rollout
+
+## 2026-02-22 (Frontend Plugin Host + Workspace Areas Baseline)
+
+### Implemented This Session
+
+- Added backend plugin area metadata endpoint:
+  - `GET /api/v1/plugins/areas` in `src/sift/api/routes/plugins.py`
+  - endpoint returns enabled, loaded workspace plugin areas from registry UI metadata
+- Added frontend plugin area host baseline:
+  - typed plugin area registration/runtime in `frontend/src/features/workspace/plugins/registry.ts`
+  - baseline plugin mount host + error-boundary isolation in
+    `frontend/src/features/workspace/plugins/PluginAreaHost.tsx`
+- Added workspace plugin navigation and route integration:
+  - `Plugins` section in `NavigationPane`
+  - plugin area route branch `/app/plugins/$areaId` in router
+  - plugin area rendering inside existing workspace shell in `WorkspacePage`
+- Added baseline `discover_feeds` plugin area metadata in `config/plugins.yaml`.
+
+### Verification
+
+- backend:
+  - `python -m ruff check src tests`
+  - `python -m mypy src --no-incremental`
+  - `python -m pytest tests/test_plugins_api.py tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_stream_service.py tests/test_ingestion_service.py`
+- frontend:
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run test`
+  - `npm --prefix frontend run build`
+
+### Remaining Scope
+
+- Keep `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md` in progress for:
+  - broader extension-point coverage beyond workspace-area baseline
+
+## 2026-02-22 (Plugin Runtime Hardening + Diagnostics Baseline)
+
+### Implemented This Session
+
+- Completed runtime guardrails and diagnostics baseline for plugins:
+  - `src/sift/plugins/manager.py` now provides timeout-guarded, fault-isolated dispatch for ingest/classifier hooks
+  - runtime counters and status snapshots are tracked per plugin/capability (success/failure/timeout)
+  - plugin load/capability contract failures are non-fatal per plugin and remain visible in status output
+- Added admin diagnostics API:
+  - new endpoint `GET /api/v1/plugins/status` via `src/sift/api/routes/plugins.py`
+  - endpoint is auth-protected + admin-only and can be disabled with `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+- Added configuration controls and docs wiring:
+  - timeout settings added in `src/sift/config.py` and `.env.example`
+  - API/router wiring updated for plugin diagnostics route
+- Added coverage:
+  - `tests/test_plugin_runtime_manager.py`
+  - `tests/test_plugins_api.py`
+
+### Verification
+
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `python -m pytest tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py tests/test_stream_service.py tests/test_ingestion_service.py`
+
+### Remaining Scope
+
+- Keep `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md` in progress for:
+  - explicit metrics backend export wiring (`sift_plugin_*` names)
+  - dedicated telemetry contract assertions beyond current runtime/API behavior tests
+
+## 2026-02-22 (Plugin Platform Foundation v1: Registry + Runtime Cutover Baseline)
+
+### Implemented This Session
+
+- Implemented centralized plugin registry loading/validation:
+  - added `src/sift/plugins/registry.py` with strict schema validation for:
+    - unique plugin ids
+    - known capability keys only
+    - strict field-set enforcement (`extra=forbid`)
+  - added default registry file `config/plugins.yaml` with first-party built-ins
+- Cut over runtime plugin initialization:
+  - `src/sift/core/runtime.py` now loads plugins from registry (`SIFT_PLUGIN_REGISTRY_PATH`)
+  - `src/sift/config.py` now uses `plugin_registry_path` and no longer relies on legacy `plugin_paths`
+  - `.env.example` now exposes `SIFT_PLUGIN_REGISTRY_PATH=config/plugins.yaml`
+- Updated plugin manager behavior to registry/capability model:
+  - `src/sift/plugins/manager.py` now loads `PluginRegistryEntry` records
+  - ingest and classifier dispatch are capability-gated by declared plugin capabilities
+- Added regression coverage:
+  - new `tests/test_plugin_registry.py` for validation, capability gating, and runtime registry-path loading
+
+### Verification
+
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `python -m pytest tests/test_plugin_registry.py tests/test_stream_service.py tests/test_ingestion_service.py`
+
+### Notes / Remaining Scope
+
+- `uv run ...` could not be used in this local environment due a `.venv\\lib64` access error; direct `python -m ...`
+  commands were used for verification.
+- Remaining plugin-platform scope stays active:
+  - runtime hardening/diagnostics (`docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`)
+  - frontend plugin host/workspace areas (`docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`)
+  - dashboard shell host (`docs/specs/done/dashboard-shell-plugin-host-v1.md`)
+
+## 2026-02-22 (Plugin-First Planning Session: Spec Set Authored)
+
+### Implemented This Session
+
+- Authored new active planning specs for the plugin-first priority stack:
+  - `docs/specs/done/plugin-platform-foundation-v1.md`
+  - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+  - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+  - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+- Updated dashboard planning dependency wiring:
+  - `docs/specs/dashboard-command-center-v1.md` now references dashboard shell host as an explicit foundation
+    dependency/spec gate item
+- Updated source-of-truth planning docs to reference new specs and sequencing:
+  - `docs/backlog.md` core priorities now include direct spec links for each plugin-first step
+  - `AGENTS.md` `Next Delivery Sequence` now includes direct spec links
+  - `docs/architecture.md` `Planned Next Moves` now includes direct spec links
+  - dashboard spec-gate checklists in backlog/architecture/AGENTS now include
+    `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- Consistency checks:
+  - `rg -n "plugin-platform-foundation-v1|plugin-runtime-hardening-diagnostics-v1|frontend-plugin-host-workspace-areas-v1|dashboard-shell-plugin-host-v1|dashboard-shell-plugin-host" docs/backlog.md AGENTS.md docs/architecture.md docs/specs docs/session-notes.md`
+
+## 2026-02-22 (Planning Reprioritization: Plugin Architecture First)
+
+### Implemented This Session
+
+- Reprioritized active planning from feature-first sequencing to plugin-platform-first sequencing:
+  - `docs/backlog.md` `Core Platform Priorities` now starts with plugin registry/runtime/frontend-host/dashboard-host
+    foundation work
+  - `AGENTS.md` `Next Delivery Sequence` now mirrors the same plugin-first order
+  - `docs/architecture.md` `Planned Next Moves` now mirrors the same plugin-first order
+- Removed deferred duplicate plugin-foundation item after promotion to active priorities:
+  - removed deferred `Plugin UI Areas + Centralized Plugin Configuration` item from `docs/backlog.md`
+  - updated deferred sequence ordering in `docs/backlog.md` and `docs/architecture.md`
+- Locked planning decision for plugin configuration migration:
+  - direct cutover to centralized plugin registry
+  - no legacy `plugin_paths` compatibility mode
+  - updated `docs/specs/plugin-configuration-registry-v1.md` rollout notes accordingly
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- Consistency checks:
+  - `rg -n "Core Platform Priorities|Next Delivery Sequence|Planned Next Moves|plugin_paths|Deferred Delivery Sequence" docs/backlog.md AGENTS.md docs/architecture.md docs/specs/plugin-configuration-registry-v1.md`
+
+## 2026-02-22 (Desktop Reader/Workspace Polish v2 Closure Verification)
+
+### Implemented This Session
+
+- Verified closure criteria for `Desktop reader/workspace polish v2` and aligned planning docs:
+  - updated `docs/backlog.md` to remove active UI-only polish scope and mark the slice closed
+  - updated `AGENTS.md` and `docs/architecture.md` to reflect the same closed status and evidence
+- Verified screenshot gate evidence from:
+  - `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+  - capture set includes `1920x1080` and `1366x768` screenshots for `/app`, `/account`, `/account/feed-health`,
+    `/account/monitoring`, and `/help`
+
+### Verification
+
+- frontend quality gates (rerun at close):
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run test`
+  - `npm --prefix frontend run build`
+- screenshot dimensions check:
+  - verified PNG dimensions in `artifacts/desktop-review-2026-02-21T23-27-06-123Z` match target viewports
+    (`1920x1080`, `1366x768`)
+
+## 2026-02-22 (Session Close Consolidation / Next-Session Handoff)
+
+### Session Close State
+
+- Branch: `develop`
+- Latest pushed commits:
+  - `b047508` (`Polish desktop readability and track deferred mobile planning`)
+  - `ebf9025` (`Enforce mobile read-only mode for workspace and settings`)
+- Working tree is clean at close.
+
+### Backlog Consolidation
+
+- `docs/backlog.md` now marks a single active UI slice: `Desktop reader/workspace polish v2`.
+- Mobile planning remains explicitly deferred as a dedicated future planning session.
+- `AGENTS.md` is aligned with the same active/deferred UI direction.
+- `docs/backlog-history.md` now records the completed 2026-02-22 mobile read-focus + desktop readability pass.
+
+### Next Session Quick Start
+
+1. Read:
+   - `AGENTS.md`
+   - `docs/backlog.md`
+   - `docs/session-notes.md` (top two 2026-02-22 entries)
+2. Run baseline validation:
+   - `npm --prefix frontend run lint`
+   - `npm --prefix frontend run typecheck`
+   - `npm --prefix frontend run test`
+3. Start `Desktop reader/workspace polish v2` with screenshot QA gate at:
+   - `1920x1080`
+   - `1366x768`
+
+## 2026-02-22 (Mobile Read-Only Mode + Desktop Readability Tightening)
+
+### Implemented This Session
+
+- Enforced mobile read-only behavior for app focus on feed reading:
+  - mobile routes now redirect from `/account`, `/account/feed-health`, `/account/monitoring`, and `/help` to `/app`
+  - mobile workspace rail now exposes reading-only actions (`Nav`, `Saved`, `Search`)
+  - mobile navigation pane now hides feed/folder management controls and action menus/dialogs
+- Added test coverage for mobile/read-only behavior:
+  - read-only management controls hidden in `NavigationPane` tests
+  - mobile workspace rail behavior updated in `WorkspacePage` route tests
+- Applied desktop readability/alignment polish pass:
+  - improved article-list readability by reducing read-row fade and strengthening metadata text
+  - refined reader header rhythm (title scale + top spacing) for tighter vertical alignment
+  - improved feed-health/monitoring table legibility with slightly stronger caption sizing and row separators
+  - monitoring rules summary text now uses a larger, easier-to-scan type style
+- Backlog update:
+  - added deferred item for a dedicated future mobile UX planning session in `docs/backlog.md`
+
+### Verification
+
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+- desktop screenshot review capture:
+  - `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+
+## 2026-02-21 (Viewport Balance Polish Pass)
+
+### Implemented This Session
+
+- Applied a visual-balance-only responsive polish pass in `frontend/src/app/styles.css` for target viewports:
+  - `1920x1080` / `1366x768`:
+    - tightened list/reader spacing and row rhythm
+    - normalized panel shell spacing for settings routes
+  - `768x1024`:
+    - tuned rail sizing and typography
+    - made tablet workspace composition read as two-pane (`list + reader`) while nav remains drawer-based
+  - `390x844` / `320x480`:
+    - compacted top rail into icon-first mobile strip
+    - improved list header/control stacking and sticky offsets
+    - enabled two-line mobile article titles and tighter reader typography/padding
+  - feed health and monitoring tables:
+    - added controlled horizontal overflow behavior with stable minimum row-content width
+    - preserved one-row operational density without destructive text clipping
+
+### Verification
+
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
+## 2026-02-21 (Workspace/UI Alignment + Responsive Single-Route Pass)
+
+### Implemented This Session
+
+- Delivered phased UI touch-up implementation for workspace and settings surfaces:
+  - tokenized alignment pass in `frontend/src/app/styles.css`:
+    - normalized layout tokens (`--rail-width`, `--nav-width`, `--list-width`, splitter/control/rhythm tokens)
+    - unified control sizing/radius and baseline line-height rhythm
+    - added table row/name-cell style hooks for condensed feed-health/monitoring rows
+  - workspace responsive mode contract in `frontend/src/features/workspace/routes/WorkspacePage.tsx`:
+    - explicit breakpoint-driven layout modes (`desktop`, `tablet`, `mobile`)
+    - desktop: 3-pane with splitters and resizable panes
+    - tablet: 2-pane with collapsible nav drawer
+    - mobile: single active pane flow with nav drawer + list/reader transitions
+    - mobile default is now list when `article_id` is unset
+  - mobile navigation affordances:
+    - `Back to nav` action in list header (`ArticlesPane`)
+    - `Back to nav` + `Back to list` actions in reader (`ReaderPane`)
+  - settings shell alignment:
+    - settings/workspace nav breakpoint parity moved to `1200px` in `SettingsWorkspaceShell`
+  - long-name handling:
+    - monitoring feed name cells now wrap (no forced `noWrap`)
+    - feed-health and monitoring rows now use condensed row class hooks for consistency
+- Added/updated test coverage:
+  - new route-level responsive behavior tests:
+    - `frontend/src/features/workspace/routes/WorkspacePage.test.tsx`
+  - component interaction tests:
+    - `frontend/src/features/workspace/components/ArticlesPane.test.tsx` (mobile back-to-nav)
+    - `frontend/src/features/workspace/components/ReaderPane.test.tsx` (back-to-nav)
+  - monitoring table wrapping regression:
+    - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`
+
+### Verification
+
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+
+## 2026-02-21 (Workspace + Settings Management UI Touchups v1 Delivered)
+
+### Implemented This Session
+
+- Delivered backend + frontend implementation for workspace/settings management touchups v1:
+  - backend:
+    - added migration `alembic/versions/20260221_0015_keyword_stream_folder.py`
+    - added `keyword_streams.folder_id` persistence and validation
+    - stream contracts now support `folder_id` on create/update/out
+    - navigation stream payload now includes `folder_id`
+    - `GET /api/v1/feeds/health` now supports `all=true`
+    - `POST /api/v1/feeds` now supports optional `folder_id`
+  - frontend:
+    - workspace nav add-folder is now icon-only (`folder-plus`)
+    - monitoring/folder expand-collapse controls now use chevrons
+    - monitoring streams are grouped by folders in workspace navigation
+    - settings routes now use a shared side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
+    - monitoring management list is now one-row-per-feed definition with icon actions and edit-left form population
+    - feed health list is now one-row-per-feed with icon actions and add-feed dialog
+    - feed health uses `all=true` query mode by default
+- Synced planning/backlog/spec governance:
+  - moved implemented spec to `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`
+  - updated `docs/backlog.md`, `docs/backlog-history.md`, `AGENTS.md`, and `docs/architecture.md` to reflect completion
+
+### Verification
+
+- Backend:
+  - `python -m pytest tests/test_stream_service.py tests/test_navigation_service.py tests/test_feed_health_service.py tests/test_feed_health_api.py`
+- Frontend:
+  - `pnpm --dir frontend run gen:openapi`
+  - `pnpm --dir frontend run test -- src/entities/navigation/model.test.ts src/features/workspace/components/NavigationPane.test.tsx src/features/auth/routes/AccountPage.test.tsx src/features/monitoring/routes/MonitoringFeedsPage.test.tsx src/features/feed-health/routes/FeedHealthPage.test.tsx src/features/help/routes/HelpPage.test.tsx`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run lint`
+  - `pnpm --dir frontend run build`
+
+## 2026-02-21 (UI Touchups Planning Spec Captured)
+
+### Implemented This Session
+
+- Added a new implementation-ready UI planning spec:
+  - `docs/specs/workspace-settings-management-ui-touchups-v1.md` (now archived at
+    `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
+  - scope includes:
+    - icon/chevron navigation touchups
+    - monitoring feed folders
+    - settings side-menu shell
+    - condensed monitoring management rows
+    - condensed feed-health rows
+    - add-feed flow and all-feeds default loading in feed health
+- Updated active backlog tracking:
+  - `docs/backlog.md` `Next UI Slice` now points to the new touchups spec
+  - `docs/backlog.md` linked specifications now include the new spec
+- Updated planning alignment docs:
+  - `AGENTS.md` `Next UI Slice (Prioritized)` now points to the new touchups spec
+  - `docs/architecture.md` `Next UI Slice (Prioritized)` now points to the new touchups spec
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency checks:
+  - `Get-ChildItem docs/specs`
+  - `rg -n "workspace-settings-management-ui-touchups-v1|Next UI Slice|Linked Specifications" docs/backlog.md AGENTS.md docs/architecture.md docs/session-notes.md docs/specs`
+
+## 2026-02-19 (Observability Planning Spec Captured)
+
+### Implemented This Session
+
+- Added new implementation-ready observability planning spec:
+  - `docs/specs/scheduler-ingestion-observability-v1.md`
+  - scope is backend runtime observability for API/scheduler/worker and ingestion pipeline telemetry
+  - locked decisions captured:
+    - OTel-aligned + Prometheus-compatible metrics
+    - VMUI-first operational posture for resource efficiency
+    - metadata-only logging defaults
+    - no collector required in v1
+    - trace-ready contract with tracing backend deferred
+- Updated active backlog references:
+  - `docs/backlog.md` `Next` priority #2 now links the observability spec inline
+  - `docs/backlog.md` linked-spec list now includes scheduler/ingestion observability spec
+- Kept priority ordering and deferred sequence unchanged.
+
+### Verification
+
+- Documentation/planning update only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency checks:
+  - `rg -n "scheduler.*observability|scheduler-ingestion-observability-v1|Linked Specifications" docs/backlog.md AGENTS.md docs/architecture.md docs/session-notes.md docs/specs`
+  - `Get-ChildItem docs/specs`
+
+## 2026-02-19 (Planning Docs Consolidation Pass)
+
+### Implemented This Session
+
+- Consolidated active planning docs so implemented feed-health work is no longer listed as active `Next` work:
+  - updated `docs/backlog.md` core priorities to start with stream ranking, then scheduler observability
+  - updated `AGENTS.md` `Next Delivery Sequence` to match
+  - updated `docs/architecture.md` `Planned Next Moves` to match
+- Consolidated completed-work references:
+  - moved completed spec to `docs/specs/done/feed-health-edit-surface-v1.md`
+  - updated `docs/backlog-history.md` with completed feed health + edit surface v1 summary
+  - updated stale spec/path references in active docs.
+- Recorded current next step explicitly in planning docs:
+  - next active implementation priority is stream-level ranking and prioritization controls.
+
+### Verification
+
+- Documentation/planning consolidation only.
+- No backend/frontend runtime behavior changes were implemented in this session.
+- No test suite execution was required for this docs-only update.
+- Consistency check commands:
+  - `rg -n "feed health \\+ edit surface v1|stream-level ranking and prioritization controls|Planned Next Moves|Next Delivery Sequence" docs/backlog.md AGENTS.md docs/architecture.md docs/backlog-history.md`
+  - `Get-ChildItem docs/specs`
+  - `Get-ChildItem docs/specs/done`
+
+## 2026-02-19 (Feed Health + Edit Surface v1 Delivered)
+
+### Implemented This Session
+
+- Delivered feed lifecycle + health backend slice:
+  - migration added feed lifecycle/fetch metadata fields:
+    - `feeds.is_archived`
+    - `feeds.archived_at`
+    - `feeds.last_fetch_success_at`
+    - `feeds.last_fetch_error_at`
+  - ingestion bookkeeping now updates success/error timestamps on fetch outcomes
+  - scheduler feed candidate selection now excludes archived feeds
+  - navigation tree feed nodes now exclude archived feeds
+  - new feed health service added for stale/cadence/unread aggregation and filtering
+- Added/extended feed APIs:
+  - `GET /api/v1/feeds` now supports `include_archived`
+  - `GET /api/v1/feeds/health`
+  - `PATCH /api/v1/feeds/{feed_id}/settings`
+  - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+  - lifecycle behavior includes archive side effect: bulk-mark existing unread feed articles as read
+- Delivered frontend feed health management vertical slice:
+  - new authenticated route: `/account/feed-health`
+  - new account settings entry: `Manage feed health`
+  - health filters (`lifecycle`, `stale_only`, `error_only`, `q`)
+  - per-feed interval editing and lifecycle actions (pause/resume/archive/unarchive)
+  - archive confirmation explicitly mentions unread mark-read behavior
+  - success feedback includes archive `marked_read_count`
+  - follow-up UI polish completed:
+    - clearer filter panel copy/actions (`Apply filters`, `Reset`)
+    - additional status context (`Last refreshed`, stale age, interval badge)
+    - clearer lifecycle action labels (`Pause updates`, `Resume updates`, `Archive feed`, `Unarchive feed`)
+- Added test coverage:
+  - `tests/test_feed_health_service.py`
+  - `tests/test_feed_health_api.py`
+  - extended `tests/test_feed_service.py`
+  - extended `tests/test_navigation_service.py`
+  - extended `tests/test_ingestion_service.py`
+  - `frontend/src/features/feed-health/routes/FeedHealthPage.test.tsx`
+  - extended `frontend/src/features/auth/routes/AccountPage.test.tsx`
+- Synced planning docs and spec tracking:
+  - promoted feed health into `Next` priorities in `docs/backlog.md`
+  - added implementation spec `docs/specs/done/feed-health-edit-surface-v1.md` (archived to done after delivery)
+  - updated `AGENTS.md` and `docs/architecture.md` priority and API status references.
+
+### Verification
+
+- Backend test suite:
+  - `python -m pytest`
+- Frontend quality gates:
+  - `pnpm --dir frontend run gen:openapi`
+  - `pnpm --dir frontend run lint`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run test`
+  - `pnpm --dir frontend run build`
+- Note:
+  - `uv run pytest` was attempted first but failed in this environment due local `.venv` access issues; verification
+    used `python -m pytest` successfully.
+
 ## 2026-02-19 (Planning Reprioritization: Stream Ranking First, Vector DB Deferred)
 
 ### Implemented This Session
@@ -169,7 +844,7 @@
 ### Implemented This Session
 
 - Added new planning spec for reader-triggered full article fetch:
-  - `docs/specs/full-article-fetch-on-demand-v1.md`
+  - `docs/specs/done/full-article-fetch-on-demand-v1.md`
   - scopes manual `Fetch full article` action from reader, persisted extracted fulltext storage, and guarded fetch
     pipeline requirements.
 - Updated active backlog deferred planning:
@@ -1242,3 +1917,5 @@
 
 - Backlog source of truth is maintained in `docs/backlog.md`.
 - This file remains the chronological session log only.
+
+

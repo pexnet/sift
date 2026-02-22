@@ -11,7 +11,7 @@ from sqlalchemy import and_, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Article, Feed, KeywordStream, KeywordStreamMatch, RawEntry, StreamClassifierRun
+from sift.db.models import Article, Feed, FeedFolder, KeywordStream, KeywordStreamMatch, RawEntry, StreamClassifierRun
 from sift.domain.schemas import (
     ArticleOut,
     KeywordStreamCreate,
@@ -35,6 +35,10 @@ class StreamValidationError(Exception):
 
 
 class StreamNotFoundError(Exception):
+    pass
+
+
+class StreamFolderNotFoundError(Exception):
     pass
 
 
@@ -548,6 +552,18 @@ def stream_match_reason(
 
 
 class StreamService:
+    async def _ensure_user_folder_exists(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: UUID,
+        folder_id: UUID,
+    ) -> None:
+        folder_query = select(FeedFolder.id).where(FeedFolder.id == folder_id, FeedFolder.user_id == user_id)
+        folder_result = await session.execute(folder_query)
+        if folder_result.scalar_one_or_none() is None:
+            raise StreamFolderNotFoundError(f"Folder {folder_id} not found")
+
     async def list_streams(self, session: AsyncSession, user_id: UUID) -> list[KeywordStream]:
         query = select(KeywordStream).where(KeywordStream.user_id == user_id).order_by(
             KeywordStream.priority.asc(),
@@ -566,6 +582,9 @@ class StreamService:
         return [compile_stream(stream) for stream in result.scalars().all()]
 
     async def create_stream(self, session: AsyncSession, user_id: UUID, payload: KeywordStreamCreate) -> KeywordStream:
+        if payload.folder_id is not None:
+            await self._ensure_user_folder_exists(session=session, user_id=user_id, folder_id=payload.folder_id)
+
         include_keywords = _normalize_keywords(payload.include_keywords)
         exclude_keywords = _normalize_keywords(payload.exclude_keywords)
         include_regex = _normalize_regex_patterns(payload.include_regex)
@@ -597,6 +616,7 @@ class StreamService:
 
         stream = KeywordStream(
             user_id=user_id,
+            folder_id=payload.folder_id,
             name=payload.name.strip(),
             description=_normalize_optional_text(payload.description),
             is_active=payload.is_active,
@@ -638,6 +658,12 @@ class StreamService:
             stream.name = payload.name.strip()
         if payload.description is not None:
             stream.description = _normalize_optional_text(payload.description)
+        if "folder_id" in payload.model_fields_set:
+            if payload.folder_id is None:
+                stream.folder_id = None
+            else:
+                await self._ensure_user_folder_exists(session=session, user_id=user_id, folder_id=payload.folder_id)
+                stream.folder_id = payload.folder_id
         if payload.is_active is not None:
             stream.is_active = payload.is_active
         if payload.priority is not None:
@@ -873,6 +899,7 @@ class StreamService:
             user_id=stream.user_id,
             name=stream.name,
             description=stream.description,
+            folder_id=stream.folder_id,
             is_active=stream.is_active,
             priority=stream.priority,
             match_query=stream.match_query,

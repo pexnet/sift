@@ -13,14 +13,26 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures).
+1. Stream-level ranking/prioritization controls.
+2. Scheduler and ingestion observability (metrics, latency, failures; spec:
+   [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)).
 
 ### Next UI Slice
 
-- No active prioritized UI slice is currently queued.
-- Most recently completed: workspace action iconification v1 (completed on 2026-02-18; archived in
-  `docs/backlog-history.md`; spec archived in `docs/specs/done/workspace-action-iconification-v1.md`).
+1. No additional UI-only polish slice is active; core platform priorities are now primary.
+2. Most recently completed:
+  - full article fetch on-demand v1 (completed on 2026-02-22; spec archived in
+    `docs/specs/done/full-article-fetch-on-demand-v1.md`)
+  - desktop reader/workspace polish v2 (closed on 2026-02-22):
+    - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+    - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
+      `/account/monitoring`, and `/help`
+    - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
+      `npm --prefix frontend run test`, `npm --prefix frontend run build`
+  - workspace + settings management UI touchups v1 (completed on 2026-02-21; spec archived in
+    `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
+  - feed health + edit surface v1 (completed on 2026-02-19; archived in `docs/backlog-history.md`; spec archived in
+    `docs/specs/done/feed-health-edit-surface-v1.md`).
 
 ### Linked Specifications
 
@@ -28,11 +40,12 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
-- Full article fetch on-demand v1: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
 - Dashboard command center v1: [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
 - Stream ranking/prioritization controls v1:
   [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
 - Feed health ops panel v1: [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
+- Scheduler/ingestion observability v1:
+  [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)
 - Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
 - Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
@@ -42,27 +55,16 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ## Deferred (Not Prioritized Yet)
 
-### 1) Feed Health + Edit Surface
-
-- Add a dedicated feed status/edit page showing per-feed health and operational metadata.
-- Include feed freshness and cadence metrics:
-  - last successful ingest time
-  - recent ingest failures and error reason
-  - estimated article frequency (for example: articles/day and 7-day rolling cadence)
-- Add feed lifecycle actions:
-  - pause/resume scheduled ingestion
-  - archive/unarchive feed
-
-### 2) Monitoring Feed Search Management v2 Follow-Ups
+### 1) Monitoring Feed Search Management v2 Follow-Ups
 
 - Add expanded management capabilities for monitoring feed definitions.
 - Support additional matcher composition capabilities beyond current baseline semantics.
 - Add optional create/update-triggered historical matching pass.
 - Continue article-view explainability refinements for plugin findings and richer query evidence rendering.
 
-### 3) Dashboard as Daily Command Center
+### 2) Dashboard as Daily Command Center (Full Card/Data Rollout)
 
-- Introduce a dedicated command-center route (`/app/dashboard`) while keeping existing left workspace chrome:
+- Complete the command-center experience at `/app/dashboard` while keeping existing left workspace chrome:
   - rail + navigation tree remain visible
   - dashboard fills the remaining workspace content area
 - Add prioritization controls to weight content sources (regular feeds vs monitoring feeds vs other scopes).
@@ -77,6 +79,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - alerts
   - follow-up detail tab
 - Dashboard spec gate checklist (required before implementation starts):
+  - [docs/specs/done/dashboard-shell-plugin-host-v1.md](specs/done/dashboard-shell-plugin-host-v1.md)
   - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
@@ -86,7 +89,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Rule:
   - dashboard implementation starts only after all checklist dependency specs are drafted and linked.
 
-### 4) Duplicate Detection Visibility (Iteration 1)
+### 3) Duplicate Detection Visibility (Iteration 1)
 
 - Provide an initial duplicate-candidate screen accessible from Settings.
 - Keep first iteration read-focused:
@@ -94,7 +97,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - show confidence/source metadata
   - link out to canonical article + variants
 
-### 5) Plugin Backlog Ideas
+### 4) Plugin Backlog Ideas
 
 - LLM summarization plugin:
   - generate concise article summaries
@@ -104,7 +107,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - supports related-content surfacing and future semantic monitoring workflows
 - Spec reference: [docs/specs/article-llm-summary-on-demand-v1.md](specs/article-llm-summary-on-demand-v1.md)
 
-### 6) Trends Detection for Selected Feed Folders
+### 5) Trends Detection for Selected Feed Folders
 
 - Add a deferred trends feature that detects emerging topics across selected feed folders.
 - Intended use cases:
@@ -119,7 +122,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - supporting article count and source spread
   - links into matching article lists for drill-down
 
-### 7) Advanced Search Query Acceleration
+### 6) Advanced Search Query Acceleration
 
 - Keep v1 search semantics stable, but defer DB-side acceleration work.
 - Candidate acceleration paths:
@@ -130,20 +133,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - avoid full in-memory scan for advanced expressions on large article sets
   - preserve current query-language behavior and error model
 
-### 8) Plugin UI Areas + Centralized Plugin Configuration
-
-- Add a dedicated plugin section in workspace navigation where each enabled plugin owns its own folder/area.
-- Initial target examples:
-  - `Discover feeds` plugin area
-  - `Bluesky` plugin area (when plugin is implemented)
-- Introduce centralized plugin registry configuration (single file) for:
-  - plugin metadata and route/UI area configuration
-  - enable/disable toggles per plugin
-  - plugin-specific settings payloads
-- Keep secrets in environment variables and reference them from config.
-- Plan compatibility mode to migrate from legacy `plugin_paths` to registry-based plugin activation.
-
-### 9) Silent Feeds for Monitoring-Only Population
+### 7) Silent Feeds for Monitoring-Only Population
 
 - Add feed-level `silent` mode for high-noise feeds that should populate monitoring streams without creating unread
   backlog.
@@ -154,7 +144,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - When a feed is switched to silent, existing unread for that feed should be bulk-marked read.
 - Spec reference: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 
-### 10) Discover Feeds (Discovery Streams)
+### 8) Discover Feeds (Discovery Streams)
 
 - Add the `Discover feeds` vertical slice using separate `discovery_streams` (not monitoring stream reuse).
 - Implement discovery-stream generation and recommendation decision flow:
@@ -164,7 +154,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Keep provider execution behind ordered adapters with free-tier-safe budgets/rate limits.
 - Spec reference: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 
-### 11) OIDC Provider Integration
+### 9) OIDC Provider Integration
 
 - Add external identity provider support on top of existing `auth_identities` foundation.
 - Delivery order:
@@ -172,32 +162,31 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - then Azure/Apple
 - Keep current local auth provider behavior unchanged as fallback.
 
-### 12) Full Article Fetch On-Demand
-
-- Add user-triggered `Fetch full article` action in reader to retrieve the full source-page content on demand.
-- Persist extracted fulltext separately from feed excerpt content and show source state in reader.
-- Keep initial version manual/on-demand only (no global auto-fetch).
-- Spec reference: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
-
-### 13) Vector Database Integration Infrastructure
+### 10) Vector Database Integration Infrastructure
 
 - Move vector-database integration out of immediate `Next` and keep it as a later deferred capability.
 - Add plugin-boundary vector infrastructure for embeddings and semantic matching workflows.
 - Keep vector storage optional and provider-pluggable (for example `pgvector`, Qdrant, Weaviate).
 - Preserve core-ingestion independence so vector infrastructure remains non-blocking for baseline feeds/streams.
 
+### 11) Mobile UX Planning (Dedicated Session)
+
+- Keep current mobile runtime in read-focused mode.
+- Run a separate mobile planning/design session later to define:
+  - mobile-specific navigation and reading ergonomics
+  - deferred settings/admin re-entry strategy (if any)
+  - final mobile density/accessibility targets and test matrix
+- Do not block current desktop polish and core platform priorities on this planning slice.
+
 ### Suggested Deferred Delivery Sequence
 
-1. Feed health/edit page (operability baseline).
-2. Monitoring feed management v2 follow-ups.
-3. Dashboard v1 (priority inbox and command-center widgets; start only after dashboard spec-gate checklist is complete).
-4. Discover feeds v1 (discovery streams + recommendation decisions).
-5. Duplicate-candidate settings view.
-6. Trends detection for selected feed folders (dashboard-oriented).
-7. Advanced search query acceleration (PostgreSQL-oriented).
-8. Plugin UI areas + centralized plugin configuration.
-9. Vector-database integration infrastructure (plugin-boundary embeddings support).
-10. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
-11. Silent feeds for monitoring-only population.
-12. OIDC provider integration (Google, then Azure/Apple).
-13. Full article fetch on-demand (reader-triggered).
+1. Monitoring feed management v2 follow-ups.
+2. Dashboard v1 (priority inbox and command-center widgets; start only after dashboard spec-gate checklist is complete).
+3. Discover feeds v1 (discovery streams + recommendation decisions).
+4. Duplicate-candidate settings view.
+5. Trends detection for selected feed folders (dashboard-oriented).
+6. Advanced search query acceleration (PostgreSQL-oriented).
+7. Vector-database integration infrastructure (plugin-boundary embeddings support).
+8. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+9. Silent feeds for monitoring-only population.
+10. OIDC provider integration (Google, then Azure/Apple).

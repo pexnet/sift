@@ -37,11 +37,15 @@ class Feed(TimestampMixin, Base):
     url: Mapped[str] = mapped_column(String(1000), nullable=False, unique=True, index=True)
     site_url: Mapped[str | None] = mapped_column(String(1000))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     fetch_interval_minutes: Mapped[int] = mapped_column(Integer, default=15)
     etag: Mapped[str | None] = mapped_column(String(512))
     last_modified: Mapped[str | None] = mapped_column(String(512))
     last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_fetch_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_fetch_error: Mapped[str | None] = mapped_column(String(1000))
+    last_fetch_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Subscription(TimestampMixin, Base):
@@ -93,6 +97,22 @@ class ArticleState(TimestampMixin, Base):
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_starred: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+
+
+class ArticleFulltext(TimestampMixin, Base):
+    __tablename__ = "article_fulltexts"
+    __table_args__ = (UniqueConstraint("article_id", name="uq_article_fulltexts_article"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="idle", index=True)
+    source_url: Mapped[str | None] = mapped_column(String(2000))
+    final_url: Mapped[str | None] = mapped_column(String(2000))
+    content_text: Mapped[str | None] = mapped_column(Text)
+    content_html: Mapped[str | None] = mapped_column(Text)
+    extractor: Mapped[str | None] = mapped_column(String(128))
+    error_message: Mapped[str | None] = mapped_column(String(1000))
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class User(TimestampMixin, Base):
@@ -169,6 +189,7 @@ class KeywordStream(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    folder_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("feed_folders.id", ondelete="SET NULL"), index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)

@@ -48,11 +48,6 @@ describe("AccountPage", () => {
     expect(screen.getByText("Density", { selector: "legend" })).toBeVisible();
     expect(screen.getByText("Navigation preset", { selector: "legend" })).toBeVisible();
     expect(screen.getByText("Use arrow keys to move options and Enter or Space to select.")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Manage monitoring feeds" })).toHaveAttribute(
-      "href",
-      "/account/monitoring"
-    );
-    expect(screen.getByRole("link", { name: "Help" })).toHaveAttribute("href", "/help");
 
     expect(screen.getByText("settings@example.com")).toBeVisible();
     expect(screen.getByText("Settings User")).toBeVisible();

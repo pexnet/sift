@@ -9,6 +9,7 @@ from sift.db.models import User
 from sift.db.session import get_db_session
 from sift.domain.schemas import (
     ArticleDetailOut,
+    ArticleFulltextFetchOut,
     ArticleListResponse,
     ArticleOut,
     ArticleScopeReadPatch,
@@ -17,6 +18,7 @@ from sift.domain.schemas import (
     ArticleStatePatch,
     KeywordFilterPreviewRequest,
 )
+from sift.services.article_fulltext_service import article_fulltext_service
 from sift.services.article_service import (
     ArticleNotFoundError,
     ArticleStateValidationError,
@@ -119,6 +121,22 @@ async def get_article(
 ) -> ArticleDetailOut:
     try:
         return await article_service.get_article_detail(
+            session=session,
+            user_id=current_user.id,
+            article_id=article_id,
+        )
+    except ArticleNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/{article_id}/fulltext/fetch", response_model=ArticleFulltextFetchOut)
+async def fetch_article_fulltext(
+    article_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> ArticleFulltextFetchOut:
+    try:
+        return await article_fulltext_service.fetch_for_article(
             session=session,
             user_id=current_user.id,
             article_id=article_id,

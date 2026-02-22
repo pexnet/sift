@@ -2,12 +2,14 @@ import { z } from "zod";
 
 import type {
   ArticleDetail,
+  ArticleFulltextFetchResult,
   ArticleListItem,
   ArticleListResponse,
   ArticleStateBulkPatchRequest,
   PatchArticleStateRequest,
   WorkspaceSearch,
 } from "../../shared/types/contracts";
+import { WORKSPACE_FILTERS_KEY } from "../../shared/lib/storage";
 
 export const DEFAULT_WORKSPACE_SEARCH: WorkspaceSearch = {
   scope_type: "system",
@@ -63,6 +65,20 @@ const articleDetailSchema = z.object({
   is_starred: z.boolean(),
   is_archived: z.boolean(),
   stream_ids: z.array(z.string().uuid()),
+  fulltext_status: z.enum(["idle", "pending", "succeeded", "failed"]).nullable().optional(),
+  fulltext_error: z.string().nullable().optional(),
+  fulltext_fetched_at: z.string().nullable().optional(),
+  fulltext_content_text: z.string().nullable().optional(),
+  fulltext_content_html: z.string().nullable().optional(),
+  content_source: z.enum(["feed_excerpt", "full_article"]).optional(),
+});
+
+const articleFulltextFetchSchema = z.object({
+  article_id: z.string().uuid(),
+  status: z.enum(["idle", "pending", "succeeded", "failed"]),
+  error_message: z.string().nullable().optional(),
+  fetched_at: z.string().nullable().optional(),
+  content_source: z.enum(["feed_excerpt", "full_article"]),
 });
 
 const patchArticleStateSchema = z
@@ -98,12 +114,46 @@ export function parseWorkspaceSearch(value: unknown): WorkspaceSearch {
   return workspaceSearchSchema.parse(value) as WorkspaceSearch;
 }
 
+export function loadPersistedWorkspaceSearch(): WorkspaceSearch {
+  if (typeof window === "undefined") {
+    return DEFAULT_WORKSPACE_SEARCH;
+  }
+  const raw = window.localStorage.getItem(WORKSPACE_FILTERS_KEY);
+  if (!raw) {
+    return DEFAULT_WORKSPACE_SEARCH;
+  }
+  try {
+    const parsed = parseWorkspaceSearch(JSON.parse(raw));
+    return {
+      ...parsed,
+      article_id: "",
+    };
+  } catch {
+    return DEFAULT_WORKSPACE_SEARCH;
+  }
+}
+
+export function savePersistedWorkspaceSearch(search: WorkspaceSearch): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const normalized = parseWorkspaceSearch({
+    ...search,
+    article_id: "",
+  });
+  window.localStorage.setItem(WORKSPACE_FILTERS_KEY, JSON.stringify(normalized));
+}
+
 export function parseArticleList(payload: unknown): ArticleListResponse {
   return articleListSchema.parse(payload) as ArticleListResponse;
 }
 
 export function parseArticleDetail(payload: unknown): ArticleDetail {
   return articleDetailSchema.parse(payload) as ArticleDetail;
+}
+
+export function parseArticleFulltextFetch(payload: unknown): ArticleFulltextFetchResult {
+  return articleFulltextFetchSchema.parse(payload) as ArticleFulltextFetchResult;
 }
 
 export function parsePatchArticleStateRequest(payload: PatchArticleStateRequest): PatchArticleStateRequest {

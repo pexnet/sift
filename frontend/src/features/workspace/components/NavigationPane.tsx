@@ -1,6 +1,11 @@
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import AddLinkRoundedIcon from "@mui/icons-material/AddLinkRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import CreateNewFolderRoundedIcon from "@mui/icons-material/CreateNewFolderRounded";
+import DynamicFeedRoundedIcon from "@mui/icons-material/DynamicFeedRounded";
+import ExtensionRoundedIcon from "@mui/icons-material/ExtensionRounded";
+import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import TravelExploreRoundedIcon from "@mui/icons-material/TravelExploreRounded";
 import {
   Alert,
   Avatar,
@@ -11,21 +16,25 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
   List,
   ListItemButton,
   ListItemText,
   Menu,
   MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMemo, useState } from "react";
 
 import type { NavigationHierarchy } from "../../../entities/navigation/model";
-import type { FeedFolder } from "../../../shared/types/contracts";
+import type { FeedFolder, PluginArea } from "../../../shared/types/contracts";
 import { getFeedAvatarHue, getFeedInitial } from "../lib/feedIcons";
 import {
   loadExpandedFolderIds,
@@ -35,6 +44,7 @@ import {
 } from "../lib/navState";
 
 type NavigationPaneProps = {
+  isReadOnly: boolean;
   density: "compact" | "comfortable";
   navPreset: "tight" | "balanced" | "airy";
   hierarchy: NavigationHierarchy | null;
@@ -48,11 +58,16 @@ type NavigationPaneProps = {
   onSelectFolder: (folderId: string) => void;
   onSelectFeed: (feedId: string) => void;
   onSelectStream: (streamId: string) => void;
+  pluginAreas: PluginArea[];
+  selectedPluginAreaRouteKey: string | null;
+  onSelectPluginArea: (area: PluginArea) => void;
   onCreateFolder: (name: string) => Promise<void>;
+  onCreateFeed: (payload: { title: string; url: string; folderId: string | null }) => Promise<void>;
   onRenameFolder: (folderId: string, name: string) => Promise<void>;
   onDeleteFolder: (folderId: string) => Promise<void>;
   onAssignFeedFolder: (feedId: string, folderId: string | null) => Promise<void>;
   isFolderMutationPending: boolean;
+  isFeedMutationPending: boolean;
   isAssignPending: boolean;
 };
 
@@ -82,7 +97,19 @@ function getExpandedFolderIds(expandedFolders: Record<string, boolean>): Set<str
   );
 }
 
+function pluginAreaIcon(icon: string | null | undefined) {
+  const iconKey = (icon ?? "").toLowerCase();
+  if (iconKey === "search") {
+    return <TravelExploreRoundedIcon fontSize="inherit" className="workspace-nav__plugin-icon" />;
+  }
+  if (iconKey === "rss") {
+    return <DynamicFeedRoundedIcon fontSize="inherit" className="workspace-nav__plugin-icon" />;
+  }
+  return <ExtensionRoundedIcon fontSize="inherit" className="workspace-nav__plugin-icon" />;
+}
+
 export function NavigationPane({
+  isReadOnly,
   density,
   navPreset,
   hierarchy,
@@ -96,11 +123,16 @@ export function NavigationPane({
   onSelectFolder,
   onSelectFeed,
   onSelectStream,
+  pluginAreas,
+  selectedPluginAreaRouteKey,
+  onSelectPluginArea,
   onCreateFolder,
+  onCreateFeed,
   onRenameFolder,
   onDeleteFolder,
   onAssignFeedFolder,
   isFolderMutationPending,
+  isFeedMutationPending,
   isAssignPending,
 }: NavigationPaneProps) {
   const [initialFolderState] = useState(getInitialFolderState);
@@ -117,6 +149,12 @@ export function NavigationPane({
   const [failedFeedIcons, setFailedFeedIcons] = useState<Record<string, true>>({});
   const [monitoringExpanded, setMonitoringExpanded] = useState(() => loadMonitoringExpanded() ?? true);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [expandedMonitoringFolders, setExpandedMonitoringFolders] = useState<Record<string, boolean>>({});
+  const [createFeedOpen, setCreateFeedOpen] = useState(false);
+  const [feedUrlInput, setFeedUrlInput] = useState("");
+  const [feedTitleInput, setFeedTitleInput] = useState("");
+  const [feedFolderIdInput, setFeedFolderIdInput] = useState("");
+  const [feedCreateError, setFeedCreateError] = useState<string | null>(null);
 
   const folderOptions = useMemo(
     () => [{ id: null, name: "Unfiled" }, ...folders.map((folder) => ({ id: folder.id, name: folder.name }))],
@@ -169,6 +207,15 @@ export function NavigationPane({
     });
   };
 
+  const isMonitoringFolderOpen = (folderKey: string): boolean => expandedMonitoringFolders[folderKey] ?? true;
+
+  const toggleMonitoringFolder = (folderKey: string) => {
+    setExpandedMonitoringFolders((previous) => ({
+      ...previous,
+      [folderKey]: !isMonitoringFolderOpen(folderKey),
+    }));
+  };
+
   const closeDialogs = () => {
     setCreateOpen(false);
     setRenameOpen(false);
@@ -179,12 +226,47 @@ export function NavigationPane({
     setLocalError(null);
   };
 
+  const closeCreateFeedDialog = () => {
+    setCreateFeedOpen(false);
+    setFeedUrlInput("");
+    setFeedTitleInput("");
+    setFeedFolderIdInput("");
+    setFeedCreateError(null);
+  };
+
   const submitCreate = async () => {
     try {
       await onCreateFolder(folderNameInput);
       closeDialogs();
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Failed to create folder.");
+    }
+  };
+
+  const submitCreateFeed = async () => {
+    setFeedCreateError(null);
+
+    const url = feedUrlInput.trim();
+    if (!url) {
+      setFeedCreateError("Feed URL is required.");
+      return;
+    }
+    try {
+      new URL(url);
+    } catch {
+      setFeedCreateError("Feed URL must be a valid URL.");
+      return;
+    }
+
+    try {
+      await onCreateFeed({
+        title: feedTitleInput.trim() || url,
+        url,
+        folderId: feedFolderIdInput.length > 0 ? feedFolderIdInput : null,
+      });
+      closeCreateFeedDialog();
+    } catch (error) {
+      setFeedCreateError(error instanceof Error ? error.message : "Failed to create feed.");
     }
   };
 
@@ -211,11 +293,20 @@ export function NavigationPane({
       <Stack sx={{ mb: 1 }} className="workspace-nav__toolbar">
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Feeds</Typography>
-          <Stack direction="row" spacing={0.5}>
-            <Button size="small" variant="outlined" onClick={() => setCreateOpen(true)} startIcon={<AddRoundedIcon />}>
-              Folder
-            </Button>
-          </Stack>
+          {!isReadOnly ? (
+            <Stack direction="row" spacing={0.4}>
+              <Tooltip title="Add feed">
+                <IconButton size="small" aria-label="Add feed" onClick={() => setCreateFeedOpen(true)}>
+                  <AddLinkRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add folder">
+                <IconButton size="small" aria-label="Add folder" onClick={() => setCreateOpen(true)}>
+                  <CreateNewFolderRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          ) : null}
         </Stack>
       </Stack>
 
@@ -246,54 +337,110 @@ export function NavigationPane({
           <Box className="workspace-nav__section">
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">
               <Typography className="workspace-nav__section-title">Monitoring feeds</Typography>
-              <Button
+              <IconButton
                 size="small"
-                variant="text"
-                className="workspace-nav__section-action"
                 aria-label={`${monitoringExpanded ? "Collapse" : "Expand"} monitoring feeds`}
-                startIcon={
-                  <ChevronRightRoundedIcon
-                    className={`workspace-nav__section-chevron${
-                      monitoringExpanded ? " workspace-nav__section-chevron--open" : ""
-                    }`}
-                    fontSize="small"
-                  />
-                }
                 onClick={toggleMonitoringSection}
               >
-                {monitoringExpanded ? "Collapse" : "Expand"}
-              </Button>
+                <ChevronRightRoundedIcon
+                  className={`workspace-nav__section-chevron${monitoringExpanded ? " workspace-nav__section-chevron--open" : ""}`}
+                  fontSize="small"
+                />
+              </IconButton>
             </Stack>
             <Collapse in={monitoringExpanded} timeout="auto" unmountOnExit>
+              <Stack spacing={0.2}>
+                {hierarchy.monitoring_folders
+                  .filter((monitoringFolder) => monitoringFolder.streams.length > 0)
+                  .map((monitoringFolder) => {
+                    const folderKey = monitoringFolder.id ?? "unfiled-monitoring";
+                    const open = isMonitoringFolderOpen(folderKey);
+                    return (
+                      <Box key={folderKey}>
+                        <Stack direction="row" alignItems="center" className="workspace-nav__item-group">
+                          <IconButton
+                            size="small"
+                            aria-label={`${open ? "Collapse" : "Expand"} monitoring folder ${monitoringFolder.name}`}
+                            className="workspace-nav__folder-toggle"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              toggleMonitoringFolder(folderKey);
+                            }}
+                          >
+                            <ChevronRightRoundedIcon
+                              className={`workspace-nav__folder-icon${open ? " workspace-nav__folder-icon--open" : ""}`}
+                              fontSize="small"
+                            />
+                          </IconButton>
+                          <Stack direction="row" alignItems="center" className="workspace-nav__row workspace-nav__row--folder">
+                            <Box className="workspace-nav__folder-label">
+                              <FolderRoundedIcon fontSize="inherit" className="workspace-nav__folder-inline-icon" />
+                              <ListItemText primary={monitoringFolder.name} />
+                            </Box>
+                            <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
+                              {monitoringFolder.unread_count}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                        <Collapse in={open} timeout="auto" unmountOnExit>
+                          <List dense={density === "compact"} disablePadding className="workspace-nav__children">
+                            {monitoringFolder.streams.map((stream) => (
+                              <ListItemButton
+                                key={stream.scope_id}
+                                selected={selectedScopeType === "stream" && selectedScopeKey === stream.scope_id}
+                                onClick={() => onSelectStream(stream.scope_id)}
+                                className="workspace-nav__row"
+                              >
+                                <ListItemText primary={stream.name} />
+                                <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
+                                  {stream.unread_count}
+                                </Typography>
+                              </ListItemButton>
+                            ))}
+                          </List>
+                        </Collapse>
+                      </Box>
+                    );
+                  })}
+              </Stack>
+            </Collapse>
+          </Box>
+
+          {pluginAreas.length > 0 ? (
+            <Box className="workspace-nav__section">
+              <Typography className="workspace-nav__section-title">Plugins</Typography>
               <List dense={density === "compact"} disablePadding>
-                {hierarchy.streams.map((stream) => (
+                {pluginAreas.map((pluginArea) => (
                   <ListItemButton
-                    key={stream.scope_id}
-                    selected={selectedScopeType === "stream" && selectedScopeKey === stream.scope_id}
-                    onClick={() => onSelectStream(stream.scope_id)}
+                    key={pluginArea.id}
+                    selected={selectedPluginAreaRouteKey === pluginArea.route_key}
+                    onClick={() => onSelectPluginArea(pluginArea)}
                     className="workspace-nav__row"
                   >
-                    <ListItemText primary={stream.name} />
-                    <Typography variant="caption" color="text.secondary" className="workspace-nav__count">
-                      {stream.unread_count}
-                    </Typography>
+                    <Box className="workspace-nav__plugin-label">
+                      {pluginAreaIcon(pluginArea.icon)}
+                      <ListItemText primary={pluginArea.title} />
+                    </Box>
                   </ListItemButton>
                 ))}
               </List>
-            </Collapse>
-          </Box>
+            </Box>
+          ) : null}
 
           <Box className="workspace-nav__section">
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">
               <Typography className="workspace-nav__section-title">Folders</Typography>
-              <Button
+              <IconButton
                 size="small"
-                variant="text"
-                className="workspace-nav__section-action"
+                aria-label={allFoldersExpanded ? "Collapse all folders" : "Expand all folders"}
                 onClick={allFoldersExpanded ? collapseAllFolders : expandAllFolders}
               >
-                {allFoldersExpanded ? "Collapse all" : "Expand all"}
-              </Button>
+                <ChevronRightRoundedIcon
+                  className={`workspace-nav__section-chevron${allFoldersExpanded ? " workspace-nav__section-chevron--open" : ""}`}
+                  fontSize="small"
+                />
+              </IconButton>
             </Stack>
             <List dense={density === "compact"} disablePadding>
               {hierarchy.folders.map((folder) => {
@@ -328,6 +475,7 @@ export function NavigationPane({
                       </IconButton>
                       <ListItemButton
                         selected={folderSelected}
+                        aria-label={`Folder ${folder.name}`}
                         onClick={() => {
                           if (selectable) {
                             onSelectFolder(folder.scope_id);
@@ -342,7 +490,7 @@ export function NavigationPane({
                           {folder.unread_count}
                         </Typography>
                       </ListItemButton>
-                      {!folder.is_unfiled ? (
+                      {!isReadOnly && !folder.is_unfiled ? (
                         <IconButton
                           size="small"
                           className="workspace-nav__action-button"
@@ -369,6 +517,7 @@ export function NavigationPane({
                             density={density}
                             setFailedFeedIcons={setFailedFeedIcons}
                             onSelectFeed={onSelectFeed}
+                            isReadOnly={isReadOnly}
                             onOpenFeedMenu={(event) => setFeedMenu({ anchor: event.currentTarget, feedId: feed.id })}
                           />
                         ))}
@@ -383,119 +532,171 @@ export function NavigationPane({
         </Stack>
       ) : null}
 
-      <Menu
-        open={feedMenu !== null}
-        anchorEl={feedMenu?.anchor ?? null}
-        onClose={() => setFeedMenu(null)}
-      >
-        {folderOptions.map((folderOption) => (
-          <MenuItem
-            key={folderOption.id ?? "unfiled"}
-            disabled={isAssignPending}
-            onClick={() => {
-              void (async () => {
-                if (!feedMenu) {
+      {!isReadOnly ? (
+        <>
+          <Menu
+            open={feedMenu !== null}
+            anchorEl={feedMenu?.anchor ?? null}
+            onClose={() => setFeedMenu(null)}
+          >
+            {folderOptions.map((folderOption) => (
+              <MenuItem
+                key={folderOption.id ?? "unfiled"}
+                disabled={isAssignPending}
+                onClick={() => {
+                  void (async () => {
+                    if (!feedMenu) {
+                      return;
+                    }
+                    await onAssignFeedFolder(feedMenu.feedId, folderOption.id);
+                    setFeedMenu(null);
+                  })();
+                }}
+              >
+                Move to {folderOption.name}
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <Menu
+            open={folderMenu !== null}
+            anchorEl={folderMenu?.anchor ?? null}
+            onClose={() => setFolderMenu(null)}
+          >
+            <MenuItem
+              onClick={() => {
+                if (!folderMenu) {
                   return;
                 }
-                await onAssignFeedFolder(feedMenu.feedId, folderOption.id);
-                setFeedMenu(null);
-              })();
-            }}
-          >
-            Move to {folderOption.name}
-          </MenuItem>
-        ))}
-      </Menu>
+                setActiveFolderId(folderMenu.folderId);
+                setActiveFolderName(folderMenu.folderName);
+                setFolderNameInput(folderMenu.folderName);
+                setRenameOpen(true);
+                setFolderMenu(null);
+              }}
+            >
+              Rename folder
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                if (!folderMenu) {
+                  return;
+                }
+                setActiveFolderId(folderMenu.folderId);
+                setActiveFolderName(folderMenu.folderName);
+                setDeleteOpen(true);
+                setFolderMenu(null);
+              }}
+            >
+              Delete folder
+            </MenuItem>
+          </Menu>
 
-      <Menu
-        open={folderMenu !== null}
-        anchorEl={folderMenu?.anchor ?? null}
-        onClose={() => setFolderMenu(null)}
-      >
-        <MenuItem
-          onClick={() => {
-            if (!folderMenu) {
-              return;
-            }
-            setActiveFolderId(folderMenu.folderId);
-            setActiveFolderName(folderMenu.folderName);
-            setFolderNameInput(folderMenu.folderName);
-            setRenameOpen(true);
-            setFolderMenu(null);
-          }}
-        >
-          Rename folder
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            if (!folderMenu) {
-              return;
-            }
-            setActiveFolderId(folderMenu.folderId);
-            setActiveFolderName(folderMenu.folderName);
-            setDeleteOpen(true);
-            setFolderMenu(null);
-          }}
-        >
-          Delete folder
-        </MenuItem>
-      </Menu>
+          <Dialog open={createOpen} onClose={closeDialogs}>
+            <DialogTitle>Create folder</DialogTitle>
+            <DialogContent>
+              {localError ? <Alert severity="error">{localError}</Alert> : null}
+              <TextField
+                margin="dense"
+                autoFocus
+                fullWidth
+                label="Folder name"
+                value={folderNameInput}
+                onChange={(event) => setFolderNameInput(event.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeDialogs}>Cancel</Button>
+              <Button onClick={() => void submitCreate()} disabled={isFolderMutationPending}>
+                Create
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog open={createOpen} onClose={closeDialogs}>
-        <DialogTitle>Create folder</DialogTitle>
-        <DialogContent>
-          {localError ? <Alert severity="error">{localError}</Alert> : null}
-          <TextField
-            margin="dense"
-            autoFocus
-            fullWidth
-            label="Folder name"
-            value={folderNameInput}
-            onChange={(event) => setFolderNameInput(event.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialogs}>Cancel</Button>
-          <Button onClick={() => void submitCreate()} disabled={isFolderMutationPending}>
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={createFeedOpen} onClose={closeCreateFeedDialog}>
+            <DialogTitle>Add feed</DialogTitle>
+            <DialogContent>
+              <Stack spacing={1.2} sx={{ mt: 0.4, minWidth: { xs: 260, sm: 380 } }}>
+                {feedCreateError ? <Alert severity="error">{feedCreateError}</Alert> : null}
+                <TextField
+                  margin="dense"
+                  autoFocus
+                  fullWidth
+                  required
+                  label="Feed URL"
+                  value={feedUrlInput}
+                  onChange={(event) => setFeedUrlInput(event.target.value)}
+                  placeholder="https://example.com/rss"
+                />
+                <TextField
+                  margin="dense"
+                  fullWidth
+                  label="Title (optional)"
+                  value={feedTitleInput}
+                  onChange={(event) => setFeedTitleInput(event.target.value)}
+                />
+                <FormControl size="small">
+                  <InputLabel id="nav-create-feed-folder-label">Folder</InputLabel>
+                  <Select
+                    labelId="nav-create-feed-folder-label"
+                    label="Folder"
+                    value={feedFolderIdInput}
+                    onChange={(event) => setFeedFolderIdInput(event.target.value)}
+                  >
+                    <MenuItem value="">Unfiled</MenuItem>
+                    {folders.map((folder) => (
+                      <MenuItem key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeCreateFeedDialog}>Cancel</Button>
+              <Button variant="contained" onClick={() => void submitCreateFeed()} disabled={isFeedMutationPending}>
+                Add feed
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog open={renameOpen} onClose={closeDialogs}>
-        <DialogTitle>Rename folder</DialogTitle>
-        <DialogContent>
-          {localError ? <Alert severity="error">{localError}</Alert> : null}
-          <TextField
-            margin="dense"
-            autoFocus
-            fullWidth
-            label="Folder name"
-            value={folderNameInput}
-            onChange={(event) => setFolderNameInput(event.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialogs}>Cancel</Button>
-          <Button onClick={() => void submitRename()} disabled={isFolderMutationPending}>
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={renameOpen} onClose={closeDialogs}>
+            <DialogTitle>Rename folder</DialogTitle>
+            <DialogContent>
+              {localError ? <Alert severity="error">{localError}</Alert> : null}
+              <TextField
+                margin="dense"
+                autoFocus
+                fullWidth
+                label="Folder name"
+                value={folderNameInput}
+                onChange={(event) => setFolderNameInput(event.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeDialogs}>Cancel</Button>
+              <Button onClick={() => void submitRename()} disabled={isFolderMutationPending}>
+                Save
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      <Dialog open={deleteOpen} onClose={closeDialogs}>
-        <DialogTitle>Delete folder</DialogTitle>
-        <DialogContent>
-          {localError ? <Alert severity="error">{localError}</Alert> : null}
-          <Typography variant="body2">Delete folder "{activeFolderName}"? Feeds will be moved to Unfiled.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialogs}>Cancel</Button>
-          <Button color="error" onClick={() => void submitDelete()} disabled={isFolderMutationPending}>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Dialog open={deleteOpen} onClose={closeDialogs}>
+            <DialogTitle>Delete folder</DialogTitle>
+            <DialogContent>
+              {localError ? <Alert severity="error">{localError}</Alert> : null}
+              <Typography variant="body2">Delete folder "{activeFolderName}"? Feeds will be moved to Unfiled.</Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeDialogs}>Cancel</Button>
+              <Button color="error" onClick={() => void submitDelete()} disabled={isFolderMutationPending}>
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      ) : null}
     </Paper>
   );
 }
@@ -505,6 +706,7 @@ type FeedRowProps = {
   feedIconByFeedId: Record<string, string | null>;
   failedFeedIcons: Record<string, true>;
   density: "compact" | "comfortable";
+  isReadOnly: boolean;
   selectedScopeType: string;
   selectedScopeKey: string;
   onSelectFeed: (feedId: string) => void;
@@ -517,6 +719,7 @@ function FeedRow({
   feedIconByFeedId,
   failedFeedIcons,
   density,
+  isReadOnly,
   selectedScopeType,
   selectedScopeKey,
   onSelectFeed,
@@ -569,14 +772,16 @@ function FeedRow({
           {feed.unread_count}
         </Typography>
       </ListItemButton>
-      <IconButton
-        size="small"
-        className="workspace-nav__action-button"
-        aria-label={`Feed actions for ${feed.title}`}
-        onClick={onOpenFeedMenu}
-      >
-        <MoreHorizRoundedIcon fontSize="small" />
-      </IconButton>
+      {!isReadOnly ? (
+        <IconButton
+          size="small"
+          className="workspace-nav__action-button"
+          aria-label={`Feed actions for ${feed.title}`}
+          onClick={onOpenFeedMenu}
+        >
+          <MoreHorizRoundedIcon fontSize="small" />
+        </IconButton>
+      ) : null}
     </Stack>
   );
 }

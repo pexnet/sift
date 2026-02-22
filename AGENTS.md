@@ -29,6 +29,8 @@ This file stores persistent project context for future Codex sessions.
   - `develop` is the default integration branch for active feature development.
   - Create feature branches from `develop` and merge completed features back into `develop`.
   - Merge `develop` into `main` only when features are validated and release-ready.
+  - PRs into `main` must include exactly one release label: `release:major`, `release:minor`, or `release:patch`.
+  - Releases are automated from `main` merges with SemVer tags and GHCR image publish (`sift-backend`, `sift-frontend`).
 - Prefer migration-first database evolution:
   - Create migration.
   - Apply migration.
@@ -64,6 +66,9 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/feeds`
 - `POST /api/v1/feeds/{feed_id}/ingest`
 - `PATCH /api/v1/feeds/{feed_id}/folder`
+- `GET /api/v1/feeds/health`
+- `PATCH /api/v1/feeds/{feed_id}/settings`
+- `PATCH /api/v1/feeds/{feed_id}/lifecycle`
 - `GET /api/v1/folders`
 - `POST /api/v1/folders`
 - `PATCH /api/v1/folders/{folder_id}`
@@ -71,10 +76,14 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/articles/filter-preview`
 - `GET /api/v1/articles`
 - `GET /api/v1/articles/{article_id}`
+- `POST /api/v1/articles/{article_id}/fulltext/fetch`
 - `PATCH /api/v1/articles/{article_id}/state`
 - `POST /api/v1/articles/state/bulk`
 - `GET /api/v1/navigation`
+- `GET /api/v1/dashboard/summary`
 - `POST /api/v1/imports/opml`
+- `GET /api/v1/plugins/areas`
+- `GET /api/v1/plugins/status`
 
 ## Queue/Scheduler Status
 
@@ -128,7 +137,8 @@ This file stores persistent project context for future Codex sessions.
   - Light/dark theme toggle with local persistence
   - Compact/comfortable density toggle (compact default)
   - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
-  - Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and talks to backend through REST APIs only.
+  - Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/feed-health`,
+    `/help`) and talks to backend through REST APIs only.
 - Settings hub + unified UI preferences are implemented:
   - `/account` now hosts appearance and reading/layout controls plus account summary
   - unified browser-local preferences model for `themeMode`, `themePreset`, `density`, and `navPreset`
@@ -162,6 +172,49 @@ This file stores persistent project context for future Codex sessions.
   - article-list scope read action is icon-first with tooltip semantics and explicit accessibility label
   - reader actions (read/save/open/prev/next/highlight toggle) are icon-first with explicit accessibility labels
   - keyboard shortcuts remain unchanged (`j/k`, `o`, `m`, `s`)
+- Feed health + edit surface v1 is implemented:
+  - `/account/feed-health` route provides feed lifecycle/health management
+  - health APIs are available (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
+    `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
+  - feeds now support lifecycle metadata (`is_archived`, `archived_at`, `last_fetch_success_at`, `last_fetch_error_at`)
+  - archiving a feed bulk-marks existing unread articles from that feed as read
+- Workspace + settings management UI touchups v1 are implemented:
+  - navigation add-folder action is icon-only (`folder-plus`) and section expand/collapse controls are chevron-first
+  - monitoring streams now support folder assignment (`keyword_streams.folder_id`) and are grouped by folder in workspace
+    navigation
+  - settings routes now use a shared side-menu shell across `/account`, `/account/monitoring`, `/account/feed-health`,
+    and `/help`
+  - monitoring feed management list is condensed to one-row-per-stream with icon actions and edit-to-left-form behavior
+  - feed health is condensed to one-row-per-feed with icon actions, `all=true` full-list loading, and add-feed dialog
+  - feed create now accepts optional folder assignment at creation time (`folder_id`)
+- Plugin registry/runtime cutover baseline is implemented:
+  - plugin activation/config now loads from centralized registry (`config/plugins.yaml`) via
+    `SIFT_PLUGIN_REGISTRY_PATH`
+  - runtime validation enforces plugin id uniqueness and strict capability declarations
+  - active runtime path no longer uses legacy `plugin_paths`
+  - plugin manager dispatch is capability-gated for ingest and stream classifier hooks
+- Plugin runtime hardening and diagnostics baseline is implemented:
+  - ingest/classifier plugin dispatch is timeout-guarded and fault-isolated
+  - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error`
+  - admin diagnostics endpoint is available at `GET /api/v1/plugins/status`
+  - diagnostics endpoint is gated by `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+  - plugin telemetry metrics contract is wired (`sift_plugin_invocations_total`,
+    `sift_plugin_invocation_duration_seconds`, `sift_plugin_timeouts_total`, `sift_plugin_dispatch_failures_total`)
+- Frontend plugin host/workspace areas baseline is implemented:
+  - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
+  - workspace navigation renders a dedicated `Plugins` section from enabled plugin area metadata
+  - `/app/plugins/$areaId` route mounts plugin area content inside workspace shell
+  - plugin area mounts are isolated by error boundaries (`Plugin unavailable` fallback)
+- Dashboard shell/plugin host baseline is implemented:
+  - `/app/dashboard` route is implemented and keeps workspace rail + navigation visible
+  - desktop rail `Dashboard` action now routes to `/app/dashboard`
+  - dashboard host renders deterministic card states (`ready`, `unavailable`, `degraded`)
+  - summary metadata endpoint is available at `GET /api/v1/dashboard/summary`
+- Full article fetch on-demand v1 is implemented:
+  - reader now supports user-triggered `Fetch full article` / `Refetch full article`
+  - backend endpoint is available at `POST /api/v1/articles/{article_id}/fulltext/fetch`
+  - article detail now includes fulltext status/content fields and `content_source`
+  - extracted fulltext is persisted separately from feed excerpt content
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -171,28 +224,49 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
+1. Stream-level ranking/prioritization controls.
+2. Scheduler and ingestion observability.
+3. Recently completed and archived:
+   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
+4. Completed and archived:
+   - `docs/specs/done/plugin-platform-foundation-v1.md`
+   - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+   - plugin-configuration follow-up checkpoint: `docs/specs/plugin-configuration-registry-v1.md`
 
 ## Next UI Slice (Prioritized)
 
-1. No active prioritized UI slice is currently queued.
+1. No additional UI-only polish slice is active; core platform priorities are now primary.
+2. Most recently completed:
+   - full article fetch on-demand v1 (completed on 2026-02-22; spec archived at
+     `docs/specs/done/full-article-fetch-on-demand-v1.md`)
+   - desktop reader/workspace polish v2 (closed on 2026-02-22):
+     - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+     - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
+       `/account/monitoring`, and `/help`
+     - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
+       `npm --prefix frontend run test`, `npm --prefix frontend run build`
+   - workspace + settings management UI touchups v1 (2026-02-21; spec archived at
+     `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
+   - feed health + edit surface v1 (2026-02-19; spec archived at
+   `docs/specs/done/feed-health-edit-surface-v1.md`).
 
 ## Deferred
 
 1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
-2. Add reader-triggered full article fetch on demand (later priority).
-3. Add on-demand article LLM summary feature (later priority; spec:
+2. Add on-demand article LLM summary feature (later priority; spec:
    `docs/specs/article-llm-summary-on-demand-v1.md`).
-4. Add dashboard command center v1 (`/app/dashboard`) as deferred command-center planning/implementation with spec gate
-   dependencies:
+3. Complete dashboard command center v1 card/data rollout on top of `/app/dashboard` after spec-gate dependencies:
+   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
    - `docs/specs/dashboard-command-center-v1.md`
    - `docs/specs/stream-ranking-prioritization-controls-v1.md`
    - `docs/specs/feed-health-ops-panel-v1.md`
    - `docs/specs/monitoring-signal-scoring-v1.md`
    - `docs/specs/trends-detection-dashboard-v1.md`
    - `docs/specs/feed-recommendations-v1.md`
-5. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
+5. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
 
 ## Feature Notes
 

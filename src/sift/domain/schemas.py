@@ -9,6 +9,7 @@ class FeedCreate(BaseModel):
     title: str
     url: HttpUrl
     site_url: HttpUrl | None = None
+    folder_id: UUID | None = None
 
 
 class FeedOut(BaseModel):
@@ -19,15 +20,69 @@ class FeedOut(BaseModel):
     url: str
     site_url: str | None
     is_active: bool
+    is_archived: bool
+    archived_at: datetime | None
     fetch_interval_minutes: int
     etag: str | None
     last_modified: str | None
     last_fetched_at: datetime | None
+    last_fetch_success_at: datetime | None
     last_fetch_error: str | None
+    last_fetch_error_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class FeedSettingsUpdate(BaseModel):
+    fetch_interval_minutes: int
+
+
+class FeedLifecycleUpdate(BaseModel):
+    action: Literal["pause", "resume", "archive", "unarchive"]
+
+
+class FeedLifecycleResultOut(BaseModel):
+    feed: FeedOut
+    marked_read_count: int
+
+
+class FeedHealthSummaryOut(BaseModel):
+    total_feed_count: int
+    active_feed_count: int
+    paused_feed_count: int
+    archived_feed_count: int
+    stale_feed_count: int
+    error_feed_count: int
+
+
+class FeedHealthItemOut(BaseModel):
+    feed_id: UUID
+    title: str
+    url: str
+    site_url: str | None
+    folder_id: UUID | None
+    lifecycle_status: Literal["active", "paused", "archived"]
+    fetch_interval_minutes: int
+    last_fetched_at: datetime | None
+    last_fetch_success_at: datetime | None
+    last_fetch_error: str | None
+    last_fetch_error_at: datetime | None
+    is_stale: bool
+    stale_age_hours: float | None
+    articles_last_7d: int
+    estimated_articles_per_day_7d: float
+    unread_count: int
+
+
+class FeedHealthListResponse(BaseModel):
+    items: list[FeedHealthItemOut]
+    total: int
+    limit: int
+    offset: int
+    summary: FeedHealthSummaryOut
+    last_updated_at: datetime
 
 
 class FeedIngestResult(BaseModel):
@@ -120,6 +175,20 @@ class ArticleDetailOut(BaseModel):
     stream_ids: list[UUID] = Field(default_factory=list)
     stream_match_reasons: dict[UUID, str] | None = None
     stream_match_evidence: dict[UUID, dict[str, Any]] | None = None
+    fulltext_status: Literal["idle", "pending", "succeeded", "failed"] = "idle"
+    fulltext_error: str | None = None
+    fulltext_fetched_at: datetime | None = None
+    fulltext_content_text: str | None = None
+    fulltext_content_html: str | None = None
+    content_source: Literal["feed_excerpt", "full_article"] = "feed_excerpt"
+
+
+class ArticleFulltextFetchOut(BaseModel):
+    article_id: UUID
+    status: Literal["idle", "pending", "succeeded", "failed"]
+    error_message: str | None = None
+    fetched_at: datetime | None = None
+    content_source: Literal["feed_excerpt", "full_article"]
 
 
 class ArticleStatePatch(BaseModel):
@@ -172,6 +241,7 @@ class NavigationFolderNodeOut(BaseModel):
 class NavigationStreamNodeOut(BaseModel):
     id: UUID
     name: str
+    folder_id: UUID | None = None
     unread_count: int
 
 
@@ -275,6 +345,7 @@ class IngestRuleOut(BaseModel):
 class KeywordStreamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
+    folder_id: UUID | None = None
     is_active: bool = True
     priority: int = Field(default=100, ge=0, le=10000)
     match_query: str | None = Field(default=None, max_length=5000)
@@ -293,6 +364,7 @@ class KeywordStreamCreate(BaseModel):
 class KeywordStreamUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
+    folder_id: UUID | None = None
     is_active: bool | None = None
     priority: int | None = Field(default=None, ge=0, le=10000)
     match_query: str | None = Field(default=None, max_length=5000)
@@ -313,6 +385,7 @@ class KeywordStreamOut(BaseModel):
     user_id: UUID
     name: str
     description: str | None
+    folder_id: UUID | None
     is_active: bool
     priority: int
     match_query: str | None
@@ -362,4 +435,43 @@ class StreamClassifierRunOut(BaseModel):
     error_message: str | None
     duration_ms: int | None
     created_at: datetime
+
+
+class PluginCapabilityRuntimeCountersOut(BaseModel):
+    success_count: int
+    failure_count: int
+    timeout_count: int
+
+
+class PluginStatusOut(BaseModel):
+    plugin_id: str
+    enabled: bool
+    loaded: bool
+    capabilities: list[str]
+    startup_validation_status: str
+    last_error: str | None
+    unavailable_reason: str | None
+    runtime_counters: dict[str, PluginCapabilityRuntimeCountersOut]
+    last_updated_at: datetime
+
+
+class PluginAreaOut(BaseModel):
+    id: str
+    title: str
+    icon: str | None = None
+    order: int = 100
+    route_key: str
+
+
+class DashboardCardAvailabilityOut(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "unavailable", "degraded"]
+    reason: str | None = None
+    dependency_spec: str | None = None
+
+
+class DashboardSummaryOut(BaseModel):
+    cards: list[DashboardCardAvailabilityOut]
+    last_updated_at: datetime
 

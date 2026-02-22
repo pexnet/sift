@@ -27,7 +27,8 @@ This keeps deployment simple while preserving clean seams for future service ext
 **Current**
 
 - Frontend is a standalone React + TypeScript SPA in `frontend/` (Vite + MUI + TanStack Router/Query).
-- Frontend owns routes (`/app`, `/login`, `/register`, `/account`) and is deployed independently from FastAPI.
+- Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/feed-health`,
+  `/help`) and is deployed independently from FastAPI.
 - Backend no longer serves UI pages/static frontend bundles from `src/sift`.
 - Integration with backend is API-only via `/api/v1/*`.
 
@@ -46,6 +47,8 @@ Reader UX target is a modern, responsive React workspace built with MUI componen
    - row-level read/save actions
 3. Right reader pane:
    - article detail view and open-original action
+   - on-demand full article fetch action with retry (`Fetch full article` / `Refetch full article`)
+   - content source labeling (`Source: full article` / `Source: feed excerpt`)
    - mark-read auto-advance to next article when transitioning unread -> read
    - sanitized rich HTML rendering pipeline for article body content (DOMPurify-based allowlist)
    - paper-editorial default reading surface in light mode (warm background + serif body typography)
@@ -259,13 +262,14 @@ For day-to-day development, use the Dev Container stack in `.devcontainer/`:
 - `src/sift/services`: application services and use-case orchestration
 - `src/sift/domain`: domain schemas and shared contracts
 - `src/sift/db`: SQLAlchemy models and session management
-- `src/sift/plugins`: plugin protocol, loader, built-ins
+- `src/sift/plugins`: plugin protocol, registry loader/validation, runtime manager, built-ins
 - `src/sift/tasks`: worker and scheduler entrypoints
 - `frontend`: Vite + React + TypeScript source code and frontend tests
 
 ## Plugin Contract
 
-Plugins are loaded by dotted path and may implement one or more hooks:
+Plugins are now activated through centralized registry configuration (`config/plugins.yaml`) and may implement one or
+more hooks:
 
 - `on_article_ingested(article)` for ingest-time enrichment/transformation.
 - `classify_stream(article, stream)` for stream relevance decisions with confidence.
@@ -286,7 +290,9 @@ Design goals:
 
 - `feeds`: source catalog
   - includes owner reference (`owner_id`)
-  - includes fetch metadata (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_error`)
+  - includes fetch metadata (`etag`, `last_modified`, `last_fetched_at`, `last_fetch_success_at`, `last_fetch_error`,
+    `last_fetch_error_at`)
+  - includes lifecycle metadata (`is_active`, `is_archived`, `archived_at`)
 - `subscriptions`: user to feed mapping
 - `raw_entries`: immutable source payloads (unique feed/source key for ingest dedupe)
 - `articles`: normalized canonical content (unique feed/source key for ingest dedupe)
@@ -373,6 +379,46 @@ Design goals:
    - persisted fields include plugin/provider/model/version, confidence/threshold, match result, and run status
    - ingest and stream backfill flows both record classifier runs
    - stream API provides classifier run diagnostics endpoint (`GET /api/v1/streams/{stream_id}/classifier-runs`)
+17. Feed health + lifecycle management baseline:
+   - endpoints:
+     - `GET /api/v1/feeds/health`
+     - `PATCH /api/v1/feeds/{feed_id}/settings`
+     - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+   - archived feeds are excluded from scheduler candidate selection and navigation feed-tree rendering
+   - archive lifecycle action bulk-marks existing unread articles from that feed as read
+   - settings UI route `/account/feed-health` supports feed-level lifecycle and interval controls
+18. Workspace/settings management touchups v1 backend contracts:
+   - `keyword_streams` now support optional folder assignment (`folder_id`)
+   - stream create/update/out contracts now include `folder_id`
+   - navigation stream payload now includes `folder_id` so monitoring streams can be grouped by folders in UI
+   - `GET /api/v1/feeds/health` now supports `all=true` for full filtered list retrieval
+   - `POST /api/v1/feeds` now supports optional `folder_id` for one-step feed create + folder assignment
+19. Plugin registry/runtime cutover baseline:
+   - plugin activation/config now loads from `config/plugins.yaml` (`SIFT_PLUGIN_REGISTRY_PATH`)
+   - runtime registry validation enforces plugin id uniqueness and allowed capability declarations
+   - legacy `plugin_paths` runtime behavior is removed from the active plugin manager initialization path
+   - plugin manager now dispatches capability-gated ingest/classifier hooks using registry plugin ids
+20. Plugin runtime hardening and diagnostics baseline:
+   - plugin invocation is timeout-guarded for ingest/classifier capabilities with failure isolation
+   - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error` metadata
+   - diagnostics endpoint is available at `GET /api/v1/plugins/status` (auth-protected, admin-only)
+   - plugin dispatch emits structured logging events for start/complete/error/timeout and registry validation errors
+   - plugin telemetry metrics contract is wired in runtime export surfaces (`sift_plugin_invocations_total`,
+     `sift_plugin_invocation_duration_seconds`, `sift_plugin_timeouts_total`, `sift_plugin_dispatch_failures_total`)
+21. Frontend plugin host/workspace areas baseline:
+   - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
+   - workspace navigation now renders a `Plugins` section from enabled/loaded plugin area metadata
+   - frontend route `/app/plugins/$areaId` mounts plugin area views inside existing workspace shell
+   - plugin area mounts run inside error-boundary isolation with `Plugin unavailable` fallback behavior
+22. Dashboard shell/plugin host baseline:
+   - frontend route `/app/dashboard` is implemented with workspace rail + navigation preserved
+   - dashboard rail action now routes to `/app/dashboard` instead of resetting workspace scope
+   - dashboard host renders card availability states (`ready`, `unavailable`, `degraded`) with per-card isolation
+   - summary availability API is available at `GET /api/v1/dashboard/summary`
+23. Full article fetch on-demand v1:
+   - endpoint `POST /api/v1/articles/{article_id}/fulltext/fetch` performs user-triggered fulltext fetch/extraction
+   - article detail response now includes fulltext status/content fields and `content_source`
+   - extracted fulltext is persisted in `article_fulltexts` and rendered in reader when available
 
 ## Frontend Delivery Standard
 
@@ -385,6 +431,21 @@ Design goals:
 5. Vite build output is `frontend/dist` and is deployed by a separate static host/runtime.
 6. Runtime CDN imports and legacy `React.createElement` frontend modules have been removed.
 
+## Delivery Pipeline
+
+Current delivery automation is GitHub Actions + GHCR based:
+
+1. `ci-fast` runs on PRs targeting `develop` and acts as the integration gate.
+2. `release-readiness` runs on PRs targeting `main` and enforces:
+   - full backend/frontend quality checks
+   - release label contract (`release:major|minor|patch`)
+   - security gate (dependency review + Trivy HIGH/CRITICAL)
+3. `release-main` runs on push to `main` and:
+   - computes the next SemVer tag from merged PR labels
+   - creates GitHub Release notes
+   - publishes multi-arch backend/frontend images to GHCR
+4. `codeql` runs on `develop`/`main` PR and push events plus weekly schedule.
+
 ### Quality Baseline
 
 | Category | Current frontend standard |
@@ -396,24 +457,41 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Add stream-level ranking and prioritization controls.
-2. Add scheduler and ingestion observability (metrics, latency, failures) after core content features.
-3. Keep vector-database integration as a deferred plugin-infrastructure slice after near-term core priorities.
+1. Stream-level ranking/prioritization controls.
+2. Scheduler and ingestion observability.
+3. Completed and archived on 2026-02-22:
+   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
+   - `docs/specs/done/plugin-platform-foundation-v1.md`
+   - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+   - plugin-configuration follow-up checkpoint: `docs/specs/plugin-configuration-registry-v1.md`
 
 ## Next UI Slice (Prioritized)
 
-1. Monitoring match visual explainability v1 was completed on 2026-02-18:
-   - query-hit evidence (`query_hits`) is persisted and surfaced in APIs
-   - compact `Matched terms` summaries are rendered in list/reader
-   - title/content span-level highlighting is rendered in reader surfaces
-2. Workspace action iconification v1 was completed on 2026-02-18:
-   - list and reader actions now use icon-first controls with explicit `aria-label` values
-   - tooltip/label copy includes shortcut hints for core reader actions (`j/k`, `o`, `m`, `s`)
-   - no behavioral changes to existing reader/list actions or keyboard shortcut mappings.
+1. No additional UI-only polish slice is active; core platform priorities are now primary.
+2. Most recently completed: desktop reader/workspace polish v2 on 2026-02-22:
+   - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
+   - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
+     `/account/monitoring`, and `/help`
+   - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
+     `npm --prefix frontend run test`, `npm --prefix frontend run build`
+3. Previously completed: workspace + settings management UI touchups v1 on 2026-02-21:
+   - workspace navigation now uses icon-first folder creation and chevron-first section/folder controls
+   - monitoring streams now support folder assignment and are grouped by folder in navigation
+   - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
+   - monitoring feed management list is now condensed to one-row-per-stream with iconized actions
+   - feed health is now condensed to one-row-per-feed with iconized actions and add-feed dialog
+4. Previously completed: feed health + edit surface v1 on 2026-02-19:
+   - `/account/feed-health` route is implemented for lifecycle/freshness management
+   - feed health APIs are implemented (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
+     `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
+   - archive action bulk-marks existing unread feed articles as read
 
 ## Deferred
 
 1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
+2. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
 
 ## Frontend Settings and Theme Architecture (Current)
 
@@ -474,21 +552,20 @@ These items are intentionally documented for future implementation and are **not
 
 ### 1) Feed Health + Feed Lifecycle Management
 
-Planned capability:
+Status:
 
-- A dedicated feed status/edit surface for operators/users to inspect feed health.
-- Health/quality indicators per feed:
-  - last successful fetch/ingest timestamp
-  - recent failures + latest error context
-  - ingest cadence metrics (for example, rolling articles/day)
-- Lifecycle controls directly on this page:
-  - pause/resume feed ingestion
-  - archive/unarchive feed from active navigation
+- v1 feed health/edit surface is now implemented:
+  - new settings route: `/account/feed-health`
+  - feed health API: `GET /api/v1/feeds/health`
+  - feed settings API: `PATCH /api/v1/feeds/{feed_id}/settings`
+  - feed lifecycle API: `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+  - archive action now marks existing unread for that feed as read
+  - feed lifecycle/fetch metadata now includes `is_archived`, `archived_at`, `last_fetch_success_at`,
+    `last_fetch_error_at`
 
-Architecture implications:
+Deferred follow-up capability:
 
-- Extend feed domain/API contracts with lifecycle state (`active`/`paused`/`archived`) and health aggregates.
-- Add lightweight ingestion telemetry aggregation to power cadence and reliability indicators.
+- dashboard feed-health card aggregation endpoint and richer historical telemetry views.
 
 ### 2) Monitoring Feed Definition Management (Keyword/Regex/Plugin)
 
@@ -569,6 +646,7 @@ Architecture implications:
 - Extend existing `dashboard_card` plugin slot with source-priority context.
 - Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
 - Dashboard dependency spec gate before implementation:
+  - [docs/specs/done/dashboard-shell-plugin-host-v1.md](specs/done/dashboard-shell-plugin-host-v1.md)
   - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
@@ -639,32 +717,15 @@ Architecture implications:
 - Ensure ingest pipeline applies silent auto-read without changing matcher execution/evidence persistence.
 - Ensure unread/navigation counters remain coherent after silent toggle and ingest updates.
 
-### 9) Full Article Fetch On-Demand
-
-Planned capability:
-
-- Add reader-level on-demand full article fetch action for currently selected articles.
-- Fetch source page content from article canonical URL and extract main readable content.
-- Persist extracted fulltext separately from feed-provided excerpt and render it when available.
-
-Architecture implications:
-
-- Add persisted fulltext storage model (separate from `articles.content_text`) with fetch status and error metadata.
-- Add article-scoped fetch mutation endpoint and extend article detail payload with fulltext status/content source fields.
-- Add guarded outbound fetch pipeline (scheme restrictions, network safety checks, timeout/size bounds).
-
 ### Deferred Delivery Sequence (Post Current Core Priorities)
 
-1. Feed health/edit + lifecycle controls.
-2. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
-3. Dashboard v1 command center (only after dashboard dependency spec gate checklist is complete).
-4. Discover feeds v1 (discovery streams + recommendation decisions).
-5. Duplicate candidate review screen.
-6. Trends detection for selected feed folders (dashboard-oriented).
-7. Advanced search query acceleration (PostgreSQL-oriented).
-8. Plugin UI areas + centralized plugin configuration.
-9. Vector-database integration infrastructure (plugin-boundary embeddings support).
-10. Plugin implementations (LLM summary, vector similarity).
-11. Silent feeds for monitoring-only population.
-12. OIDC provider integration (Google, then Azure/Apple).
-13. Full article fetch on-demand (reader-triggered).
+1. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
+2. Dashboard v1 command center card/data rollout (only after dashboard dependency spec gate checklist is complete).
+3. Discover feeds v1 (discovery streams + recommendation decisions).
+4. Duplicate candidate review screen.
+5. Trends detection for selected feed folders (dashboard-oriented).
+6. Advanced search query acceleration (PostgreSQL-oriented).
+7. Vector-database integration infrastructure (plugin-boundary embeddings support).
+8. Plugin implementations (LLM summary, vector similarity).
+9. Silent feeds for monitoring-only population.
+10. OIDC provider integration (Google, then Azure/Apple).

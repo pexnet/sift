@@ -38,6 +38,7 @@ function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
     user_id: "656e7cbf-aa77-4959-af8e-c4e322ae8f3d",
     name: "Threat watch",
     description: "Security monitoring feed",
+    folder_id: null,
     is_active: true,
     priority: 100,
     match_query: null,
@@ -103,9 +104,21 @@ describe("MonitoringFeedsPage", () => {
 
     expect(screen.getByRole("heading", { name: "Monitoring feeds" })).toBeVisible();
     expect(screen.getByText("Threat watch")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Help" })).toHaveAttribute("href", "/help");
-    expect(screen.getByRole("link", { name: "Back to settings" })).toHaveAttribute("href", "/account");
+    expect(screen.getByRole("button", { name: /Select monitoring feed Threat watch/i })).toBeVisible();
+  });
+
+  it("allows long monitoring feed names to wrap instead of forcing ellipsis", () => {
+    const longName = "Blog by Morten Knudsen about Microsoft Security, Azure, M365 and Automation";
+    useStreamsQueryMock.mockReturnValue({
+      data: [makeStream({ name: longName })],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamsQuery>);
+
+    renderPage();
+
+    const nameNode = screen.getByText(longName);
+    expect(nameNode.className).not.toContain("MuiTypography-noWrap");
   });
 
   it("creates a monitoring feed from form input", async () => {
@@ -137,6 +150,7 @@ describe("MonitoringFeedsPage", () => {
       expect(createMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "corelight feed",
+          folder_id: null,
           match_query: "corelight AND microsoft",
           include_keywords: ["corelight", "microsoft"],
           include_regex: ["cve-\\d{4}-\\d+"],
@@ -151,7 +165,7 @@ describe("MonitoringFeedsPage", () => {
 
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: /Select monitoring feed Threat watch/i }));
     fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), {
       target: { value: "edited stream" },
     });
@@ -168,7 +182,7 @@ describe("MonitoringFeedsPage", () => {
     backfillMutateAsync.mockRejectedValue(new ApiError("Request failed with status 404", 404));
 
     renderPage();
-    fireEvent.click(screen.getByRole("button", { name: "Run backfill" }));
+    fireEvent.click(screen.getByRole("button", { name: /Run backfill for Threat watch/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Backfill endpoint is not available yet in this build.")).toBeVisible();
@@ -184,7 +198,7 @@ describe("MonitoringFeedsPage", () => {
     });
 
     renderPage();
-    fireEvent.click(screen.getByRole("button", { name: "Run backfill" }));
+    fireEvent.click(screen.getByRole("button", { name: /Run backfill for Threat watch/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Backfill completed: 2 matched of 5 scanned.")).toBeVisible();

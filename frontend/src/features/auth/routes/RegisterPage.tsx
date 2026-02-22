@@ -6,7 +6,7 @@ import type { FormEvent } from "react";
 import { useRegisterMutation } from "../api/authHooks";
 import { AuthCard } from "../components/AuthCard";
 import { validateEmail, validatePassword } from "../lib/validation";
-import { DEFAULT_WORKSPACE_SEARCH } from "../../../entities/article/model";
+import { loadPersistedWorkspaceSearch } from "../../../entities/article/model";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export function RegisterPage() {
       },
       {
         onSuccess: () => {
-          void navigate({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH });
+          void navigate({ to: "/app", search: loadPersistedWorkspaceSearch() });
         },
       }
     );

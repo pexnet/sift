@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -69,10 +69,37 @@ const hierarchy: NavigationHierarchy = {
     {
       id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
       name: "[Global] darktrace",
+      folder_id: "ef1ecd29-2f93-49d6-ae70-c989df4da59f",
       unread_count: 9,
       kind: "stream",
       scope_type: "stream",
       scope_id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+    },
+  ],
+  monitoring_folders: [
+    {
+      id: "ef1ecd29-2f93-49d6-ae70-c989df4da59f",
+      name: "Security",
+      is_unfiled: false,
+      unread_count: 9,
+      streams: [
+        {
+          id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+          name: "[Global] darktrace",
+          folder_id: "ef1ecd29-2f93-49d6-ae70-c989df4da59f",
+          unread_count: 9,
+          kind: "stream",
+          scope_type: "stream",
+          scope_id: "a951f7ec-1cf6-4e6a-bcb7-26642ab53412",
+        },
+      ],
+    },
+    {
+      id: null,
+      name: "Unfiled",
+      is_unfiled: true,
+      unread_count: 0,
+      streams: [],
     },
   ],
   feeds: [],
@@ -80,6 +107,7 @@ const hierarchy: NavigationHierarchy = {
 
 function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = {}) {
   const defaults: ComponentProps<typeof NavigationPane> = {
+    isReadOnly: false,
     density: "compact",
     navPreset: "balanced",
     hierarchy,
@@ -96,11 +124,16 @@ function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = 
     onSelectFolder: vi.fn(),
     onSelectFeed: vi.fn(),
     onSelectStream: vi.fn(),
+    pluginAreas: [],
+    selectedPluginAreaRouteKey: null,
+    onSelectPluginArea: vi.fn(),
     onCreateFolder: vi.fn(async () => {}),
+    onCreateFeed: vi.fn(async () => {}),
     onRenameFolder: vi.fn(async () => {}),
     onDeleteFolder: vi.fn(async () => {}),
     onAssignFeedFolder: vi.fn(async () => {}),
     isFolderMutationPending: false,
+    isFeedMutationPending: false,
     isAssignPending: false,
   };
 
@@ -119,9 +152,34 @@ describe("NavigationPane", () => {
     const onSelectFolder = vi.fn();
     renderPane({ onSelectFolder });
 
-    fireEvent.click(screen.getByText("Security"));
+    expect(screen.getByRole("button", { name: "Add feed" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add folder" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Folder Security" }));
     expect(onSelectFolder).toHaveBeenCalledWith("ef1ecd29-2f93-49d6-ae70-c989df4da59f");
     expect(screen.getByText("Alpha Feed")).toBeVisible();
+  });
+
+  it("creates feed from toolbar add feed dialog", async () => {
+    const onCreateFeed = vi.fn(async () => {});
+    renderPane({ onCreateFeed });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add feed" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByRole("textbox", { name: /Feed URL/i }), {
+      target: { value: "https://example.com/rss.xml" },
+    });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: /Title \(optional\)/i }), {
+      target: { value: "Example Feed" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add feed" }));
+
+    await waitFor(() => {
+      expect(onCreateFeed).toHaveBeenCalledWith({
+        title: "Example Feed",
+        url: "https://example.com/rss.xml",
+        folderId: null,
+      });
+    });
   });
 
   it("toggles folder collapse with one chevron click", async () => {
@@ -138,13 +196,13 @@ describe("NavigationPane", () => {
     storage.removeItem(NAV_FOLDERS_EXPANDED_KEY);
     renderPane();
 
-    fireEvent.click(screen.getByRole("button", { name: /Collapse all/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Collapse all folders/i }));
     await waitFor(() => {
       expect(screen.queryByText("Alpha Feed")).toBeNull();
       expect(screen.queryByText("Bravo Feed")).toBeNull();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Expand all/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Expand all folders/i }));
     await waitFor(() => {
       expect(screen.getByText("Alpha Feed")).toBeVisible();
       expect(screen.getByText("Bravo Feed")).toBeVisible();
@@ -165,13 +223,11 @@ describe("NavigationPane", () => {
   it("collapses and expands monitoring section", async () => {
     renderPane();
     expect(screen.getByText("[Global] darktrace")).toBeVisible();
-    expect(screen.getByText("Collapse")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /Collapse monitoring feeds/i }));
     await waitFor(() => {
       expect(screen.queryByText("[Global] darktrace")).toBeNull();
     });
-    expect(screen.getByText("Expand")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /Expand monitoring feeds/i }));
     await waitFor(() => {
@@ -206,6 +262,7 @@ describe("NavigationPane", () => {
 
     rerender(
       <NavigationPane
+        isReadOnly={false}
         density="compact"
         navPreset="tight"
         hierarchy={hierarchy}
@@ -222,15 +279,58 @@ describe("NavigationPane", () => {
         onSelectFolder={vi.fn()}
         onSelectFeed={vi.fn()}
         onSelectStream={vi.fn()}
+        pluginAreas={[]}
+        selectedPluginAreaRouteKey={null}
+        onSelectPluginArea={vi.fn()}
         onCreateFolder={vi.fn(async () => {})}
+        onCreateFeed={vi.fn(async () => {})}
         onRenameFolder={vi.fn(async () => {})}
         onDeleteFolder={vi.fn(async () => {})}
         onAssignFeedFolder={vi.fn(async () => {})}
         isFolderMutationPending={false}
+        isFeedMutationPending={false}
         isAssignPending={false}
       />
     );
 
     expect(navRoot?.className).toContain("workspace-nav--preset-tight");
+  });
+
+  it("hides navigation management controls in read-only mode", () => {
+    renderPane({ isReadOnly: true });
+
+    expect(screen.queryByRole("button", { name: "Add feed" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add folder" })).toBeNull();
+    expect(screen.queryByLabelText(/Folder actions for/i)).toBeNull();
+    expect(screen.queryByLabelText(/Feed actions for/i)).toBeNull();
+  });
+
+  it("renders plugins section and selects plugin area route", () => {
+    const onSelectPluginArea = vi.fn();
+    renderPane({
+      pluginAreas: [
+        {
+          id: "discover_feeds",
+          title: "Discover feeds",
+          icon: "search",
+          order: 10,
+          route_key: "discover-feeds",
+        },
+      ],
+      selectedPluginAreaRouteKey: "discover-feeds",
+      onSelectPluginArea,
+    });
+
+    expect(screen.getByText("Plugins")).toBeVisible();
+    const row = screen.getByRole("button", { name: /Discover feeds/i });
+    expect(row).toHaveClass("Mui-selected");
+    fireEvent.click(row);
+    expect(onSelectPluginArea).toHaveBeenCalledWith({
+      id: "discover_feeds",
+      title: "Discover feeds",
+      icon: "search",
+      order: 10,
+      route_key: "discover-feeds",
+    });
   });
 });

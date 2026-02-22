@@ -20,7 +20,14 @@ describe("toNavigationHierarchy", () => {
           feeds: [{ id: "f04eb25e-c9dc-445d-8c37-41f7868cd8ab", title: "Unfiled feed", unread_count: 2 }],
         },
       ],
-      streams: [{ id: "0f50472d-91d5-4f9a-8820-9f72a55f7f53", name: "darktrace", unread_count: 48 }],
+      streams: [
+        {
+          id: "0f50472d-91d5-4f9a-8820-9f72a55f7f53",
+          name: "darktrace",
+          folder_id: "1714bf8e-f573-4288-b053-29592b2125fe",
+          unread_count: 48,
+        },
+      ],
     });
 
     expect(hierarchy.sections.map((section) => section.id)).toEqual(["systems", "monitoring", "folders"]);
@@ -31,5 +38,8 @@ describe("toNavigationHierarchy", () => {
     expect(hierarchy.folders[1]?.is_unfiled).toBe(true);
     expect(hierarchy.feeds[0]?.scope_type).toBe("feed");
     expect(hierarchy.streams[0]?.scope_type).toBe("stream");
+    expect(hierarchy.streams[0]?.folder_id).toBe("1714bf8e-f573-4288-b053-29592b2125fe");
+    expect(hierarchy.monitoring_folders[0]?.name).toBe("Github");
+    expect(hierarchy.monitoring_folders[0]?.streams).toHaveLength(1);
   });
 });

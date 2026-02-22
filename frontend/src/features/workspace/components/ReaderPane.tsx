@@ -1,13 +1,14 @@
 import BookmarkBorderRoundedIcon from "@mui/icons-material/BookmarkBorderRounded";
 import BookmarkRoundedIcon from "@mui/icons-material/BookmarkRounded";
 import DoneRoundedIcon from "@mui/icons-material/DoneRounded";
+import DownloadForOfflineRoundedIcon from "@mui/icons-material/DownloadForOfflineRounded";
 import MarkEmailUnreadRoundedIcon from "@mui/icons-material/MarkEmailUnreadRounded";
 import NavigateBeforeRoundedIcon from "@mui/icons-material/NavigateBeforeRounded";
 import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
-import { Alert, Box, Button, Divider, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Divider, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { type ReactNode, useState } from "react";
 
 import { buildMatchedTermsSummary } from "../lib/matchEvidence";
@@ -24,11 +25,16 @@ type ReaderPaneProps = {
   isError: boolean;
   isMutating: boolean;
   hasMutationError: boolean;
+  isFulltextFetching?: boolean;
+  hasFulltextMutationError?: boolean;
+  fulltextMutationErrorMessage?: string | null;
   onToggleRead: () => void;
   onToggleSaved: () => void;
   onOpenOriginal: () => void;
+  onFetchFullArticle?: () => void;
   onMoveSelection: (delta: number) => void;
   onBackToList?: () => void;
+  onBackToNav?: () => void;
 };
 
 type EvidenceRecord = Record<string, unknown>;
@@ -628,11 +634,16 @@ export function ReaderPane({
   isError,
   isMutating,
   hasMutationError,
+  isFulltextFetching = false,
+  hasFulltextMutationError = false,
+  fulltextMutationErrorMessage = null,
   onToggleRead,
   onToggleSaved,
   onOpenOriginal,
+  onFetchFullArticle,
   onMoveSelection,
   onBackToList,
+  onBackToNav,
 }: ReaderPaneProps) {
   const streamIds = detail?.stream_ids ?? selectedArticle?.stream_ids ?? [];
   const matchedStreamNames = streamIds
@@ -719,6 +730,15 @@ export function ReaderPane({
   const toggleSavedLabel = selectedArticle?.is_starred ? "Remove from saved (s)" : "Save article (s)";
   const openOriginalAvailable = Boolean(detail?.canonical_url);
   const openOriginalTooltip = openOriginalAvailable ? "Open original source (o)" : "Original source unavailable";
+  const fulltextFetchAvailable = Boolean(detail?.canonical_url && onFetchFullArticle);
+  const fulltextFetchLabel =
+    detail?.content_source === "full_article" ? "Refetch full article" : "Fetch full article";
+  const fulltextFetchTooltip = isFulltextFetching
+    ? "Fetching full article..."
+    : fulltextFetchAvailable
+      ? fulltextFetchLabel
+      : "Full article fetch unavailable";
+  const contentSourceLabel = detail?.content_source === "full_article" ? "Source: full article" : "Source: feed excerpt";
   const previousArticleLabel = "Previous article (k)";
   const nextArticleLabel = "Next article (j)";
   const toggleHighlightsLabel = showHighlights ? "Hide match highlights" : "Show match highlights";
@@ -734,16 +754,31 @@ export function ReaderPane({
       {isLoading ? <Typography color="text.secondary">Loading article...</Typography> : null}
       {isError ? <Alert severity="error">Failed to load article details.</Alert> : null}
       {hasMutationError ? <Alert severity="error">Failed to update article state.</Alert> : null}
+      {hasFulltextMutationError ? (
+        <Alert severity="error">
+          {fulltextMutationErrorMessage ? `Failed to fetch full article: ${fulltextMutationErrorMessage}` : "Failed to fetch full article."}
+        </Alert>
+      ) : null}
+      {detail?.fulltext_status === "failed" && detail.fulltext_error ? (
+        <Alert severity="warning">Full article fetch failed: {detail.fulltext_error}</Alert>
+      ) : null}
 
       {detail ? (
         <Stack spacing={2}>
           <Box className="workspace-reader__top">
-            {onBackToList ? (
-              <Box>
-                <Button size="small" variant="text" onClick={onBackToList}>
-                  Back to list
-                </Button>
-              </Box>
+            {onBackToList || onBackToNav ? (
+              <Stack direction="row" spacing={1} className="workspace-reader__mobile-nav">
+                {onBackToNav ? (
+                  <Button size="small" variant="text" onClick={onBackToNav}>
+                    Back to nav
+                  </Button>
+                ) : null}
+                {onBackToList ? (
+                  <Button size="small" variant="text" onClick={onBackToList}>
+                    Back to list
+                  </Button>
+                ) : null}
+              </Stack>
             ) : null}
 
             <Box>
@@ -753,6 +788,9 @@ export function ReaderPane({
               <Typography variant="body2" color="text.secondary" className="workspace-reader__meta">
                 {detail.feed_title || "Unknown source"}
                 {detail.published_at ? ` · ${formatRelativeTime(detail.published_at)}` : ""}
+              </Typography>
+              <Typography variant="body2" className="workspace-reader__match">
+                {contentSourceLabel}
               </Typography>
               {matchedStreamNames.length > 0 ? (
                 <Typography variant="body2" className="workspace-reader__match">
@@ -784,7 +822,6 @@ export function ReaderPane({
                     aria-label={toggleReadLabel}
                     disabled={isMutating}
                     onClick={onToggleRead}
-                    sx={{ width: 40, height: 40 }}
                   >
                     {selectedArticle?.is_read ? (
                       <MarkEmailUnreadRoundedIcon fontSize="small" />
@@ -801,7 +838,6 @@ export function ReaderPane({
                     aria-label={toggleSavedLabel}
                     disabled={isMutating}
                     onClick={onToggleSaved}
-                    sx={{ width: 40, height: 40 }}
                   >
                     {selectedArticle?.is_starred ? (
                       <BookmarkRoundedIcon fontSize="small" />
@@ -818,9 +854,24 @@ export function ReaderPane({
                     aria-label="Open original source (o)"
                     onClick={onOpenOriginal}
                     disabled={!openOriginalAvailable}
-                    sx={{ width: 40, height: 40 }}
                   >
                     <OpenInNewRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={fulltextFetchTooltip}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={fulltextFetchLabel}
+                    onClick={onFetchFullArticle}
+                    disabled={!fulltextFetchAvailable || isFulltextFetching}
+                  >
+                    {isFulltextFetching ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <DownloadForOfflineRoundedIcon fontSize="small" />
+                    )}
                   </IconButton>
                 </span>
               </Tooltip>
@@ -830,7 +881,6 @@ export function ReaderPane({
                     size="small"
                     aria-label={previousArticleLabel}
                     onClick={() => onMoveSelection(-1)}
-                    sx={{ width: 40, height: 40 }}
                   >
                     <NavigateBeforeRoundedIcon fontSize="small" />
                   </IconButton>
@@ -842,7 +892,6 @@ export function ReaderPane({
                     size="small"
                     aria-label={nextArticleLabel}
                     onClick={() => onMoveSelection(1)}
-                    sx={{ width: 40, height: 40 }}
                   >
                     <NavigateNextRoundedIcon fontSize="small" />
                   </IconButton>
@@ -852,11 +901,10 @@ export function ReaderPane({
                 <Tooltip title={toggleHighlightsLabel}>
                   <span>
                     <IconButton
-                      size="small"
-                      aria-label={toggleHighlightsLabel}
-                      onClick={() => setShowHighlights((current) => !current)}
-                      sx={{ width: 40, height: 40 }}
-                    >
+                    size="small"
+                    aria-label={toggleHighlightsLabel}
+                    onClick={() => setShowHighlights((current) => !current)}
+                  >
                       {showHighlights ? (
                         <VisibilityOffRoundedIcon fontSize="small" />
                       ) : (

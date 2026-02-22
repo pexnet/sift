@@ -1,7 +1,7 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 
-import { DEFAULT_WORKSPACE_SEARCH } from "../entities/article/model";
+import { loadPersistedWorkspaceSearch } from "../entities/article/model";
 import { useCurrentUser, useLogoutMutation } from "../features/auth/api/authHooks";
 import { joinClassNames } from "../shared/lib/joinClassNames";
 
@@ -10,8 +10,10 @@ export function AppShell() {
   const navigate = useNavigate();
   const currentUserQuery = useCurrentUser();
   const logoutMutation = useLogoutMutation();
+  const workspaceSearch = loadPersistedWorkspaceSearch();
 
-  const isWorkspaceRoute = location.pathname === "/app";
+  const isWorkspaceRoute =
+    location.pathname === "/app" || location.pathname.startsWith("/account") || location.pathname === "/help";
 
   if (isWorkspaceRoute) {
     return (
@@ -24,7 +26,7 @@ export function AppShell() {
   return (
     <main className="layout">
       <Box component="nav" className="topnav">
-        <Link to="/app" search={DEFAULT_WORKSPACE_SEARCH} className="brand">
+        <Link to="/app" search={workspaceSearch} className="brand">
           Sift
         </Link>
         {currentUserQuery.data ? (

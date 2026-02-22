@@ -1,0 +1,160 @@
+name: release-readiness
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-release-label:
+    name: validate-release-label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate exactly one release label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map((label) => label.name);
+            const allowed = ["release:major", "release:minor", "release:patch"];
+            const selected = labels.filter((label) => allowed.includes(label));
+
+            if (selected.length !== 1) {
+              core.setFailed(
+                `PR into main must include exactly one release label (${allowed.join(", ")}). Found: ${selected.join(", ") || "none"}`
+              );
+              return;
+            }
+
+            core.notice(`Release label accepted: ${selected[0]}`);
+
+  backend-full:
+    name: backend-full
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: MyPy
+        run: uv run mypy src
+
+      - name: Pytest
+        run: uv run pytest
+
+  frontend-full:
+    name: frontend-full
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync backend dependencies (for OpenAPI generation)
+        run: uv sync --extra dev --frozen
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Generate OpenAPI types
+        run: pnpm --dir frontend run gen:openapi
+
+      - name: Ensure generated OpenAPI types are committed
+        run: git diff --exit-code -- frontend/src/shared/types/generated.ts
+
+      - name: Frontend formatting check
+        env:
+          FORMAT_BASE_REF: origin/${{ github.base_ref }}
+        run: pnpm --dir frontend run format:check
+
+      - name: Frontend lint
+        run: pnpm --dir frontend run lint
+
+      - name: Frontend typecheck
+        run: pnpm --dir frontend run typecheck
+
+      - name: Frontend unit tests
+        run: pnpm --dir frontend run test
+
+      - name: Frontend build
+        run: pnpm --dir frontend run build
+
+  security-gate:
+    name: security-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+
+      - name: Trivy filesystem scan (HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+          format: table
+
+  release-readiness:
+    name: release-readiness
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-label
+      - backend-full
+      - frontend-full
+      - security-gate
+    steps:
+      - name: Release readiness gate passed
+        run: echo "release-readiness checks passed"

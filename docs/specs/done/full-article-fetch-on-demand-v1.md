@@ -2,9 +2,36 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- State: Completed (2026-02-22)
+- Scope: Implemented in backend + frontend
+- Backlog reference: [docs/backlog.md](../../backlog.md)
+
+## Implementation Summary
+
+Backend:
+
+1. Added `article_fulltexts` persistence model + migration.
+2. Added fulltext fetch service with URL safety checks and bounded extraction flow.
+3. Added `POST /api/v1/articles/{article_id}/fulltext/fetch`.
+4. Extended article detail payload with fulltext status/content fields and `content_source`.
+
+Frontend:
+
+1. Added reader `Fetch full article` / `Refetch full article` action with pending/error handling.
+2. Wired fulltext fetch mutation and article-detail refresh behavior.
+3. Reader now renders full extracted content when available and shows source label
+   (`Source: full article` / `Source: feed excerpt`).
+
+Verification:
+
+- Backend:
+  - `python -m pytest tests/test_article_fulltext_service.py tests/test_article_fulltext_api.py`
+  - `python -m ruff check src/sift/api/routes/articles.py src/sift/services/article_fulltext_service.py src/sift/services/article_service.py src/sift/db/models.py src/sift/domain/schemas.py tests/test_article_fulltext_service.py tests/test_article_fulltext_api.py`
+  - `python -m mypy src/sift/services/article_fulltext_service.py src/sift/services/article_service.py src/sift/api/routes/articles.py src/sift/domain/schemas.py --no-incremental`
+- Frontend:
+  - `npm --prefix frontend run test -- src/features/workspace/components/ReaderPane.test.tsx src/features/workspace/routes/WorkspacePage.test.tsx src/entities/article/model.test.ts`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run lint`
 
 ## Context
 

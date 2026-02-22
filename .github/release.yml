@@ -1,0 +1,28 @@
+changelog:
+  exclude:
+    labels:
+      - dependencies
+      - release:none
+  categories:
+    - title: Breaking Changes
+      labels:
+        - release:major
+        - breaking
+    - title: Features
+      labels:
+        - release:minor
+        - feature
+    - title: Fixes
+      labels:
+        - release:patch
+        - bug
+    - title: Documentation
+      labels:
+        - docs
+    - title: CI/CD and Tooling
+      labels:
+        - ci
+        - tooling
+    - title: Other Changes
+      labels:
+        - "*"

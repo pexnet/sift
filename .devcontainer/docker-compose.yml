@@ -86,7 +86,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    command: uv run sift-worker
+    command: /bin/sh -c "uv run --extra dev alembic upgrade head && uv run sift-worker"
     volumes:
       - ..:/app
     environment:
@@ -101,6 +101,8 @@ services:
       SIFT_AUTH_COOKIE_SECURE: "false"
       SIFT_AUTO_CREATE_TABLES: "false"
     depends_on:
+      app:
+        condition: service_started
       db:
         condition: service_healthy
       redis:
@@ -110,7 +112,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    command: uv run sift-scheduler
+    command: /bin/sh -c "uv run --extra dev alembic upgrade head && uv run sift-scheduler"
     volumes:
       - ..:/app
     environment:
@@ -125,6 +127,8 @@ services:
       SIFT_AUTH_COOKIE_SECURE: "false"
       SIFT_AUTO_CREATE_TABLES: "false"
     depends_on:
+      app:
+        condition: service_started
       db:
         condition: service_healthy
       redis:

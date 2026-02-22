@@ -1,6 +1,17 @@
 :root {
   --font-ui: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
   --font-reader: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --rail-width: 76px;
+  --nav-width: 320px;
+  --list-width: 540px;
+  --pane-splitter-width: 8px;
+  --workspace-control-height: 40px;
+  --workspace-control-radius: 12px;
+  --workspace-panel-radius: 14px;
+  --workspace-section-gap: 0.9rem;
+  --workspace-line-height-title: 1.12;
+  --workspace-line-height-body: 1.38;
+  --workspace-table-row-min-height: 40px;
   --bg: #eff5ec;
   --surface: #f7f9f3;
   --surface-soft: #f2f6ee;
@@ -293,13 +304,17 @@ body {
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--workspace-panel-radius);
   padding: 2rem;
   box-shadow: var(--shadow-soft);
 }
 
 .settings-panel {
   padding: clamp(1.1rem, 2vw, 2rem);
+}
+
+.settings-page-shell {
+  padding: 0.65rem 0.8rem 0.9rem;
 }
 
 .settings-panel .MuiDivider-root {
@@ -374,17 +389,18 @@ body {
 }
 
 .workspace-shell {
-  --workspace-nav-width: 320px;
-  --workspace-list-width: 540px;
-  --workspace-splitter-width: 8px;
+  --workspace-nav-width: var(--nav-width);
+  --workspace-list-width: var(--list-width);
+  --workspace-splitter-width: var(--pane-splitter-width);
   display: grid;
-  grid-template-columns: 76px var(--workspace-nav-width) var(--workspace-splitter-width) minmax(0, 1fr);
+  grid-template-columns: var(--rail-width) var(--workspace-nav-width) var(--workspace-splitter-width) minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
 .workspace-rail {
+  width: var(--rail-width);
   background: linear-gradient(180deg, var(--rail-gradient-top) 0%, var(--rail-bg) 100%);
   color: var(--rail-text);
   padding: 0.8rem 0.45rem;
@@ -482,7 +498,7 @@ body {
 }
 
 .workspace-nav-drawer {
-  width: min(360px, calc(100vw - 76px));
+  width: min(360px, calc(100vw - var(--rail-width)));
 }
 
 .workspace-nav-drawer .workspace-nav {
@@ -548,6 +564,7 @@ body {
 .workspace-nav__row .MuiListItemText-primary {
   font-size: 0.89rem;
   font-weight: 520;
+  line-height: var(--workspace-line-height-body);
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -604,8 +621,13 @@ body {
   opacity: 1;
 }
 
+.workspace-nav__folder-inline-icon {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .workspace-nav__folder-toggle:focus-visible,
-.workspace-nav__section-action:focus-visible {
+.workspace-nav__section-header .MuiIconButton-root:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -618,13 +640,17 @@ body {
   transform: rotate(90deg);
 }
 
-.workspace-nav__section-action {
-  margin-right: 0.2rem;
-  min-height: 24px;
-  font-size: 0.72rem;
+.workspace-nav__section-header .MuiIconButton-root {
+  margin-right: 0.14rem;
+  width: 22px;
+  height: 22px;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  opacity: 0.74;
+}
+
+.workspace-nav__section-header .MuiIconButton-root:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--surface-muted) 64%, var(--bg) 36%);
 }
 
 .workspace-nav__section-chevron {
@@ -641,6 +667,20 @@ body {
   gap: 0.4rem;
   min-width: 0;
   flex: 1;
+}
+
+.workspace-nav__plugin-label {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-nav__plugin-icon {
+  color: var(--muted);
+  font-size: 0.95rem;
+  flex: 0 0 auto;
 }
 
 .workspace-nav__feed-avatar {
@@ -719,9 +759,65 @@ body {
   background: var(--bg);
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
+}
+
+.workspace-plugin-shell {
+  background: var(--surface-list);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  overflow: auto;
+}
+
+.dashboard-shell {
+  background: var(--surface-list);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  overflow: auto;
+}
+
+.dashboard-shell__header {
+  margin-bottom: 0.85rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-card {
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+  background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft) 10%);
+  border-radius: 12px;
+  padding: 0.85rem 0.9rem;
+}
+
+.workspace-plugin-area {
+  max-width: 760px;
+  background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft) 10%);
+  border: 1px solid color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+}
+
+.workspace-plugin-area__header {
+  margin-bottom: 0.6rem;
+}
+
+.workspace-plugin-area__description {
+  margin-bottom: 0.9rem;
+}
+
+.settings-workspace-main {
+  min-height: 0;
+  overflow: auto;
+  padding: 0.95rem;
+  overscroll-behavior: contain;
 }
 
 .workspace-splitter {
@@ -813,6 +909,18 @@ body {
   background: var(--workspace-list-header-bg);
 }
 
+.workspace-list .MuiInputBase-root {
+  min-height: var(--workspace-control-height);
+  border-radius: var(--workspace-control-radius);
+}
+
+.workspace-list .MuiButtonBase-root.workspace-mobile-nav-button,
+.workspace-reader__mobile-nav .MuiButtonBase-root {
+  min-height: calc(var(--workspace-control-height) - 8px);
+  border-radius: var(--workspace-control-radius);
+  text-transform: none;
+}
+
 .workspace-list__banner {
   background: var(--accent-soft);
   border: 1px solid var(--list-banner-border);
@@ -855,7 +963,7 @@ body {
 }
 
 .workspace-row--read {
-  opacity: 0.72;
+  opacity: 0.84;
 }
 
 .workspace-row--read .workspace-row__title {
@@ -900,16 +1008,17 @@ body {
 
 .workspace-row__title {
   font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.27;
+  font-weight: 680;
+  line-height: var(--workspace-line-height-title);
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
 .workspace-row__meta {
-  color: var(--muted);
-  font-size: 0.86rem;
+  color: color-mix(in srgb, var(--text) 42%, var(--muted) 58%);
+  font-size: 0.88rem;
+  line-height: var(--workspace-line-height-body);
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -932,7 +1041,7 @@ body {
 .workspace-reader {
   background: var(--reader-paper-bg);
   color: var(--reader-paper-text);
-  padding: 0.9rem 1.4rem 1.5rem;
+  padding: 0.82rem 1.4rem 1.5rem;
   overflow: auto;
   border-left: 1px solid var(--reader-paper-border);
   min-height: 0;
@@ -944,20 +1053,21 @@ body {
   top: 0;
   z-index: 2;
   padding-top: 0.15rem;
-  padding-bottom: 0.78rem;
+  padding-bottom: 0.68rem;
   background: var(--workspace-reader-top-bg);
 }
 
 .workspace-reader__title {
   margin: 0;
-  font-size: clamp(1.8rem, 2.15vw, 2.45rem);
-  line-height: 1.14;
+  font-size: clamp(1.66rem, 2vw, 2.28rem);
+  line-height: 1.16;
   letter-spacing: -0.016em;
 }
 
 .workspace-reader__meta {
   margin-top: 0.4rem;
   font-size: 0.94rem;
+  line-height: var(--workspace-line-height-body);
   color: var(--reader-paper-muted);
 }
 
@@ -969,6 +1079,22 @@ body {
 
 .workspace-reader__actions {
   margin-top: 0.35rem;
+}
+
+.workspace-list__controls .MuiIconButton-root,
+.workspace-reader__actions .MuiIconButton-root {
+  width: var(--workspace-control-height);
+  height: var(--workspace-control-height);
+  border-radius: var(--workspace-control-radius);
+}
+
+.workspace-list__controls .MuiIconButton-root:hover,
+.workspace-reader__actions .MuiIconButton-root:hover {
+  background: color-mix(in srgb, var(--accent-soft) 58%, transparent 42%);
+}
+
+.workspace-reader__mobile-nav {
+  margin-bottom: 0.28rem;
 }
 
 .workspace-reader__evidence {
@@ -1096,17 +1222,127 @@ body {
   min-height: calc(var(--nav-feed-row-min-height) + 4px);
 }
 
-@media (max-width: 980px) {
+.settings-page-content {
+  gap: var(--workspace-section-gap);
+}
+
+.settings-page-header {
+  padding-bottom: 0.3rem;
+}
+
+.feed-health-table,
+.monitoring-table {
+  overflow-x: auto;
+}
+
+.table-scroll-hint {
+  display: none;
+  margin: 0.05rem 0 0.3rem;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.feed-health-table__row,
+.monitoring-table__row {
+  min-height: var(--workspace-table-row-min-height);
+}
+
+.feed-health-table__rows {
+  min-width: 980px;
+}
+
+.monitoring-table__rows {
+  min-width: 0;
+}
+
+.feed-health-table .MuiTypography-caption,
+.monitoring-table .MuiTypography-caption {
+  font-size: 0.79rem;
+  line-height: 1.38;
+}
+
+.feed-health-table__row + .feed-health-table__row,
+.monitoring-table__row + .monitoring-table__row {
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent 28%);
+}
+
+.feed-health-table__name-cell .MuiTypography-root,
+.monitoring-table__name-cell .MuiTypography-root {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1440px) {
+  .workspace-list {
+    padding: 0.8rem 0.78rem 0.95rem;
+  }
+
+  .workspace-reader {
+    padding: 0.82rem 1.05rem 1.2rem;
+  }
+
+  .workspace-row {
+    padding-top: 0.42rem;
+    padding-bottom: 0.42rem;
+  }
+}
+
+@media (max-width: 1200px) {
   .workspace-shell {
-    grid-template-columns: 64px minmax(0, 1fr);
+    --rail-width: 68px;
+  }
+
+  .workspace-shell {
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
   }
 
   .workspace-content {
     grid-column: 2;
   }
+
+  .workspace-shell--tablet .workspace-content {
+    grid-template-columns: minmax(300px, 44%) minmax(0, 1fr);
+  }
+
+  .workspace-shell--tablet .workspace-list {
+    border-right: 1px solid var(--border);
+  }
+
+  .workspace-shell--tablet .workspace-reader {
+    border-left: 1px solid var(--reader-paper-border);
+  }
+
+  .workspace-shell--tablet .workspace-list__title {
+    font-size: clamp(1.55rem, 2.8vw, 2.05rem);
+  }
+
+  .workspace-rail {
+    padding: 0.68rem 0.38rem;
+  }
+
+  .workspace-rail__item {
+    border-radius: 10px;
+    padding: 0.44rem 0;
+  }
+
+  .workspace-rail__label {
+    font-size: 0.67rem;
+  }
+
+  .settings-workspace-main {
+    padding: 0.82rem;
+  }
+
+  .table-scroll-hint {
+    display: block;
+  }
 }
 
 @media (max-width: 760px) {
+  .workspace-shell {
+    --workspace-control-height: 36px;
+    --workspace-control-radius: 10px;
+  }
+
   .settings-panel {
     padding: 0.95rem;
   }
@@ -1130,23 +1366,61 @@ body {
   .workspace-rail {
     display: flex;
     align-items: center;
-    gap: 0.36rem;
-    padding: 0.5rem;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 0.42rem;
+    padding: 0.46rem 0.5rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--rail-border);
+    overflow-x: visible;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  .workspace-rail > .MuiStack-root {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.32rem;
     overflow-x: auto;
+    padding-bottom: 0.04rem;
   }
 
   .workspace-rail__logo {
+    width: 34px;
+    height: 34px;
+    font-size: 0.92rem;
     margin: 0;
     flex: 0 0 auto;
   }
 
   .workspace-rail__item {
     flex: 0 0 auto;
-    width: 64px;
+    width: 46px;
+    min-height: 42px;
+    gap: 0.16rem;
+    padding: 0.36rem 0;
+  }
+
+  .workspace-rail__label {
+    display: none;
+  }
+
+  .workspace-rail .MuiBadge-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.58rem;
   }
 
   .workspace-content {
     grid-column: auto;
+  }
+
+  .settings-workspace-main {
+    padding: 0.7rem;
   }
 
   .workspace-nav-drawer {
@@ -1154,8 +1428,41 @@ body {
     max-width: none;
   }
 
+  .workspace-list {
+    padding: 0.66rem 0.62rem 0.84rem;
+  }
+
+  .workspace-list__header {
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .workspace-list__header > .MuiStack-root:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .workspace-list__header > .MuiStack-root:last-child {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .workspace-list__header > .MuiStack-root:last-child .MuiFormControl-root {
+    width: 120px;
+  }
+
+  .workspace-list .MuiButtonBase-root.workspace-mobile-nav-button {
+    min-height: calc(var(--workspace-control-height) - 10px);
+    padding-inline: 0.4rem;
+    font-size: 0.76rem;
+  }
+
+  .workspace-list__title {
+    font-size: clamp(1.12rem, 5.6vw, 1.55rem);
+  }
+
   .workspace-list__controls {
-    top: 3.2rem;
+    top: 4.35rem;
   }
 
   .workspace-row {
@@ -1169,8 +1476,75 @@ body {
     font-size: 0.78rem;
   }
 
+  .workspace-row__title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .workspace-row__meta,
+  .workspace-row__match {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
   .workspace-reader {
-    padding-left: 0.95rem;
-    padding-right: 0.95rem;
+    padding: 0.7rem 0.78rem 1.05rem;
+  }
+
+  .workspace-reader__title {
+    font-size: clamp(1.4rem, 6vw, 1.95rem);
+  }
+
+  .workspace-reader__body {
+    font-size: clamp(1rem, 4.2vw, 1.08rem);
+    line-height: 1.62;
+  }
+
+  .table-scroll-hint {
+    display: block;
+  }
+}
+
+@media (max-width: 360px) {
+  .settings-workspace-main {
+    padding: 0.48rem;
+  }
+
+  .workspace-rail {
+    gap: 0.18rem;
+    padding: 0.34rem;
+  }
+
+  .workspace-rail > .MuiStack-root {
+    gap: 0.2rem;
+  }
+
+  .workspace-rail__item {
+    width: 42px;
+    padding: 0.28rem 0;
+  }
+
+  .workspace-list {
+    padding: 0.56rem 0.52rem 0.72rem;
+  }
+
+  .workspace-list__controls {
+    top: 4.25rem;
+  }
+
+  .workspace-row {
+    padding: 0.38rem 0.24rem;
+  }
+
+  .workspace-reader {
+    padding: 0.62rem 0.62rem 0.9rem;
+  }
+
+  .workspace-reader__body {
+    line-height: 1.54;
   }
 }

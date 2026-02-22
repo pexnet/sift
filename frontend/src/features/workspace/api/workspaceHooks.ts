@@ -4,13 +4,17 @@ import { queryKeys } from "../../../shared/api/queryKeys";
 import {
   assignFeedFolder,
   bulkPatchArticleState,
+  createFeed,
   createFolder,
   deleteFolder,
+  fetchArticleFulltext,
   getArticleDetail,
   getArticles,
   getFeeds,
   getFolders,
   getNavigation,
+  getDashboardSummary,
+  getPluginAreas,
   markScopeAsRead,
   patchArticleState,
   updateFolder,
@@ -20,6 +24,7 @@ import type {
   ArticleStateBulkPatchRequest,
   ArticleListResponse,
   FeedFolderAssignmentRequest,
+  FeedCreateRequest,
   FeedFolderCreateRequest,
   FeedFolderUpdateRequest,
   PatchArticleStateRequest,
@@ -30,6 +35,21 @@ export function useNavigationQuery() {
   return useQuery({
     queryKey: queryKeys.navigation(),
     queryFn: getNavigation,
+  });
+}
+
+export function usePluginAreasQuery() {
+  return useQuery({
+    queryKey: queryKeys.pluginAreas(),
+    queryFn: getPluginAreas,
+  });
+}
+
+export function useDashboardSummaryQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.dashboardSummary(),
+    queryFn: getDashboardSummary,
+    enabled,
   });
 }
 
@@ -47,18 +67,30 @@ export function useFeedsQuery() {
   });
 }
 
-export function useArticlesQuery(search: WorkspaceSearch) {
+export function useArticlesQuery(search: WorkspaceSearch, enabled = true) {
   return useQuery({
     queryKey: queryKeys.articles(search),
     queryFn: () => getArticles(search),
+    enabled,
   });
 }
 
-export function useArticleDetailQuery(articleId: string) {
+export function useArticleDetailQuery(articleId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.articleDetail(articleId),
     queryFn: () => getArticleDetail(articleId),
-    enabled: articleId.length > 0,
+    enabled: enabled && articleId.length > 0,
+  });
+}
+
+export function useFetchArticleFulltextMutation(articleId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => fetchArticleFulltext(articleId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.articleDetail(articleId) });
+    },
   });
 }
 
@@ -163,6 +195,19 @@ export function useCreateFolderMutation() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.folders() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
+      ]);
+    },
+  });
+}
+
+export function useCreateFeedMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: FeedCreateRequest) => createFeed(payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.feeds() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
       ]);
     },

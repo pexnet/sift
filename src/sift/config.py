@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="SIFT_", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="SIFT_", case_sensitive=False, extra="ignore")
 
     env: str = "development"
     app_name: str = "Sift"
@@ -30,12 +30,12 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
     cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
-    plugin_paths: list[str] = Field(
-        default_factory=lambda: [
-            "sift.plugins.builtin.noop:NoopPlugin",
-            "sift.plugins.builtin.keyword_heuristic_classifier:KeywordHeuristicClassifierPlugin",
-        ]
-    )
+    plugin_registry_path: str = "config/plugins.yaml"
+    plugin_timeout_ingest_ms: int = 2000
+    plugin_timeout_classifier_ms: int = 3000
+    plugin_timeout_discovery_ms: int = 5000
+    plugin_timeout_summary_ms: int = 5000
+    plugin_diagnostics_enabled: bool = True
 
 
 @lru_cache

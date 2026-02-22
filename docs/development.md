@@ -6,6 +6,18 @@
 - Frontend (`frontend/`): standalone React + TypeScript SPA (Vite).
 - Integration contract: frontend communicates with backend through REST APIs only.
 
+## Branching and PR Policy
+
+- `develop` is the default integration branch.
+- `main` is release-only.
+- Feature flow: `feature/*` -> PR to `develop`.
+- Release flow: PR `develop` -> `main` with merge commit.
+- Hotfix flow: `hotfix/*` from `main` -> PR to `main` (`release:patch`) -> back-merge to `develop`.
+
+Release labels for PRs into `main`:
+
+- exactly one of `release:major`, `release:minor`, `release:patch`
+
 ## Recommended Workflow: Dev Container
 
 Sift standardizes full-stack development on the Dev Container stack.
@@ -54,6 +66,7 @@ Run from `frontend/`:
 - Type check: `pnpm run typecheck`
 - Unit tests: `pnpm run test`
 - E2E tests: `pnpm run e2e`
+- Format check: `pnpm run format:check`
 - Production build: `pnpm run build` (output: `frontend/dist`)
 
 ## CORS and API Proxy

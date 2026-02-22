@@ -1,14 +1,21 @@
 import { Alert, Box, Typography } from "@mui/material";
 import { RouterProvider, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
-import { DEFAULT_WORKSPACE_SEARCH, parseWorkspaceSearch } from "../entities/article/model";
+import {
+  loadPersistedWorkspaceSearch,
+  parseWorkspaceSearch,
+  savePersistedWorkspaceSearch,
+} from "../entities/article/model";
 import { getCurrentUser } from "../shared/api/authApi";
 import type { WorkspaceSearch } from "../shared/types/contracts";
 import { AccountPage } from "../features/auth/routes/AccountPage";
+import { FeedHealthPage } from "../features/feed-health/routes/FeedHealthPage";
 import { HelpPage } from "../features/help/routes/HelpPage";
 import { LoginPage } from "../features/auth/routes/LoginPage";
 import { RegisterPage } from "../features/auth/routes/RegisterPage";
 import { MonitoringFeedsPage } from "../features/monitoring/routes/MonitoringFeedsPage";
+import { SettingsWorkspaceShell } from "../features/settings/components/SettingsWorkspaceShell";
 import { WorkspacePage } from "../features/workspace/routes/WorkspacePage";
 import { AppProviders, queryClient, useAppUiState } from "./providers";
 import { AppShell } from "./AppShell";
@@ -35,7 +42,16 @@ async function requireAuth(context: RouterContext) {
 async function requireAnonymous(context: RouterContext) {
   const user = await fetchCurrentUser(context);
   if (user) {
-    throw redirect({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH });
+    throw redirect({ to: "/app", search: loadPersistedWorkspaceSearch() });
+  }
+}
+
+function guardMobileReadOnlyRoute() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return;
+  }
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    throw redirect({ to: "/app", search: loadPersistedWorkspaceSearch() });
   }
 }
 
@@ -58,7 +74,7 @@ function NotFoundBoundary() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         The requested page does not exist.
       </Typography>
-      <button type="button" onClick={() => void navigate({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH })}>
+      <button type="button" onClick={() => void navigate({ to: "/app", search: loadPersistedWorkspaceSearch() })}>
         Go to workspace
       </button>
     </Box>
@@ -77,7 +93,7 @@ const indexRoute = createRoute({
   beforeLoad: async ({ context }) => {
     const user = await fetchCurrentUser(context);
     if (user) {
-      throw redirect({ to: "/app", search: DEFAULT_WORKSPACE_SEARCH });
+      throw redirect({ to: "/app", search: loadPersistedWorkspaceSearch() });
     }
     throw redirect({ to: "/login" });
   },
@@ -97,25 +113,76 @@ const registerRoute = createRoute({
   component: RegisterPage,
 });
 
+function AccountRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <AccountPage />
+    </SettingsWorkspaceShell>
+  );
+}
+
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account",
-  beforeLoad: ({ context }) => requireAuth(context),
-  component: AccountPage,
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
+  component: AccountRouteComponent,
 });
+
+function MonitoringRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <MonitoringFeedsPage />
+    </SettingsWorkspaceShell>
+  );
+}
 
 const monitoringFeedsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/account/monitoring",
-  beforeLoad: ({ context }) => requireAuth(context),
-  component: MonitoringFeedsPage,
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
+  component: MonitoringRouteComponent,
 });
+
+function FeedHealthRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <FeedHealthPage />
+    </SettingsWorkspaceShell>
+  );
+}
+
+const feedHealthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account/feed-health",
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
+  component: FeedHealthRouteComponent,
+});
+
+function HelpRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <HelpPage />
+    </SettingsWorkspaceShell>
+  );
+}
 
 const helpRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/help",
-  beforeLoad: ({ context }) => requireAuth(context),
-  component: HelpPage,
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
+  component: HelpRouteComponent,
 });
 
 function WorkspaceRouteComponent() {
@@ -123,10 +190,16 @@ function WorkspaceRouteComponent() {
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
   const search = workspaceRoute.useSearch();
 
+  useEffect(() => {
+    savePersistedWorkspaceSearch(search);
+  }, [search]);
+
   const setSearch = (patch: Partial<WorkspaceSearch>) => {
+    const nextSearch: WorkspaceSearch = { ...search, ...patch };
+    savePersistedWorkspaceSearch(nextSearch);
     void navigate({
       to: "/app",
-      search: (previous: WorkspaceSearch) => ({ ...previous, ...patch }),
+      search: nextSearch,
     });
   };
 
@@ -150,13 +223,91 @@ const workspaceRoute = createRoute({
   component: WorkspaceRouteComponent,
 });
 
+function DashboardRouteComponent() {
+  const navigate = useNavigate();
+  const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
+  const [searchState, setSearchState] = useState(loadPersistedWorkspaceSearch());
+
+  const setSearch = (patch: Partial<WorkspaceSearch>) => {
+    setSearchState((previous) => {
+      const nextSearch: WorkspaceSearch = { ...previous, ...patch };
+      savePersistedWorkspaceSearch(nextSearch);
+      void navigate({
+        to: "/app",
+        search: nextSearch,
+      });
+      return nextSearch;
+    });
+  };
+
+  return (
+    <WorkspacePage
+      search={searchState}
+      density={density}
+      navPreset={navPreset}
+      themeMode={themeMode}
+      setThemeMode={setThemeMode}
+      setSearch={setSearch}
+      activeDashboard
+    />
+  );
+}
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app/dashboard",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: DashboardRouteComponent,
+});
+
+function PluginWorkspaceRouteComponent() {
+  const navigate = useNavigate();
+  const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
+  const { areaId } = pluginWorkspaceRoute.useParams();
+  const [searchState, setSearchState] = useState(loadPersistedWorkspaceSearch());
+
+  const setSearch = (patch: Partial<WorkspaceSearch>) => {
+    setSearchState((previous) => {
+      const nextSearch: WorkspaceSearch = { ...previous, ...patch };
+      savePersistedWorkspaceSearch(nextSearch);
+      void navigate({
+        to: "/app",
+        search: nextSearch,
+      });
+      return nextSearch;
+    });
+  };
+
+  return (
+    <WorkspacePage
+      search={searchState}
+      density={density}
+      navPreset={navPreset}
+      themeMode={themeMode}
+      setThemeMode={setThemeMode}
+      setSearch={setSearch}
+      activePluginAreaRouteKey={areaId}
+    />
+  );
+}
+
+const pluginWorkspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app/plugins/$areaId",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: PluginWorkspaceRouteComponent,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   registerRoute,
   accountRoute,
+  feedHealthRoute,
   monitoringFeedsRoute,
   helpRoute,
+  dashboardRoute,
+  pluginWorkspaceRoute,
   workspaceRoute,
 ]);
 

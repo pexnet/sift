@@ -21,6 +21,30 @@ Start local full stack:
 
 This runs API, frontend dev server, queue workers, and data services for local development.
 
+## GHCR Release Deployment
+
+Release artifacts are published to GHCR on each `main` release:
+
+- `ghcr.io/pexnet/sift-backend:vX.Y.Z` and `:latest`
+- `ghcr.io/pexnet/sift-frontend:vX.Y.Z` and `:latest`
+
+Deploy using:
+
+```bash
+export SIFT_VERSION=vX.Y.Z
+docker compose -f docker-compose.release.yml pull
+docker compose -f docker-compose.release.yml up -d
+```
+
+`docker-compose.release.yml` runs:
+
+- `app` (runs Alembic migration then starts API)
+- `worker`
+- `scheduler`
+- `frontend` (Nginx static host + `/api` reverse proxy to `app`)
+- `db`
+- `redis`
+
 ## Dev Container Compose
 
 Run the devcontainer service topology (without opening VS Code):

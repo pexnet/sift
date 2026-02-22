@@ -1,0 +1,5 @@
+dist
+node_modules
+coverage
+openapi.json
+src/shared/types/generated.ts

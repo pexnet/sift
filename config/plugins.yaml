@@ -1,0 +1,40 @@
+version: 1
+plugins:
+  - id: noop
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - ingest_hook
+    settings: {}
+  - id: keyword_heuristic_classifier
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.keyword_heuristic_classifier:KeywordHeuristicClassifierPlugin
+    capabilities:
+      - stream_classifier
+    settings: {}
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - discover_feeds
+      - workspace_area
+    ui:
+      area:
+        title: Discover feeds
+        icon: search
+        order: 10
+        route_key: discover-feeds
+    settings:
+      discover_feeds:
+        provider_chain:
+          - searxng
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25

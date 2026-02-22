@@ -1,22 +1,29 @@
 import {
+  parseArticleFulltextFetch,
   parseBulkPatchArticleStateRequest,
   parseArticleDetail,
   parseArticleList,
   parsePatchArticleStateRequest,
 } from "../../entities/article/model";
+import { parseDashboardSummaryResponse } from "../../entities/navigation/dashboard";
+import { parsePluginAreasResponse } from "../../entities/navigation/plugins";
 import { parseNavigationResponse } from "../../entities/navigation/model";
 import type {
   ArticleDetail,
+  ArticleFulltextFetchResult,
   ArticleListResponse,
   ArticleScopeMarkReadRequest,
   ArticleScopeMarkReadResponse,
   ArticleStateBulkPatchRequest,
   Feed,
+  FeedCreateRequest,
   FeedFolder,
   FeedFolderAssignmentRequest,
   FeedFolderCreateRequest,
   FeedFolderUpdateRequest,
   PatchArticleStateRequest,
+  DashboardSummary,
+  PluginArea,
   WorkspaceSearch,
 } from "../types/contracts";
 import { apiClient } from "./client";
@@ -25,6 +32,8 @@ const NAVIGATION_ENDPOINT = "/api/v1/navigation";
 const ARTICLES_ENDPOINT = "/api/v1/articles";
 const FOLDERS_ENDPOINT = "/api/v1/folders";
 const FEEDS_ENDPOINT = "/api/v1/feeds";
+const PLUGIN_AREAS_ENDPOINT = "/api/v1/plugins/areas";
+const DASHBOARD_SUMMARY_ENDPOINT = "/api/v1/dashboard/summary";
 
 function toArticleSearchParams(search: WorkspaceSearch): URLSearchParams {
   const params = new URLSearchParams({
@@ -50,6 +59,16 @@ export async function getNavigation() {
   return parseNavigationResponse(payload);
 }
 
+export async function getPluginAreas(): Promise<PluginArea[]> {
+  const payload = await apiClient.get<unknown>(PLUGIN_AREAS_ENDPOINT);
+  return parsePluginAreasResponse(payload);
+}
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  const payload = await apiClient.get<unknown>(DASHBOARD_SUMMARY_ENDPOINT);
+  return parseDashboardSummaryResponse(payload);
+}
+
 export async function getArticles(search: WorkspaceSearch): Promise<ArticleListResponse> {
   const payload = await apiClient.get<unknown>(`${ARTICLES_ENDPOINT}?${toArticleSearchParams(search).toString()}`);
   return parseArticleList(payload);
@@ -58,6 +77,14 @@ export async function getArticles(search: WorkspaceSearch): Promise<ArticleListR
 export async function getArticleDetail(articleId: string): Promise<ArticleDetail> {
   const payload = await apiClient.get<unknown>(`${ARTICLES_ENDPOINT}/${articleId}`);
   return parseArticleDetail(payload);
+}
+
+export async function fetchArticleFulltext(articleId: string): Promise<ArticleFulltextFetchResult> {
+  const payload = await apiClient.post<Record<string, never>, unknown>(
+    `${ARTICLES_ENDPOINT}/${articleId}/fulltext/fetch`,
+    {}
+  );
+  return parseArticleFulltextFetch(payload);
 }
 
 export async function patchArticleState(articleId: string, payload: PatchArticleStateRequest) {
@@ -100,6 +127,10 @@ export async function deleteFolder(folderId: string): Promise<void> {
 
 export async function getFeeds(): Promise<Feed[]> {
   return apiClient.get<Feed[]>(FEEDS_ENDPOINT);
+}
+
+export async function createFeed(payload: FeedCreateRequest): Promise<Feed> {
+  return apiClient.post<FeedCreateRequest, Feed>(FEEDS_ENDPOINT, payload);
 }
 
 export async function assignFeedFolder(feedId: string, payload: FeedFolderAssignmentRequest): Promise<Feed> {

@@ -64,7 +64,7 @@ class NavigationService:
         feed_rows = (
             await session.execute(
                 select(Feed.id, Feed.title, Feed.folder_id)
-                .where(Feed.owner_id == user_id)
+                .where(Feed.owner_id == user_id, Feed.is_archived.is_(False))
                 .order_by(Feed.title.asc())
             )
         ).all()
@@ -81,6 +81,7 @@ class NavigationService:
                     and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
                 )
                 .where(Feed.owner_id == user_id)
+                .where(Feed.is_archived.is_(False))
                 .group_by(Article.feed_id)
             )
         ).all()
@@ -128,11 +129,16 @@ class NavigationService:
                 select(
                     KeywordStream.id,
                     KeywordStream.name,
+                    KeywordStream.folder_id,
                     func.sum(case((and_(KeywordStreamMatch.article_id.is_not(None), unread_expr), 1), else_=0)).label(
                         "unread"
                     ),
                 )
                 .select_from(KeywordStream)
+                .outerjoin(
+                    FeedFolder,
+                    and_(FeedFolder.id == KeywordStream.folder_id, FeedFolder.user_id == user_id),
+                )
                 .outerjoin(KeywordStreamMatch, KeywordStreamMatch.stream_id == KeywordStream.id)
                 .outerjoin(Article, Article.id == KeywordStreamMatch.article_id)
                 .outerjoin(
@@ -140,13 +146,19 @@ class NavigationService:
                     and_(ArticleState.article_id == Article.id, ArticleState.user_id == str(user_id)),
                 )
                 .where(KeywordStream.user_id == user_id)
-                .group_by(KeywordStream.id, KeywordStream.name)
-                .order_by(KeywordStream.priority.asc(), KeywordStream.name.asc())
+                .group_by(KeywordStream.id, KeywordStream.name, KeywordStream.folder_id, FeedFolder.sort_order, FeedFolder.name)
+                .order_by(
+                    case((KeywordStream.folder_id.is_(None), 1), else_=0).asc(),
+                    FeedFolder.sort_order.asc().nullsfirst(),
+                    FeedFolder.name.asc().nullslast(),
+                    KeywordStream.priority.asc(),
+                    KeywordStream.name.asc(),
+                )
             )
         ).all()
         streams = [
-            NavigationStreamNodeOut(id=stream_id, name=name, unread_count=int(unread or 0))
-            for stream_id, name, unread in stream_rows
+            NavigationStreamNodeOut(id=stream_id, name=name, folder_id=folder_id, unread_count=int(unread or 0))
+            for stream_id, name, folder_id, unread in stream_rows
         ]
 
         return NavigationTreeOut(systems=systems, folders=folder_nodes, streams=streams)

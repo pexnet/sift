@@ -6,6 +6,54 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Full Article Fetch On-Demand v1 (Completed on 2026-02-22)
+
+1. Reader full-article fetch action is implemented:
+   - `Fetch full article` / `Refetch full article` reader action with pending/error handling
+   - source label shown in reader metadata (`Source: full article` / `Source: feed excerpt`)
+2. Backend fulltext persistence/runtime is implemented:
+   - `article_fulltexts` model/table with one-to-one article fulltext storage
+   - on-demand extraction service with URL safety checks and bounded fetch behavior
+3. API contracts are implemented:
+   - `POST /api/v1/articles/{article_id}/fulltext/fetch`
+   - `GET /api/v1/articles/{article_id}` now includes fulltext status/content and `content_source`
+4. Spec archived:
+   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
+
+### Plugin Platform Milestones (Completed on 2026-02-22)
+
+1. Plugin platform foundation v1 completed and archived:
+   - centralized registry loading/validation from `config/plugins.yaml`
+   - runtime cutover to registry activation (`SIFT_PLUGIN_REGISTRY_PATH`)
+   - legacy `plugin_paths` runtime behavior removed
+   - archived spec: `docs/specs/done/plugin-platform-foundation-v1.md`
+2. Frontend plugin host + workspace plugin IA v1 completed and archived:
+   - plugin area metadata endpoint (`GET /api/v1/plugins/areas`)
+   - workspace `Plugins` nav section and `/app/plugins/$areaId` route
+   - plugin area error-boundary isolation in workspace shell
+   - archived spec: `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+3. Dashboard shell + plugin-ready card host v1 completed and archived:
+   - `/app/dashboard` route and rail navigation integration
+   - summary metadata endpoint (`GET /api/v1/dashboard/summary`)
+   - card availability host with per-card failure isolation
+   - archived spec: `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+4. Plugin runtime hardening and diagnostics v1 completed and archived:
+   - timeout/fault-isolated plugin dispatch behavior
+   - admin diagnostics endpoint (`GET /api/v1/plugins/status`)
+   - plugin telemetry metrics contract wiring:
+     - `sift_plugin_invocations_total`
+     - `sift_plugin_invocation_duration_seconds`
+     - `sift_plugin_timeouts_total`
+     - `sift_plugin_dispatch_failures_total`
+   - telemetry/logging contract tests for metric/event presence
+   - archived spec: `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+5. Plugin configuration registry follow-up checkpoint completed:
+   - sensitive settings keys now require env-var references (plaintext secrets rejected)
+   - discover-feeds provider budget/rate-limit config contract validation added
+   - registry test coverage added for security and budget contract scenarios
+   - active spec remains for later discovery-runtime enforcement work:
+     `docs/specs/plugin-configuration-registry-v1.md`
+
 ### Monitoring UI Milestones (Previously in Active Next UI Slice)
 
 1. Monitoring feed management v1 completed on 2026-02-16.
@@ -81,6 +129,18 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - persisted `stream_classifier_runs` records for classifier executions during ingest/backfill
    - captured plugin/provider/model/version metadata, confidence/threshold, and run status
    - added diagnostics API endpoint: `GET /api/v1/streams/{stream_id}/classifier-runs`
+14. Feed health + edit surface v1 completed on 2026-02-19:
+   - new settings route: `/account/feed-health`
+   - new APIs:
+     - `GET /api/v1/feeds/health`
+     - `PATCH /api/v1/feeds/{feed_id}/settings`
+     - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
+   - feed lifecycle/fetch metadata additions:
+     - `is_archived`
+     - `archived_at`
+     - `last_fetch_success_at`
+     - `last_fetch_error_at`
+   - archive action side effect: bulk-marks existing unread feed articles as read.
 
 ### Frontend Workspace and UX History
 
@@ -140,6 +200,20 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - left rail now includes a direct Help action (`/help`)
    - article list action now supports scope-aware mark-read execution with confirmation
    - action copy clarified to `Mark all in scope as read`
+15. Workspace + settings management UI touchups v1 completed on 2026-02-21:
+   - navigation add-folder action is now icon-only (`folder-plus`) and expand/collapse controls are chevron-first
+   - monitoring streams now support folder assignment and folder-grouped navigation rendering
+   - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
+   - monitoring management list is now one-row-per-stream with icon actions and edit-to-left-form behavior
+   - feed health list is now one-row-per-feed with icon actions, `all=true` load mode, and add-feed dialog
+16. Mobile read-focus and desktop readability tightening completed on 2026-02-22:
+   - mobile now enforces a read-focused path (settings/help routes redirect to `/app` on small screens)
+   - mobile rail actions are restricted to reading-focused actions (`Nav`, `Saved`, `Search`)
+   - mobile feed/folder management controls are hidden in read-focused mode
+   - desktop readability pass tightened article/list/reader typography rhythm and table scanability
+   - closure verification rerun completed on 2026-02-22:
+     - frontend quality gates pass (`lint`, `typecheck`, `test`, `build`)
+     - desktop screenshot gate evidence confirmed in `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
 
 ### Completed Session Index (Chronological)
 
@@ -164,5 +238,11 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - Monitoring explainability baseline delivered (persisted match reasons + workspace rendering).
 8. 2026-02-16:
    - Monitoring plugin matcher config baseline delivered (classifier config persistence + UI + plugin context wiring).
+9. 2026-02-18:
+   - Monitoring match visual explainability v1 delivered (`query_hits`, matched-term summaries, reader highlights).
+   - Workspace action iconification v1 delivered (icon-first list/reader actions with accessibility labels).
+10. 2026-02-19:
+   - Feed health + edit surface v1 delivered (`/account/feed-health`, lifecycle + health APIs, archive mark-read side
+     effect).
 
 Reference for detailed per-session implementation and verification logs: `docs/session-notes.md`.

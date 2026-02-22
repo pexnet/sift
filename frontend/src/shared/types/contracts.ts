@@ -7,10 +7,31 @@ export type NavigationFolderNode = components["schemas"]["NavigationFolderNodeOu
 export type NavigationStreamNode = components["schemas"]["NavigationStreamNodeOut"];
 export type ArticleListResponse = components["schemas"]["ArticleListResponse"];
 export type ArticleListItem = components["schemas"]["ArticleListItemOut"];
-export type ArticleDetail = components["schemas"]["ArticleDetailOut"];
+export type ArticleDetail = Omit<components["schemas"]["ArticleDetailOut"], "fulltext_status" | "content_source"> & {
+  fulltext_status?: "idle" | "pending" | "succeeded" | "failed";
+  content_source?: "feed_excerpt" | "full_article";
+};
+export type ArticleFulltextFetchResult = components["schemas"]["ArticleFulltextFetchOut"];
 export type PatchArticleStateRequest = components["schemas"]["ArticleStatePatch"];
 export type ArticleStateBulkPatchRequest = components["schemas"]["ArticleStateBulkPatch"];
 export type Feed = components["schemas"]["FeedOut"];
+export type FeedCreateRequest = components["schemas"]["FeedCreate"];
+export type FeedSettingsUpdateRequest = components["schemas"]["FeedSettingsUpdate"];
+export type FeedLifecycleUpdateRequest = components["schemas"]["FeedLifecycleUpdate"];
+export type FeedLifecycleResult = components["schemas"]["FeedLifecycleResultOut"];
+export type FeedHealthItem = components["schemas"]["FeedHealthItemOut"];
+export type FeedHealthSummary = components["schemas"]["FeedHealthSummaryOut"];
+export type FeedHealthListResponse = components["schemas"]["FeedHealthListResponse"];
+export type FeedHealthLifecycleFilter = "all" | "active" | "paused" | "archived";
+export type FeedHealthQueryParams = {
+  lifecycle?: FeedHealthLifecycleFilter;
+  q?: string;
+  stale_only?: boolean;
+  error_only?: boolean;
+  all?: boolean;
+  limit?: number;
+  offset?: number;
+};
 export type FeedFolder = components["schemas"]["FeedFolderOut"];
 export type FeedFolderCreateRequest = components["schemas"]["FeedFolderCreate"];
 export type FeedFolderUpdateRequest = components["schemas"]["FeedFolderUpdate"];
@@ -23,6 +44,25 @@ export type StreamBackfillResult = {
   scanned_count: number;
   previous_match_count: number;
   matched_count: number;
+};
+export type PluginArea = {
+  id: string;
+  title: string;
+  icon?: string | null;
+  order: number;
+  route_key: string;
+};
+export type DashboardCardAvailabilityStatus = "ready" | "unavailable" | "degraded";
+export type DashboardCardAvailability = {
+  id: string;
+  title: string;
+  status: DashboardCardAvailabilityStatus;
+  reason?: string | null;
+  dependency_spec?: string | null;
+};
+export type DashboardSummary = {
+  cards: DashboardCardAvailability[];
+  last_updated_at: string;
 };
 
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
