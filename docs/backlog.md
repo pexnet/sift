@@ -23,6 +23,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 2. Plugin runtime hardening and operator visibility:
   - add per-plugin fault isolation and bounded execution behavior for hook dispatch
   - add plugin diagnostics/status surface and plugin-level telemetry contracts
+  - implementation checkpoint (2026-02-22): timeout-guarded ingest/classifier dispatch, runtime counters, and
+    admin diagnostics endpoint (`GET /api/v1/plugins/status`) are completed
   - spec: [docs/specs/plugin-runtime-hardening-diagnostics-v1.md](specs/plugin-runtime-hardening-diagnostics-v1.md)
 3. Frontend plugin host + workspace plugin IA:
   - implement typed frontend extension registry host with error-boundary isolation

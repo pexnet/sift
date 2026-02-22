@@ -396,6 +396,11 @@ Design goals:
    - runtime registry validation enforces plugin id uniqueness and allowed capability declarations
    - legacy `plugin_paths` runtime behavior is removed from the active plugin manager initialization path
    - plugin manager now dispatches capability-gated ingest/classifier hooks using registry plugin ids
+20. Plugin runtime hardening and diagnostics baseline:
+   - plugin invocation is timeout-guarded for ingest/classifier capabilities with failure isolation
+   - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error` metadata
+   - diagnostics endpoint is available at `GET /api/v1/plugins/status` (auth-protected, admin-only)
+   - plugin dispatch emits structured logging events for start/complete/error/timeout and registry validation errors
 
 ## Frontend Delivery Standard
 
@@ -423,7 +428,7 @@ Design goals:
    - centralized registry-driven activation/configuration and direct cutover are now implemented
    - finish broader capability-oriented contract coverage across backend/frontend extension points
    - spec: `docs/specs/plugin-platform-foundation-v1.md`
-2. Harden plugin runtime execution and add plugin diagnostics/telemetry baseline.
+2. Complete remaining plugin runtime hardening scope (metrics export and deeper telemetry validation).
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
 3. Add frontend plugin host surfaces (workspace plugin areas + dashboard extension host).
    - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`

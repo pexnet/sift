@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,8 @@ VALID_PLUGIN_CAPABILITIES = frozenset(
         "command_palette_action",
     }
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PluginRegistryError(RuntimeError):
@@ -107,22 +110,77 @@ def _format_validation_errors(exc: ValidationError) -> str:
 def load_plugin_registry(path: str) -> PluginRegistry:
     registry_path = _resolve_registry_path(path)
     if not registry_path.exists():
+        logger.error(
+            "plugin.registry.validation_error",
+            extra={
+                "event": "plugin.registry.validation_error",
+                "plugin_id": None,
+                "capability": "startup",
+                "result": "failure",
+                "duration_ms": 0,
+                "error_type": "FileNotFoundError",
+            },
+        )
         raise PluginRegistryError(f"Plugin registry file not found: {registry_path}")
 
     try:
         raw_payload = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
+        logger.error(
+            "plugin.registry.validation_error",
+            extra={
+                "event": "plugin.registry.validation_error",
+                "plugin_id": None,
+                "capability": "startup",
+                "result": "failure",
+                "duration_ms": 0,
+                "error_type": type(exc).__name__,
+            },
+        )
         raise PluginRegistryError(f"Invalid YAML in plugin registry '{registry_path}': {exc}") from exc
     except OSError as exc:
+        logger.error(
+            "plugin.registry.validation_error",
+            extra={
+                "event": "plugin.registry.validation_error",
+                "plugin_id": None,
+                "capability": "startup",
+                "result": "failure",
+                "duration_ms": 0,
+                "error_type": type(exc).__name__,
+            },
+        )
         raise PluginRegistryError(f"Failed reading plugin registry '{registry_path}': {exc}") from exc
 
     if raw_payload is None:
         raw_payload = {}
     if not isinstance(raw_payload, dict):
+        logger.error(
+            "plugin.registry.validation_error",
+            extra={
+                "event": "plugin.registry.validation_error",
+                "plugin_id": None,
+                "capability": "startup",
+                "result": "failure",
+                "duration_ms": 0,
+                "error_type": "TypeError",
+            },
+        )
         raise PluginRegistryError(f"Plugin registry root must be a mapping object: {registry_path}")
 
     try:
         return PluginRegistry.model_validate(raw_payload)
     except ValidationError as exc:
+        logger.error(
+            "plugin.registry.validation_error",
+            extra={
+                "event": "plugin.registry.validation_error",
+                "plugin_id": None,
+                "capability": "startup",
+                "result": "failure",
+                "duration_ms": 0,
+                "error_type": type(exc).__name__,
+            },
+        )
         details = _format_validation_errors(exc)
         raise PluginRegistryError(f"Plugin registry validation failed for '{registry_path}': {details}") from exc

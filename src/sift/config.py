@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
     cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
     plugin_registry_path: str = "config/plugins.yaml"
+    plugin_timeout_ingest_ms: int = 2000
+    plugin_timeout_classifier_ms: int = 3000
+    plugin_timeout_discovery_ms: int = 5000
+    plugin_timeout_summary_ms: int = 5000
+    plugin_diagnostics_enabled: bool = True
 
 
 @lru_cache

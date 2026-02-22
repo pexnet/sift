@@ -422,3 +422,21 @@ class StreamClassifierRunOut(BaseModel):
     duration_ms: int | None
     created_at: datetime
 
+
+class PluginCapabilityRuntimeCountersOut(BaseModel):
+    success_count: int
+    failure_count: int
+    timeout_count: int
+
+
+class PluginStatusOut(BaseModel):
+    plugin_id: str
+    enabled: bool
+    loaded: bool
+    capabilities: list[str]
+    startup_validation_status: str
+    last_error: str | None
+    unavailable_reason: str | None
+    runtime_counters: dict[str, PluginCapabilityRuntimeCountersOut]
+    last_updated_at: datetime
+

@@ -78,6 +78,7 @@ This file stores persistent project context for future Codex sessions.
 - `POST /api/v1/articles/state/bulk`
 - `GET /api/v1/navigation`
 - `POST /api/v1/imports/opml`
+- `GET /api/v1/plugins/status`
 
 ## Queue/Scheduler Status
 
@@ -187,6 +188,11 @@ This file stores persistent project context for future Codex sessions.
   - runtime validation enforces plugin id uniqueness and strict capability declarations
   - active runtime path no longer uses legacy `plugin_paths`
   - plugin manager dispatch is capability-gated for ingest and stream classifier hooks
+- Plugin runtime hardening and diagnostics baseline is implemented:
+  - ingest/classifier plugin dispatch is timeout-guarded and fault-isolated
+  - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error`
+  - admin diagnostics endpoint is available at `GET /api/v1/plugins/status`
+  - diagnostics endpoint is gated by `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -200,7 +206,7 @@ This file stores persistent project context for future Codex sessions.
    - registry source-of-truth and direct runtime cutover are already implemented
    - finish broader capability contract coverage across backend/frontend extension points
    - spec: `docs/specs/plugin-platform-foundation-v1.md`
-2. Harden plugin runtime and add plugin diagnostics/telemetry baseline.
+2. Complete remaining plugin runtime hardening scope (metrics export and telemetry validation).
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
 3. Add frontend plugin host surfaces (workspace plugin areas + dashboard extension host).
    - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`

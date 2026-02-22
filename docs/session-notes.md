@@ -1,5 +1,35 @@
 # Session Notes
 
+## 2026-02-22 (Plugin Runtime Hardening + Diagnostics Baseline)
+
+### Implemented This Session
+
+- Completed runtime guardrails and diagnostics baseline for plugins:
+  - `src/sift/plugins/manager.py` now provides timeout-guarded, fault-isolated dispatch for ingest/classifier hooks
+  - runtime counters and status snapshots are tracked per plugin/capability (success/failure/timeout)
+  - plugin load/capability contract failures are non-fatal per plugin and remain visible in status output
+- Added admin diagnostics API:
+  - new endpoint `GET /api/v1/plugins/status` via `src/sift/api/routes/plugins.py`
+  - endpoint is auth-protected + admin-only and can be disabled with `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+- Added configuration controls and docs wiring:
+  - timeout settings added in `src/sift/config.py` and `.env.example`
+  - API/router wiring updated for plugin diagnostics route
+- Added coverage:
+  - `tests/test_plugin_runtime_manager.py`
+  - `tests/test_plugins_api.py`
+
+### Verification
+
+- `python -m ruff check src tests`
+- `python -m mypy src --no-incremental`
+- `python -m pytest tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py tests/test_stream_service.py tests/test_ingestion_service.py`
+
+### Remaining Scope
+
+- Keep `docs/specs/plugin-runtime-hardening-diagnostics-v1.md` in progress for:
+  - explicit metrics backend export wiring (`sift_plugin_*` names)
+  - dedicated telemetry contract assertions beyond current runtime/API behavior tests
+
 ## 2026-02-22 (Plugin Platform Foundation v1: Registry + Runtime Cutover Baseline)
 
 ### Implemented This Session

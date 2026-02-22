@@ -2,8 +2,8 @@
 
 ## Status
 
-- State: Planned
-- Scope: Backend runtime isolation, diagnostics, and telemetry baseline
+- State: In Progress
+- Scope: Runtime guardrails + diagnostics API baseline implemented; telemetry backend export remains pending
 - Backlog reference: [docs/backlog.md](../backlog.md)
 - Parent dependency: [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
 
@@ -44,7 +44,32 @@ fully standardized for multi-capability plugin growth.
 1. Registration/dispatch order is stable.
 2. Error handling and status mapping are deterministic for same inputs.
 
-## Diagnostics API (Planned)
+## Implemented Checkpoint (2026-02-22)
+
+1. Added per-plugin fault isolation and timeout-guarded dispatch in `PluginManager` for:
+   - ingest hook dispatch (`ingest_hook`)
+   - stream classifier dispatch (`stream_classifier`)
+2. Added per-plugin runtime counters and status snapshots:
+   - success/failure/timeout counts by capability
+   - startup validation/load status and `last_error`
+3. Added operator diagnostics API:
+   - `GET /api/v1/plugins/status`
+   - auth-protected and admin-only
+   - endpoint can be disabled via `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+4. Added structured dispatch/registry logging events:
+   - `plugin.dispatch.start`
+   - `plugin.dispatch.complete`
+   - `plugin.dispatch.error`
+   - `plugin.dispatch.timeout`
+   - `plugin.registry.validation_error`
+5. Added runtime configuration controls:
+   - `SIFT_PLUGIN_TIMEOUT_INGEST_MS`
+   - `SIFT_PLUGIN_TIMEOUT_CLASSIFIER_MS`
+   - `SIFT_PLUGIN_TIMEOUT_DISCOVERY_MS`
+   - `SIFT_PLUGIN_TIMEOUT_SUMMARY_MS`
+   - `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+
+## Diagnostics API
 
 Endpoint: `GET /api/v1/plugins/status`
 
@@ -65,7 +90,7 @@ Auth/scope:
 1. Auth-protected.
 2. Initial v1: admin-only access.
 
-## Telemetry Contract (Planned)
+## Telemetry Contract
 
 ### Metrics
 
@@ -92,7 +117,7 @@ Required fields:
 4. `duration_ms`
 5. `error_type` (if error)
 
-## Configuration Additions (Planned)
+## Configuration Additions
 
 1. `SIFT_PLUGIN_TIMEOUT_INGEST_MS`
 2. `SIFT_PLUGIN_TIMEOUT_CLASSIFIER_MS`
@@ -100,19 +125,19 @@ Required fields:
 4. `SIFT_PLUGIN_TIMEOUT_SUMMARY_MS`
 5. `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
 
-## Acceptance Criteria (for later implementation)
+## Acceptance Criteria
 
-1. Plugin failures/timeouts do not crash or stall whole capability dispatch.
-2. Diagnostics endpoint returns accurate plugin load and runtime status.
-3. Plugin invocation metrics/logs are emitted with bounded cardinality.
-4. Existing ingest/classifier behavior remains functionally correct with added guards.
+1. [x] Plugin failures/timeouts do not crash or stall whole capability dispatch.
+2. [x] Diagnostics endpoint returns accurate plugin load and runtime status.
+3. [ ] Plugin invocation metrics/logs are emitted with bounded cardinality.
+4. [x] Existing ingest/classifier behavior remains functionally correct with added guards.
 
-## Test Plan (for later implementation)
+## Test Plan
 
-1. Unit tests for timeout/error mapping and isolated dispatch behavior.
-2. API tests for diagnostics response shape and auth boundaries.
-3. Metrics/logging contract tests for event/metric name presence.
-4. Regression tests for existing ingestion and stream classifier flows.
+1. [x] Unit tests for timeout/error mapping and isolated dispatch behavior.
+2. [x] API tests for diagnostics response shape and auth boundaries.
+3. [ ] Metrics/logging contract tests for event/metric name presence.
+4. [x] Regression tests for existing ingestion and stream classifier flows.
 
 ## Rollout Notes
 
