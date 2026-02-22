@@ -103,8 +103,11 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm --dir frontend install --frozen-lockfile
 
+      - name: Generate OpenAPI schema
+        run: uv run python frontend/scripts/export_openapi.py
+
       - name: Generate OpenAPI types
-        run: pnpm --dir frontend run gen:openapi
+        run: pnpm --dir frontend exec openapi-typescript ./openapi.json --output ./src/shared/types/generated.ts
 
       - name: Ensure generated OpenAPI types are committed
         run: git diff --exit-code -- frontend/src/shared/types/generated.ts
