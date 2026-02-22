@@ -37,7 +37,7 @@ services:
 
   worker:
     build: .
-    command: /bin/sh -c "uv run --extra dev alembic upgrade head && uv run sift-worker"
+    command: /bin/sh -c "uv run sift-worker"
     volumes:
       - .:/app
     env_file:
@@ -51,7 +51,7 @@ services:
 
   scheduler:
     build: .
-    command: /bin/sh -c "uv run --extra dev alembic upgrade head && uv run sift-scheduler"
+    command: /bin/sh -c "uv run sift-scheduler"
     volumes:
       - .:/app
     env_file:
