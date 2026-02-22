@@ -1,0 +1,326 @@
+name: release-main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run release workflow without publishing tags/images"
+        required: false
+        default: false
+        type: boolean
+      manual_bump:
+        description: "Manual bump when triggered via workflow_dispatch"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: prepare-release
+    runs-on: ubuntu-latest
+    outputs:
+      owner_lc: ${{ steps.repo-meta.outputs.owner_lc }}
+      bump: ${{ steps.bump.outputs.bump }}
+      pr_number: ${{ steps.bump.outputs.pr_number }}
+      dry_run: ${{ steps.dry-run.outputs.dry_run }}
+      previous_tag: ${{ steps.version.outputs.previous_tag }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve repository metadata
+        id: repo-meta
+        run: |
+          echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve dry-run mode
+        id: dry-run
+        run: |
+          DRY_RUN="false"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            DRY_RUN="true"
+          elif [ "${{ vars.RELEASE_DRY_RUN }}" = "true" ]; then
+            DRY_RUN="true"
+          fi
+          echo "dry_run=${DRY_RUN}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release bump source
+        id: bump
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === "workflow_dispatch") {
+              core.setOutput("bump", "${{ inputs.manual_bump }}");
+              core.setOutput("pr_number", "manual");
+              return;
+            }
+
+            const allowed = ["release:major", "release:minor", "release:patch"];
+            const { owner, repo } = context.repo;
+            const commitSha = context.sha;
+
+            const response = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: commitSha,
+            });
+
+            const candidate =
+              response.data.find((pr) => pr.base.ref === "main" && pr.merged_at) ??
+              response.data.find((pr) => pr.base.ref === "main") ??
+              response.data[0];
+
+            if (!candidate) {
+              core.setFailed(`No PR associated with commit ${commitSha}. Cannot infer release bump label.`);
+              return;
+            }
+
+            const labels = candidate.labels.map((label) => label.name);
+            const selected = labels.filter((label) => allowed.includes(label));
+            if (selected.length !== 1) {
+              core.setFailed(
+                `Main release requires exactly one label (${allowed.join(", ")}). PR #${candidate.number} labels: ${labels.join(", ")}`
+              );
+              return;
+            }
+
+            const bump = selected[0].split(":")[1];
+            core.setOutput("bump", bump);
+            core.setOutput("pr_number", String(candidate.number));
+
+      - name: Compute release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          latest_tag="$(git tag -l 'v*' --sort=-v:refname | head -n1)"
+          bump="${{ steps.bump.outputs.bump }}"
+
+          if [ -z "${latest_tag}" ]; then
+            new_tag="v0.1.0"
+            previous_tag="none"
+          else
+            if [[ ! "${latest_tag}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "Latest tag '${latest_tag}' is not SemVer (vX.Y.Z)." >&2
+              exit 1
+            fi
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+            patch="${BASH_REMATCH[3]}"
+
+            case "${bump}" in
+              major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              patch)
+                patch=$((patch + 1))
+                ;;
+              *)
+                echo "Unsupported bump type '${bump}'." >&2
+                exit 1
+                ;;
+            esac
+
+            new_tag="v${major}.${minor}.${patch}"
+            previous_tag="${latest_tag}"
+          fi
+
+          if git rev-parse "${new_tag}" >/dev/null 2>&1; then
+            echo "Tag ${new_tag} already exists. Refusing to continue." >&2
+            exit 1
+          fi
+
+          echo "previous_tag=${previous_tag}" >> "$GITHUB_OUTPUT"
+          echo "tag=${new_tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${new_tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Release summary
+        run: |
+          echo "Dry run: ${{ steps.dry-run.outputs.dry_run }}"
+          echo "Bump: ${{ steps.bump.outputs.bump }}"
+          echo "PR: ${{ steps.bump.outputs.pr_number }}"
+          echo "Previous tag: ${{ steps.version.outputs.previous_tag }}"
+          echo "New tag: ${{ steps.version.outputs.tag }}"
+
+  security-gate:
+    name: security-gate
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan (HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+          format: table
+
+  backend-image:
+    name: backend-image
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - security-gate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image for security scan
+        run: docker build -f docker/backend.Dockerfile -t local/sift-backend:scan .
+
+      - name: Trivy backend image scan (HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: local/sift-backend:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+          format: table
+
+      - name: Login to GHCR
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish backend image (multi-arch)
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-backend:${{ needs.prepare.outputs.tag }}
+            ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-backend:latest
+
+  frontend-image:
+    name: frontend-image
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - security-gate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend image for security scan
+        run: docker build -f docker/frontend.Dockerfile -t local/sift-frontend:scan .
+
+      - name: Trivy frontend image scan (HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: local/sift-frontend:scan
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+          format: table
+
+      - name: Login to GHCR
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish frontend image (multi-arch)
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/frontend.Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-frontend:${{ needs.prepare.outputs.tag }}
+            ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-frontend:latest
+
+  publish-release:
+    name: publish-release
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - backend-image
+      - frontend-image
+    if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+    steps:
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Release ${{ needs.prepare.outputs.tag }}
+          generate_release_notes: true
+          append_body: |
+            ## Container Images
+            - `ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-backend:${{ needs.prepare.outputs.tag }}`
+            - `ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-backend:latest`
+            - `ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-frontend:${{ needs.prepare.outputs.tag }}`
+            - `ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-frontend:latest`
+
+            ## Upgrade
+            ```bash
+            export SIFT_VERSION=${{ needs.prepare.outputs.tag }}
+            docker compose -f docker-compose.release.yml pull
+            docker compose -f docker-compose.release.yml up -d
+            ```
+          fail_on_unmatched_files: false
+
+  release-dry-run:
+    name: release-dry-run
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - backend-image
+      - frontend-image
+    if: ${{ needs.prepare.outputs.dry_run == 'true' }}
+    steps:
+      - name: Dry-run summary
+        run: |
+          echo "Dry-run complete."
+          echo "Would release tag: ${{ needs.prepare.outputs.tag }}"
+          echo "Would publish:"
+          echo "  ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-backend:${{ needs.prepare.outputs.tag }}"
+          echo "  ghcr.io/${{ needs.prepare.outputs.owner_lc }}/sift-frontend:${{ needs.prepare.outputs.tag }}"

@@ -1,0 +1,68 @@
+services:
+  app:
+    image: ghcr.io/pexnet/sift-backend:${SIFT_VERSION:-latest}
+    command: /bin/sh -c "uv run alembic upgrade head && uv run uvicorn sift.main:app --host 0.0.0.0 --port 8000"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SIFT_DATABASE_URL: ${SIFT_DATABASE_URL:-postgresql+asyncpg://sift:sift@db:5432/sift}
+      SIFT_REDIS_URL: ${SIFT_REDIS_URL:-redis://redis:6379/0}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    image: ghcr.io/pexnet/sift-frontend:${SIFT_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+
+  worker:
+    image: ghcr.io/pexnet/sift-backend:${SIFT_VERSION:-latest}
+    command: /bin/sh -c "uv run sift-worker"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SIFT_DATABASE_URL: ${SIFT_DATABASE_URL:-postgresql+asyncpg://sift:sift@db:5432/sift}
+      SIFT_REDIS_URL: ${SIFT_REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      - app
+      - db
+      - redis
+
+  scheduler:
+    image: ghcr.io/pexnet/sift-backend:${SIFT_VERSION:-latest}
+    command: /bin/sh -c "uv run sift-scheduler"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SIFT_DATABASE_URL: ${SIFT_DATABASE_URL:-postgresql+asyncpg://sift:sift@db:5432/sift}
+      SIFT_REDIS_URL: ${SIFT_REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      - app
+      - db
+      - redis
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sift}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sift}
+      POSTGRES_DB: ${POSTGRES_DB:-sift}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+
+volumes:
+  pgdata:

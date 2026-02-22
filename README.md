@@ -19,5 +19,15 @@ Sift is a self-hosted RSS and content aggregation portal focused on a reliable P
 - [Getting started](docs/getting-started.md) — local setup and first run.
 - [Development guide](docs/development.md) — day-to-day developer workflow, tooling, and notes.
 - [Deployment guide](docs/deployment.md) — containerized runtime profiles and service topology.
+- [Release cycle](docs/release-cycle.md) — GitFlow, CI/CD gates, SemVer labels, and GHCR release process.
 - [Architecture](docs/architecture.md) — system design and current/target architecture.
 - [Session notes](docs/session-notes.md) — change log and near-term priorities.
+
+## Branch and Release Model
+
+- `develop` is the default integration branch.
+- `main` is the protected release branch.
+- Releases are tag-driven (`vX.Y.Z`) and automated from merges into `main`.
+- Container artifacts are published to GHCR for both backend and frontend:
+  - `ghcr.io/pexnet/sift-backend:vX.Y.Z` and `:latest`
+  - `ghcr.io/pexnet/sift-frontend:vX.Y.Z` and `:latest`

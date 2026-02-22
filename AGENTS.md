@@ -29,6 +29,8 @@ This file stores persistent project context for future Codex sessions.
   - `develop` is the default integration branch for active feature development.
   - Create feature branches from `develop` and merge completed features back into `develop`.
   - Merge `develop` into `main` only when features are validated and release-ready.
+  - PRs into `main` must include exactly one release label: `release:major`, `release:minor`, or `release:patch`.
+  - Releases are automated from `main` merges with SemVer tags and GHCR image publish (`sift-backend`, `sift-frontend`).
 - Prefer migration-first database evolution:
   - Create migration.
   - Apply migration.

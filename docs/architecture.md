@@ -431,6 +431,21 @@ Design goals:
 5. Vite build output is `frontend/dist` and is deployed by a separate static host/runtime.
 6. Runtime CDN imports and legacy `React.createElement` frontend modules have been removed.
 
+## Delivery Pipeline
+
+Current delivery automation is GitHub Actions + GHCR based:
+
+1. `ci-fast` runs on PRs targeting `develop` and acts as the integration gate.
+2. `release-readiness` runs on PRs targeting `main` and enforces:
+   - full backend/frontend quality checks
+   - release label contract (`release:major|minor|patch`)
+   - security gate (dependency review + Trivy HIGH/CRITICAL)
+3. `release-main` runs on push to `main` and:
+   - computes the next SemVer tag from merged PR labels
+   - creates GitHub Release notes
+   - publishes multi-arch backend/frontend images to GHCR
+4. `codeql` runs on `develop`/`main` PR and push events plus weekly schedule.
+
 ### Quality Baseline
 
 | Category | Current frontend standard |

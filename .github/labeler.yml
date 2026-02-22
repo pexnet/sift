@@ -1,0 +1,28 @@
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/**"
+          - "tests/**"
+          - "alembic/**"
+          - "pyproject.toml"
+          - "uv.lock"
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "frontend/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "README.md"
+          - "AGENTS.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "docker-compose*.yml"
+          - "docker/**"
+          - "Dockerfile"

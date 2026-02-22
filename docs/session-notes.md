@@ -1,5 +1,40 @@
 # Session Notes
 
+## 2026-02-22 (GitFlow + CI/CD + GHCR Release Pipeline Implementation)
+
+### Implemented This Session
+
+- Replaced single legacy CI workflow with split GitFlow-oriented automation:
+  - added `.github/workflows/ci-fast.yml` for PRs into `develop`
+  - added `.github/workflows/release-readiness.yml` for PRs into `main`
+  - added `.github/workflows/release-main.yml` for release/tag/image automation on `main` pushes
+  - added `.github/workflows/codeql.yml` for code scanning on `develop`/`main` PR+push and weekly schedule
+- Added security/dependency automation:
+  - added `.github/dependabot.yml`
+  - added `.github/release.yml` release notes categorization
+  - added `.github/labeler.yml` path-based auto-label mapping config
+- Added production release container topology:
+  - `docker/backend.Dockerfile`
+  - `docker/frontend.Dockerfile` (multi-stage build + Nginx runtime)
+  - `docker/nginx.conf` (SPA fallback + `/api` reverse proxy to app)
+  - `docker-compose.release.yml` for GHCR image-based upgrades
+- Added frontend formatting gate:
+  - installed `prettier` in frontend dev deps
+  - added `frontend/.prettierrc` and `frontend/.prettierignore`
+  - added `frontend` script: `format:check`
+- Updated project docs for development/deployment/release model:
+  - `README.md`
+  - `docs/development.md`
+  - `docs/deployment.md`
+  - `docs/architecture.md`
+  - new `docs/release-cycle.md`
+  - updated `AGENTS.md` branching/release working agreement notes
+
+### Notes
+
+- GitHub repository settings (default branch switch + branch protection rulesets + required checks/labels) must still be
+  applied manually in repository settings.
+
 ## 2026-02-22 (Full Article Fetch On-Demand v1 Implemented End-to-End)
 
 ### Implemented This Session
