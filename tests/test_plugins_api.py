@@ -36,6 +36,34 @@ class _PluginManagerStub:
         ]
 
 
+class _PluginManagerAreasStub:
+    def get_status_snapshots(self) -> list[PluginStatusSnapshot]:
+        return [
+            PluginStatusSnapshot(
+                plugin_id="discover_feeds",
+                enabled=True,
+                loaded=True,
+                capabilities=["workspace_area"],
+                startup_validation_status="ok",
+                last_error=None,
+                unavailable_reason=None,
+                runtime_counters={},
+                last_updated_at=datetime.now(UTC),
+            ),
+            PluginStatusSnapshot(
+                plugin_id="hidden_unloaded",
+                enabled=True,
+                loaded=False,
+                capabilities=["workspace_area"],
+                startup_validation_status="load_error",
+                last_error="failed",
+                unavailable_reason="failed",
+                runtime_counters={},
+                last_updated_at=datetime.now(UTC),
+            ),
+        ]
+
+
 def test_plugins_status_requires_admin_and_returns_shape(monkeypatch) -> None:
     db_path = Path("test_plugins_api.db")
     if db_path.exists():
@@ -145,3 +173,88 @@ def test_plugins_status_returns_404_when_diagnostics_disabled(monkeypatch) -> No
         asyncio.run(engine.dispose())
         if db_path.exists():
             db_path.unlink()
+
+
+def test_plugins_areas_returns_enabled_loaded_workspace_areas_only(monkeypatch, tmp_path: Path) -> None:
+    registry_path = tmp_path / "plugins.yaml"
+    registry_path.write_text(
+        """
+version: 1
+plugins:
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - workspace_area
+    ui:
+      area:
+        title: Discover feeds
+        icon: search
+        order: 10
+        route_key: discover-feeds
+    settings: {}
+  - id: hidden_disabled
+    enabled: false
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - workspace_area
+    ui:
+      area:
+        title: Hidden disabled
+        icon: bolt
+        order: 20
+    settings: {}
+  - id: hidden_unloaded
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - workspace_area
+    ui:
+      area:
+        title: Hidden unloaded
+        icon: alert
+        order: 30
+    settings: {}
+  - id: no_ui
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - workspace_area
+    settings: {}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    async def override_current_user() -> User:
+        return User(email="plugin-user@example.com", is_admin=False)
+
+    app.dependency_overrides[get_current_user] = override_current_user
+    monkeypatch.setattr("sift.api.routes.plugins.get_plugin_manager", lambda: _PluginManagerAreasStub())
+    monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(registry_path))
+    get_settings.cache_clear()
+
+    from sift.core.runtime import get_plugin_manager
+
+    get_plugin_manager.cache_clear()
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/plugins/areas")
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload == [
+                {
+                    "id": "discover_feeds",
+                    "title": "Discover feeds",
+                    "icon": "search",
+                    "order": 10,
+                    "route_key": "discover-feeds",
+                }
+            ]
+    finally:
+        app.dependency_overrides.clear()
+        get_settings.cache_clear()
+        get_plugin_manager.cache_clear()

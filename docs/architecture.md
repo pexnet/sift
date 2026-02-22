@@ -401,6 +401,11 @@ Design goals:
    - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error` metadata
    - diagnostics endpoint is available at `GET /api/v1/plugins/status` (auth-protected, admin-only)
    - plugin dispatch emits structured logging events for start/complete/error/timeout and registry validation errors
+21. Frontend plugin host/workspace areas baseline:
+   - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
+   - workspace navigation now renders a `Plugins` section from enabled/loaded plugin area metadata
+   - frontend route `/app/plugins/$areaId` mounts plugin area views inside existing workspace shell
+   - plugin area mounts run inside error-boundary isolation with `Plugin unavailable` fallback behavior
 
 ## Frontend Delivery Standard
 
@@ -430,7 +435,7 @@ Design goals:
    - spec: `docs/specs/plugin-platform-foundation-v1.md`
 2. Complete remaining plugin runtime hardening scope (metrics export and deeper telemetry validation).
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
-3. Add frontend plugin host surfaces (workspace plugin areas + dashboard extension host).
+3. Complete remaining frontend plugin host scope (broader extension points + fallback tests).
    - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
 4. Implement `/app/dashboard` shell with plugin-ready card contracts.
    - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`

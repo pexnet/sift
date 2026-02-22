@@ -1,8 +1,11 @@
 import AddLinkRoundedIcon from "@mui/icons-material/AddLinkRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import CreateNewFolderRoundedIcon from "@mui/icons-material/CreateNewFolderRounded";
+import DynamicFeedRoundedIcon from "@mui/icons-material/DynamicFeedRounded";
+import ExtensionRoundedIcon from "@mui/icons-material/ExtensionRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import TravelExploreRoundedIcon from "@mui/icons-material/TravelExploreRounded";
 import {
   Alert,
   Avatar,
@@ -31,7 +34,7 @@ import {
 import { useMemo, useState } from "react";
 
 import type { NavigationHierarchy } from "../../../entities/navigation/model";
-import type { FeedFolder } from "../../../shared/types/contracts";
+import type { FeedFolder, PluginArea } from "../../../shared/types/contracts";
 import { getFeedAvatarHue, getFeedInitial } from "../lib/feedIcons";
 import {
   loadExpandedFolderIds,
@@ -55,6 +58,9 @@ type NavigationPaneProps = {
   onSelectFolder: (folderId: string) => void;
   onSelectFeed: (feedId: string) => void;
   onSelectStream: (streamId: string) => void;
+  pluginAreas: PluginArea[];
+  selectedPluginAreaRouteKey: string | null;
+  onSelectPluginArea: (area: PluginArea) => void;
   onCreateFolder: (name: string) => Promise<void>;
   onCreateFeed: (payload: { title: string; url: string; folderId: string | null }) => Promise<void>;
   onRenameFolder: (folderId: string, name: string) => Promise<void>;
@@ -91,6 +97,17 @@ function getExpandedFolderIds(expandedFolders: Record<string, boolean>): Set<str
   );
 }
 
+function pluginAreaIcon(icon: string | null | undefined) {
+  const iconKey = (icon ?? "").toLowerCase();
+  if (iconKey === "search") {
+    return <TravelExploreRoundedIcon fontSize="inherit" className="workspace-nav__plugin-icon" />;
+  }
+  if (iconKey === "rss") {
+    return <DynamicFeedRoundedIcon fontSize="inherit" className="workspace-nav__plugin-icon" />;
+  }
+  return <ExtensionRoundedIcon fontSize="inherit" className="workspace-nav__plugin-icon" />;
+}
+
 export function NavigationPane({
   isReadOnly,
   density,
@@ -106,6 +123,9 @@ export function NavigationPane({
   onSelectFolder,
   onSelectFeed,
   onSelectStream,
+  pluginAreas,
+  selectedPluginAreaRouteKey,
+  onSelectPluginArea,
   onCreateFolder,
   onCreateFeed,
   onRenameFolder,
@@ -386,6 +406,27 @@ export function NavigationPane({
               </Stack>
             </Collapse>
           </Box>
+
+          {pluginAreas.length > 0 ? (
+            <Box className="workspace-nav__section">
+              <Typography className="workspace-nav__section-title">Plugins</Typography>
+              <List dense={density === "compact"} disablePadding>
+                {pluginAreas.map((pluginArea) => (
+                  <ListItemButton
+                    key={pluginArea.id}
+                    selected={selectedPluginAreaRouteKey === pluginArea.route_key}
+                    onClick={() => onSelectPluginArea(pluginArea)}
+                    className="workspace-nav__row"
+                  >
+                    <Box className="workspace-nav__plugin-label">
+                      {pluginAreaIcon(pluginArea.icon)}
+                      <ListItemText primary={pluginArea.title} />
+                    </Box>
+                  </ListItemButton>
+                ))}
+              </List>
+            </Box>
+          ) : null}
 
           <Box className="workspace-nav__section">
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="workspace-nav__section-header">

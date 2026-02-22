@@ -124,6 +124,9 @@ function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = 
     onSelectFolder: vi.fn(),
     onSelectFeed: vi.fn(),
     onSelectStream: vi.fn(),
+    pluginAreas: [],
+    selectedPluginAreaRouteKey: null,
+    onSelectPluginArea: vi.fn(),
     onCreateFolder: vi.fn(async () => {}),
     onCreateFeed: vi.fn(async () => {}),
     onRenameFolder: vi.fn(async () => {}),
@@ -276,6 +279,9 @@ describe("NavigationPane", () => {
         onSelectFolder={vi.fn()}
         onSelectFeed={vi.fn()}
         onSelectStream={vi.fn()}
+        pluginAreas={[]}
+        selectedPluginAreaRouteKey={null}
+        onSelectPluginArea={vi.fn()}
         onCreateFolder={vi.fn(async () => {})}
         onCreateFeed={vi.fn(async () => {})}
         onRenameFolder={vi.fn(async () => {})}
@@ -297,5 +303,34 @@ describe("NavigationPane", () => {
     expect(screen.queryByRole("button", { name: "Add folder" })).toBeNull();
     expect(screen.queryByLabelText(/Folder actions for/i)).toBeNull();
     expect(screen.queryByLabelText(/Feed actions for/i)).toBeNull();
+  });
+
+  it("renders plugins section and selects plugin area route", () => {
+    const onSelectPluginArea = vi.fn();
+    renderPane({
+      pluginAreas: [
+        {
+          id: "discover_feeds",
+          title: "Discover feeds",
+          icon: "search",
+          order: 10,
+          route_key: "discover-feeds",
+        },
+      ],
+      selectedPluginAreaRouteKey: "discover-feeds",
+      onSelectPluginArea,
+    });
+
+    expect(screen.getByText("Plugins")).toBeVisible();
+    const row = screen.getByRole("button", { name: /Discover feeds/i });
+    expect(row).toHaveClass("Mui-selected");
+    fireEvent.click(row);
+    expect(onSelectPluginArea).toHaveBeenCalledWith({
+      id: "discover_feeds",
+      title: "Discover feeds",
+      icon: "search",
+      order: 10,
+      route_key: "discover-feeds",
+    });
   });
 });

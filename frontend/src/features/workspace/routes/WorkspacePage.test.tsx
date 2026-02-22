@@ -13,6 +13,13 @@ const mediaState = {
 const navigateMock = vi.fn();
 const markScopeReadMutate = vi.fn();
 const patchArticleMutate = vi.fn();
+let pluginAreasData: Array<{
+  id: string;
+  title: string;
+  icon?: string | null;
+  order: number;
+  route_key: string;
+}> = [];
 
 vi.mock("@mui/material", async () => {
   const actual = await vi.importActual<typeof import("@mui/material")>("@mui/material");
@@ -67,6 +74,7 @@ vi.mock("../../../entities/navigation/model", async () => {
 
 vi.mock("../api/workspaceHooks", () => ({
   useNavigationQuery: () => ({ data: { ok: true }, isLoading: false, isError: false }),
+  usePluginAreasQuery: () => ({ data: pluginAreasData, isLoading: false, isError: false }),
   useFoldersQuery: () => ({ data: [], isLoading: false, isError: false }),
   useFeedsQuery: () => ({ data: [], isLoading: false, isError: false }),
   useArticlesQuery: () => ({
@@ -161,6 +169,7 @@ describe("WorkspacePage", () => {
     navigateMock.mockReset();
     markScopeReadMutate.mockReset();
     patchArticleMutate.mockReset();
+    pluginAreasData = [];
   });
 
   it("uses desktop 3-pane layout with visible navigation and splitters", () => {
@@ -204,5 +213,40 @@ describe("WorkspacePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Back to list/i }));
     expect(screen.getByRole("button", { name: /First article/i })).toBeVisible();
+  });
+
+  it("renders plugin area host when plugin route is active", () => {
+    pluginAreasData = [
+      {
+        id: "discover_feeds",
+        title: "Discover feeds",
+        icon: "search",
+        order: 10,
+        route_key: "discover-feeds",
+      },
+    ];
+
+    render(
+      <WorkspacePage
+        search={{
+          scope_type: "system",
+          scope_id: "",
+          state: "all",
+          sort: "newest",
+          q: "",
+          article_id: "",
+        }}
+        density="compact"
+        navPreset="balanced"
+        themeMode="dark"
+        setThemeMode={vi.fn()}
+        setSearch={vi.fn()}
+        activePluginAreaRouteKey="discover-feeds"
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Discover feeds" })).toBeVisible();
+    expect(screen.getByText("Discovery controls coming next")).toBeVisible();
+    expect(screen.queryByRole("separator", { name: "Resize reader pane" })).toBeNull();
   });
 });

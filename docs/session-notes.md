@@ -1,5 +1,40 @@
 # Session Notes
 
+## 2026-02-22 (Frontend Plugin Host + Workspace Areas Baseline)
+
+### Implemented This Session
+
+- Added backend plugin area metadata endpoint:
+  - `GET /api/v1/plugins/areas` in `src/sift/api/routes/plugins.py`
+  - endpoint returns enabled, loaded workspace plugin areas from registry UI metadata
+- Added frontend plugin area host baseline:
+  - typed plugin area registration/runtime in `frontend/src/features/workspace/plugins/registry.ts`
+  - baseline plugin mount host + error-boundary isolation in
+    `frontend/src/features/workspace/plugins/PluginAreaHost.tsx`
+- Added workspace plugin navigation and route integration:
+  - `Plugins` section in `NavigationPane`
+  - plugin area route branch `/app/plugins/$areaId` in router
+  - plugin area rendering inside existing workspace shell in `WorkspacePage`
+- Added baseline `discover_feeds` plugin area metadata in `config/plugins.yaml`.
+
+### Verification
+
+- backend:
+  - `python -m ruff check src tests`
+  - `python -m mypy src --no-incremental`
+  - `python -m pytest tests/test_plugins_api.py tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_stream_service.py tests/test_ingestion_service.py`
+- frontend:
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run test`
+  - `npm --prefix frontend run build`
+
+### Remaining Scope
+
+- Keep `docs/specs/frontend-plugin-host-workspace-areas-v1.md` in progress for:
+  - explicit plugin render-failure fallback tests
+  - broader extension-point coverage beyond workspace-area baseline
+
 ## 2026-02-22 (Plugin Runtime Hardening + Diagnostics Baseline)
 
 ### Implemented This Session

@@ -1,6 +1,6 @@
 import { Alert, Box, Typography } from "@mui/material";
 import { RouterProvider, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   loadPersistedWorkspaceSearch,
@@ -223,6 +223,44 @@ const workspaceRoute = createRoute({
   component: WorkspaceRouteComponent,
 });
 
+function PluginWorkspaceRouteComponent() {
+  const navigate = useNavigate();
+  const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
+  const { areaId } = pluginWorkspaceRoute.useParams();
+  const [searchState, setSearchState] = useState(loadPersistedWorkspaceSearch());
+
+  const setSearch = (patch: Partial<WorkspaceSearch>) => {
+    setSearchState((previous) => {
+      const nextSearch: WorkspaceSearch = { ...previous, ...patch };
+      savePersistedWorkspaceSearch(nextSearch);
+      void navigate({
+        to: "/app",
+        search: nextSearch,
+      });
+      return nextSearch;
+    });
+  };
+
+  return (
+    <WorkspacePage
+      search={searchState}
+      density={density}
+      navPreset={navPreset}
+      themeMode={themeMode}
+      setThemeMode={setThemeMode}
+      setSearch={setSearch}
+      activePluginAreaRouteKey={areaId}
+    />
+  );
+}
+
+const pluginWorkspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app/plugins/$areaId",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: PluginWorkspaceRouteComponent,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -231,6 +269,7 @@ const routeTree = rootRoute.addChildren([
   feedHealthRoute,
   monitoringFeedsRoute,
   helpRoute,
+  pluginWorkspaceRoute,
   workspaceRoute,
 ]);
 

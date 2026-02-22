@@ -14,3 +14,17 @@ plugins:
     capabilities:
       - stream_classifier
     settings: {}
+  - id: discover_feeds
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.noop:NoopPlugin
+    capabilities:
+      - discover_feeds
+      - workspace_area
+    ui:
+      area:
+        title: Discover feeds
+        icon: search
+        order: 10
+        route_key: discover-feeds
+    settings: {}

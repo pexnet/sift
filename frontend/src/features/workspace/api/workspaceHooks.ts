@@ -12,6 +12,7 @@ import {
   getFeeds,
   getFolders,
   getNavigation,
+  getPluginAreas,
   markScopeAsRead,
   patchArticleState,
   updateFolder,
@@ -35,6 +36,13 @@ export function useNavigationQuery() {
   });
 }
 
+export function usePluginAreasQuery() {
+  return useQuery({
+    queryKey: queryKeys.pluginAreas(),
+    queryFn: getPluginAreas,
+  });
+}
+
 export function useFoldersQuery() {
   return useQuery({
     queryKey: queryKeys.folders(),
@@ -49,18 +57,19 @@ export function useFeedsQuery() {
   });
 }
 
-export function useArticlesQuery(search: WorkspaceSearch) {
+export function useArticlesQuery(search: WorkspaceSearch, enabled = true) {
   return useQuery({
     queryKey: queryKeys.articles(search),
     queryFn: () => getArticles(search),
+    enabled,
   });
 }
 
-export function useArticleDetailQuery(articleId: string) {
+export function useArticleDetailQuery(articleId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.articleDetail(articleId),
     queryFn: () => getArticleDetail(articleId),
-    enabled: articleId.length > 0,
+    enabled: enabled && articleId.length > 0,
   });
 }
 

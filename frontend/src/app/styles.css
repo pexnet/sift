@@ -669,6 +669,20 @@ body {
   flex: 1;
 }
 
+.workspace-nav__plugin-label {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-nav__plugin-icon {
+  color: var(--muted);
+  font-size: 0.95rem;
+  flex: 0 0 auto;
+}
+
 .workspace-nav__feed-avatar {
   flex: 0 0 auto;
   border: 1px solid var(--border);
@@ -748,6 +762,30 @@ body {
   grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
+}
+
+.workspace-plugin-shell {
+  background: var(--surface-list);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  overflow: auto;
+}
+
+.workspace-plugin-area {
+  max-width: 760px;
+  background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft) 10%);
+  border: 1px solid color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+}
+
+.workspace-plugin-area__header {
+  margin-bottom: 0.6rem;
+}
+
+.workspace-plugin-area__description {
+  margin-bottom: 0.9rem;
 }
 
 .settings-workspace-main {

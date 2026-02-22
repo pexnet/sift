@@ -41,6 +41,13 @@ export type StreamBackfillResult = {
   previous_match_count: number;
   matched_count: number;
 };
+export type PluginArea = {
+  id: string;
+  title: string;
+  icon?: string | null;
+  order: number;
+  route_key: string;
+};
 
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
 export type ArticleStateFilter = "all" | "unread" | "saved" | "archived" | "fresh" | "recent";

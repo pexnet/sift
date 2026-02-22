@@ -29,6 +29,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 3. Frontend plugin host + workspace plugin IA:
   - implement typed frontend extension registry host with error-boundary isolation
   - add dedicated `Plugins` navigation section with plugin area visibility driven by registry enablement
+  - implementation checkpoint (2026-02-22): plugin area host runtime, `/app/plugins/$areaId` route, `Plugins`
+    navigation section, and backend `GET /api/v1/plugins/areas` metadata API are completed
   - spec: [docs/specs/frontend-plugin-host-workspace-areas-v1.md](specs/frontend-plugin-host-workspace-areas-v1.md)
 4. Dashboard shell + plugin-ready card host:
   - implement `/app/dashboard` route and rail navigation behavior

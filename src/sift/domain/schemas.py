@@ -440,3 +440,11 @@ class PluginStatusOut(BaseModel):
     runtime_counters: dict[str, PluginCapabilityRuntimeCountersOut]
     last_updated_at: datetime
 
+
+class PluginAreaOut(BaseModel):
+    id: str
+    title: str
+    icon: str | None = None
+    order: int = 100
+    route_key: str
+
