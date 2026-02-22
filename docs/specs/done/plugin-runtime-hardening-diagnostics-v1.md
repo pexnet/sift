@@ -2,10 +2,10 @@
 
 ## Status
 
-- State: In Progress
-- Scope: Runtime guardrails + diagnostics API baseline implemented; telemetry backend export remains pending
-- Backlog reference: [docs/backlog.md](../backlog.md)
-- Parent dependency: [docs/specs/done/plugin-platform-foundation-v1.md](done/plugin-platform-foundation-v1.md)
+- State: Completed
+- Scope: Runtime guardrails, diagnostics API, and plugin telemetry export contract are implemented
+- Backlog reference: [docs/backlog.md](../../backlog.md)
+- Parent dependency: [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
 
 ## Context
 
@@ -68,6 +68,15 @@ fully standardized for multi-capability plugin growth.
    - `SIFT_PLUGIN_TIMEOUT_DISCOVERY_MS`
    - `SIFT_PLUGIN_TIMEOUT_SUMMARY_MS`
    - `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+6. Added plugin telemetry export wiring in runtime manager:
+   - `sift_plugin_invocations_total{plugin_id,capability,result}`
+   - `sift_plugin_invocation_duration_seconds{plugin_id,capability,result}`
+   - `sift_plugin_timeouts_total{plugin_id,capability}`
+   - `sift_plugin_dispatch_failures_total{capability}`
+   - in-memory collector snapshot + Prometheus-text rendering surface for metrics backend integration
+7. Added telemetry/logging contract tests:
+   - metrics contract assertions and rendered metric names
+   - structured dispatch logging field assertions (`plugin_id`, `capability`, `result`, `duration_ms`, `error_type`)
 
 ## Diagnostics API
 
@@ -129,14 +138,14 @@ Required fields:
 
 1. [x] Plugin failures/timeouts do not crash or stall whole capability dispatch.
 2. [x] Diagnostics endpoint returns accurate plugin load and runtime status.
-3. [ ] Plugin invocation metrics/logs are emitted with bounded cardinality.
+3. [x] Plugin invocation metrics/logs are emitted with bounded cardinality.
 4. [x] Existing ingest/classifier behavior remains functionally correct with added guards.
 
 ## Test Plan
 
 1. [x] Unit tests for timeout/error mapping and isolated dispatch behavior.
 2. [x] API tests for diagnostics response shape and auth boundaries.
-3. [ ] Metrics/logging contract tests for event/metric name presence.
+3. [x] Metrics/logging contract tests for event/metric name presence.
 4. [x] Regression tests for existing ingestion and stream classifier flows.
 
 ## Rollout Notes
@@ -147,7 +156,7 @@ Required fields:
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
-  - [docs/specs/done/plugin-platform-foundation-v1.md](done/plugin-platform-foundation-v1.md)
-  - [docs/specs/scheduler-ingestion-observability-v1.md](scheduler-ingestion-observability-v1.md)
+  - [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
+  - [docs/specs/scheduler-ingestion-observability-v1.md](../scheduler-ingestion-observability-v1.md)

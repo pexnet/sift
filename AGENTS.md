@@ -195,6 +195,8 @@ This file stores persistent project context for future Codex sessions.
   - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error`
   - admin diagnostics endpoint is available at `GET /api/v1/plugins/status`
   - diagnostics endpoint is gated by `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
+  - plugin telemetry metrics contract is wired (`sift_plugin_invocations_total`,
+    `sift_plugin_invocation_duration_seconds`, `sift_plugin_timeouts_total`, `sift_plugin_dispatch_failures_total`)
 - Frontend plugin host/workspace areas baseline is implemented:
   - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
   - workspace navigation renders a dedicated `Plugins` section from enabled plugin area metadata
@@ -214,15 +216,14 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Complete remaining plugin runtime hardening scope (metrics export and telemetry validation).
-   - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
-2. Complete plugin configuration registry follow-ups (security and provider-budget contract coverage).
+1. Complete plugin configuration registry follow-ups (security and provider-budget contract coverage).
    - spec: `docs/specs/plugin-configuration-registry-v1.md`
-3. Resume ranking/observability feature slices after plugin closure:
+2. Resume ranking/observability feature slices after plugin closure:
    - stream-level ranking/prioritization controls
    - scheduler and ingestion observability
-4. Completed and archived on 2026-02-22:
+3. Completed and archived:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
+   - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
    - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 

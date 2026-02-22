@@ -1,5 +1,35 @@
 # Session Notes
 
+## 2026-02-22 (Plugin Runtime Telemetry Contract Closure)
+
+### Implemented This Session
+
+- Added runtime plugin telemetry collector wiring in `PluginManager`:
+  - `sift_plugin_invocations_total{plugin_id,capability,result}`
+  - `sift_plugin_invocation_duration_seconds{plugin_id,capability,result}`
+  - `sift_plugin_timeouts_total{plugin_id,capability}`
+  - `sift_plugin_dispatch_failures_total{capability}`
+- Added exporter surfaces for plugin metrics:
+  - in-memory typed snapshot (`get_telemetry_snapshot`)
+  - Prometheus-text rendering (`render_telemetry_prometheus`)
+- Added contract-level runtime tests in `tests/test_plugin_runtime_manager.py` for:
+  - metrics emission and label/value mapping
+  - rendered metrics name presence
+  - structured logging required field assertions
+- Marked runtime hardening spec complete and archived to:
+  - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
+- Updated planning docs to remove runtime hardening from active Next priorities:
+  - `docs/backlog.md`
+  - `AGENTS.md`
+  - `docs/architecture.md`
+  - `docs/backlog-history.md`
+
+### Verification
+
+- `python -m pytest tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_plugins_api.py tests/test_dashboard_api.py`
+- `python -m ruff check src/sift/plugins tests/test_plugin_runtime_manager.py`
+- `python -m mypy src/sift/plugins tests/test_plugin_runtime_manager.py --no-incremental`
+
 ## 2026-02-22 (Plugin Verification + Backlog/Spec Cleanup Pass)
 
 ### Implemented This Session
@@ -127,7 +157,7 @@
 
 ### Remaining Scope
 
-- Keep `docs/specs/plugin-runtime-hardening-diagnostics-v1.md` in progress for:
+- Keep `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md` in progress for:
   - explicit metrics backend export wiring (`sift_plugin_*` names)
   - dedicated telemetry contract assertions beyond current runtime/API behavior tests
 
@@ -162,7 +192,7 @@
 - `uv run ...` could not be used in this local environment due a `.venv\\lib64` access error; direct `python -m ...`
   commands were used for verification.
 - Remaining plugin-platform scope stays active:
-  - runtime hardening/diagnostics (`docs/specs/plugin-runtime-hardening-diagnostics-v1.md`)
+  - runtime hardening/diagnostics (`docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`)
   - frontend plugin host/workspace areas (`docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`)
   - dashboard shell host (`docs/specs/done/dashboard-shell-plugin-host-v1.md`)
 
@@ -172,7 +202,7 @@
 
 - Authored new active planning specs for the plugin-first priority stack:
   - `docs/specs/done/plugin-platform-foundation-v1.md`
-  - `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
+  - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 - Updated dashboard planning dependency wiring:
@@ -1779,4 +1809,5 @@
 
 - Backlog source of truth is maintained in `docs/backlog.md`.
 - This file remains the chronological session log only.
+
 

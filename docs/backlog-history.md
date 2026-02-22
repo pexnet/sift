@@ -23,6 +23,16 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - summary metadata endpoint (`GET /api/v1/dashboard/summary`)
    - card availability host with per-card failure isolation
    - archived spec: `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+4. Plugin runtime hardening and diagnostics v1 completed and archived:
+   - timeout/fault-isolated plugin dispatch behavior
+   - admin diagnostics endpoint (`GET /api/v1/plugins/status`)
+   - plugin telemetry metrics contract wiring:
+     - `sift_plugin_invocations_total`
+     - `sift_plugin_invocation_duration_seconds`
+     - `sift_plugin_timeouts_total`
+     - `sift_plugin_dispatch_failures_total`
+   - telemetry/logging contract tests for metric/event presence
+   - archived spec: `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
 
 ### Monitoring UI Milestones (Previously in Active Next UI Slice)
 

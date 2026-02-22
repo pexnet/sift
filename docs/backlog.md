@@ -13,16 +13,11 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Plugin runtime hardening and operator visibility (remaining closure slice):
-  - add per-plugin fault isolation and bounded execution behavior for hook dispatch
-  - diagnostics/status API is implemented (`GET /api/v1/plugins/status`)
-  - remaining scope: metrics export wiring and telemetry contract assertions
-  - spec: [docs/specs/plugin-runtime-hardening-diagnostics-v1.md](specs/plugin-runtime-hardening-diagnostics-v1.md)
-2. Plugin configuration registry v1 follow-ups:
+1. Plugin configuration registry v1 follow-ups:
   - add config security enforcement/tests for env-ref secret handling
   - add provider budget/rate-limit contract tests for discovery-oriented plugin settings
   - spec: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
-3. Resume dependency feature slices after plugin closure:
+2. Resume dependency feature slices after plugin closure:
   - stream-level ranking/prioritization controls
   - scheduler and ingestion observability (metrics, latency, failures; spec:
     [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md))
@@ -45,8 +40,6 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 ### Linked Specifications
 
 - Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
-- Plugin runtime hardening/diagnostics v1:
-  [docs/specs/plugin-runtime-hardening-diagnostics-v1.md](specs/plugin-runtime-hardening-diagnostics-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)

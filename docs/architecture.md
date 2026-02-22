@@ -401,6 +401,8 @@ Design goals:
    - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error` metadata
    - diagnostics endpoint is available at `GET /api/v1/plugins/status` (auth-protected, admin-only)
    - plugin dispatch emits structured logging events for start/complete/error/timeout and registry validation errors
+   - plugin telemetry metrics contract is wired in runtime export surfaces (`sift_plugin_invocations_total`,
+     `sift_plugin_invocation_duration_seconds`, `sift_plugin_timeouts_total`, `sift_plugin_dispatch_failures_total`)
 21. Frontend plugin host/workspace areas baseline:
    - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
    - workspace navigation now renders a `Plugins` section from enabled/loaded plugin area metadata
@@ -434,15 +436,14 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Complete remaining plugin runtime hardening scope (metrics export and deeper telemetry validation).
-   - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
-2. Complete plugin configuration registry v1 follow-ups:
+1. Complete plugin configuration registry v1 follow-ups:
    - config security enforcement/tests for env-ref secret handling
    - provider budget/rate-limit contract coverage for discovery-oriented plugin settings
    - spec: `docs/specs/plugin-configuration-registry-v1.md`
-3. Resume stream ranking and scheduler/ingestion observability after plugin closure.
-4. Completed and archived on 2026-02-22:
+2. Resume stream ranking and scheduler/ingestion observability after plugin closure.
+3. Completed and archived on 2026-02-22:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
+   - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
    - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 

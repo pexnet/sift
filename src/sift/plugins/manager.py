@@ -9,6 +9,7 @@ from typing import Any, TypeVar
 
 from sift.plugins.base import ArticleContext, StreamClassificationDecision, StreamClassifierContext
 from sift.plugins.registry import PluginRegistryEntry
+from sift.plugins.telemetry import PluginMetricSample, PluginTelemetryCollector
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,7 @@ class PluginManager:
         timeout_discovery_ms: int = 5000,
         timeout_summary_ms: int = 5000,
         diagnostics_enabled: bool = True,
+        telemetry_collector: PluginTelemetryCollector | None = None,
     ) -> None:
         self._plugins: list[LoadedPlugin] = []
         self._plugins_by_id: dict[str, LoadedPlugin] = {}
@@ -135,6 +137,7 @@ class PluginManager:
         self._capability_timeouts_ms["stream_classifier"] = max(1, timeout_classifier_ms)
         self._capability_timeouts_ms["discover_feeds"] = max(1, timeout_discovery_ms)
         self._capability_timeouts_ms["summarize_article"] = max(1, timeout_summary_ms)
+        self._telemetry = telemetry_collector or PluginTelemetryCollector()
 
     def load_from_registry(self, plugins: list[PluginRegistryEntry]) -> None:
         self._plugins = []
@@ -215,6 +218,12 @@ class PluginManager:
     def diagnostics_enabled(self) -> bool:
         return self._diagnostics_enabled
 
+    def get_telemetry_snapshot(self) -> dict[str, list[PluginMetricSample]]:
+        return self._telemetry.snapshot()
+
+    def render_telemetry_prometheus(self) -> str:
+        return self._telemetry.render_prometheus()
+
     def _record_success(self, *, plugin_id: str, capability: str, duration_ms: int) -> None:
         state = self._runtime_states.get(plugin_id)
         if state is None:
@@ -222,6 +231,12 @@ class PluginManager:
         counters = state.runtime_counters.setdefault(capability, CapabilityRuntimeCounters())
         counters.success_count += 1
         state.last_updated_at = _now_utc()
+        self._telemetry.record_invocation(
+            plugin_id=plugin_id,
+            capability=capability,
+            result="success",
+            duration_seconds=duration_ms / 1000.0,
+        )
         logger.info(
             "plugin.dispatch.complete",
             extra={
@@ -253,6 +268,16 @@ class PluginManager:
         state.last_error = str(error)
         state.last_updated_at = _now_utc()
         self._dispatch_failures_by_capability[capability] = self._dispatch_failures_by_capability.get(capability, 0) + 1
+        result = "timeout" if timeout else "failure"
+        self._telemetry.record_invocation(
+            plugin_id=plugin_id,
+            capability=capability,
+            result=result,
+            duration_seconds=duration_ms / 1000.0,
+        )
+        if timeout:
+            self._telemetry.record_timeout(plugin_id=plugin_id, capability=capability)
+        self._telemetry.record_dispatch_failure(capability=capability)
         event_name = "plugin.dispatch.timeout" if timeout else "plugin.dispatch.error"
         logger.error(
             event_name,
@@ -260,7 +285,7 @@ class PluginManager:
                 "event": event_name,
                 "plugin_id": plugin_id,
                 "capability": capability,
-                "result": "timeout" if timeout else "failure",
+                "result": result,
                 "duration_ms": duration_ms,
                 "error_type": type(error).__name__,
                 "error_message": str(error),
