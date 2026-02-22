@@ -175,6 +175,20 @@ class ArticleDetailOut(BaseModel):
     stream_ids: list[UUID] = Field(default_factory=list)
     stream_match_reasons: dict[UUID, str] | None = None
     stream_match_evidence: dict[UUID, dict[str, Any]] | None = None
+    fulltext_status: Literal["idle", "pending", "succeeded", "failed"] = "idle"
+    fulltext_error: str | None = None
+    fulltext_fetched_at: datetime | None = None
+    fulltext_content_text: str | None = None
+    fulltext_content_html: str | None = None
+    content_source: Literal["feed_excerpt", "full_article"] = "feed_excerpt"
+
+
+class ArticleFulltextFetchOut(BaseModel):
+    article_id: UUID
+    status: Literal["idle", "pending", "succeeded", "failed"]
+    error_message: str | None = None
+    fetched_at: datetime | None = None
+    content_source: Literal["feed_excerpt", "full_article"]
 
 
 class ArticleStatePatch(BaseModel):

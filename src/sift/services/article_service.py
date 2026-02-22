@@ -1,19 +1,20 @@
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Article, ArticleState, Feed, KeywordStream, KeywordStreamMatch
+from sift.db.models import Article, ArticleFulltext, ArticleState, Feed, KeywordStream, KeywordStreamMatch
 from sift.domain.schemas import ArticleDetailOut, ArticleListItemOut, ArticleListResponse, ArticleStateOut
 from sift.search.query_language import SearchQuerySyntaxError, parse_search_query, requires_advanced_search
 
 ScopeType = Literal["system", "folder", "feed", "stream"]
 StateFilter = Literal["all", "unread", "saved", "archived", "fresh", "recent"]
 SortMode = Literal["newest", "oldest", "unread_first"]
+FulltextStatus = Literal["idle", "pending", "succeeded", "failed"]
 
 
 class ArticleNotFoundError(Exception):
@@ -269,6 +270,9 @@ class ArticleService:
             user_id=user_id,
             article_ids=[article.id],
         )
+        fulltext = await self._get_article_fulltext(session=session, article_id=article.id)
+        fulltext_status: FulltextStatus = _normalize_fulltext_status(fulltext.status) if fulltext else "idle"
+        has_full_article = fulltext_status == "succeeded" and bool(fulltext and fulltext.content_text)
         return ArticleDetailOut(
             id=article.id,
             feed_id=article.feed_id,
@@ -286,6 +290,12 @@ class ArticleService:
             stream_ids=stream_map.get(article.id, []),
             stream_match_reasons=stream_reason_map.get(article.id, {}),
             stream_match_evidence=stream_evidence_map.get(article.id, {}),
+            fulltext_status=fulltext_status,
+            fulltext_error=fulltext.error_message if fulltext else None,
+            fulltext_fetched_at=fulltext.fetched_at if fulltext else None,
+            fulltext_content_text=fulltext.content_text if fulltext else None,
+            fulltext_content_html=fulltext.content_html if fulltext else None,
+            content_source="full_article" if has_full_article else "feed_excerpt",
         )
 
     async def patch_state(
@@ -501,6 +511,10 @@ class ArticleService:
         if result.scalar_one_or_none() is None:
             raise ArticleNotFoundError(f"Article {article_id} not found")
 
+    async def _get_article_fulltext(self, *, session: AsyncSession, article_id: UUID) -> ArticleFulltext | None:
+        result = await session.execute(select(ArticleFulltext).where(ArticleFulltext.article_id == article_id))
+        return result.scalar_one_or_none()
+
     async def _get_or_create_state(
         self,
         *,
@@ -530,3 +544,9 @@ class ArticleService:
 
 
 article_service = ArticleService()
+
+
+def _normalize_fulltext_status(value: str) -> FulltextStatus:
+    if value in {"idle", "pending", "succeeded", "failed"}:
+        return cast(FulltextStatus, value)
+    return "failed"

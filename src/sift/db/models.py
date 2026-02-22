@@ -99,6 +99,22 @@ class ArticleState(TimestampMixin, Base):
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
 
+class ArticleFulltext(TimestampMixin, Base):
+    __tablename__ = "article_fulltexts"
+    __table_args__ = (UniqueConstraint("article_id", name="uq_article_fulltexts_article"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    article_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="idle", index=True)
+    source_url: Mapped[str | None] = mapped_column(String(2000))
+    final_url: Mapped[str | None] = mapped_column(String(2000))
+    content_text: Mapped[str | None] = mapped_column(Text)
+    content_html: Mapped[str | None] = mapped_column(Text)
+    extractor: Mapped[str | None] = mapped_column(String(128))
+    error_message: Mapped[str | None] = mapped_column(String(1000))
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+
+
 class User(TimestampMixin, Base):
     __tablename__ = "users"
 
