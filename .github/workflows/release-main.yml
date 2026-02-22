@@ -178,7 +178,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trivy filesystem scan (HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: fs
           scan-ref: .
@@ -204,7 +204,7 @@ jobs:
         run: docker build -f docker/backend.Dockerfile -t local/sift-backend:scan .
 
       - name: Trivy backend image scan (HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           image-ref: local/sift-backend:scan
           severity: HIGH,CRITICAL
@@ -249,7 +249,7 @@ jobs:
         run: docker build -f docker/frontend.Dockerfile -t local/sift-frontend:scan .
 
       - name: Trivy frontend image scan (HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           image-ref: local/sift-frontend:scan
           severity: HIGH,CRITICAL
