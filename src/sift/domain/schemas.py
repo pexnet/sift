@@ -448,3 +448,16 @@ class PluginAreaOut(BaseModel):
     order: int = 100
     route_key: str
 
+
+class DashboardCardAvailabilityOut(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "unavailable", "degraded"]
+    reason: str | None = None
+    dependency_spec: str | None = None
+
+
+class DashboardSummaryOut(BaseModel):
+    cards: list[DashboardCardAvailabilityOut]
+    last_updated_at: datetime
+

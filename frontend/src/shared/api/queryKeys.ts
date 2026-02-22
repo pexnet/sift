@@ -27,6 +27,7 @@ export const queryKeys = {
   navigation: () => ["navigation"] as const,
   streams: () => ["streams"] as const,
   pluginAreas: () => ["plugin-areas"] as const,
+  dashboardSummary: () => ["dashboard-summary"] as const,
   folders: () => ["folders"] as const,
   feeds: () => ["feeds"] as const,
   articles: (search: WorkspaceSearch) =>

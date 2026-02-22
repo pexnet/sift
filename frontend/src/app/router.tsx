@@ -223,6 +223,43 @@ const workspaceRoute = createRoute({
   component: WorkspaceRouteComponent,
 });
 
+function DashboardRouteComponent() {
+  const navigate = useNavigate();
+  const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
+  const [searchState, setSearchState] = useState(loadPersistedWorkspaceSearch());
+
+  const setSearch = (patch: Partial<WorkspaceSearch>) => {
+    setSearchState((previous) => {
+      const nextSearch: WorkspaceSearch = { ...previous, ...patch };
+      savePersistedWorkspaceSearch(nextSearch);
+      void navigate({
+        to: "/app",
+        search: nextSearch,
+      });
+      return nextSearch;
+    });
+  };
+
+  return (
+    <WorkspacePage
+      search={searchState}
+      density={density}
+      navPreset={navPreset}
+      themeMode={themeMode}
+      setThemeMode={setThemeMode}
+      setSearch={setSearch}
+      activeDashboard
+    />
+  );
+}
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/app/dashboard",
+  beforeLoad: ({ context }) => requireAuth(context),
+  component: DashboardRouteComponent,
+});
+
 function PluginWorkspaceRouteComponent() {
   const navigate = useNavigate();
   const { density, navPreset, themeMode, setThemeMode } = useAppUiState();
@@ -269,6 +306,7 @@ const routeTree = rootRoute.addChildren([
   feedHealthRoute,
   monitoringFeedsRoute,
   helpRoute,
+  dashboardRoute,
   pluginWorkspaceRoute,
   workspaceRoute,
 ]);

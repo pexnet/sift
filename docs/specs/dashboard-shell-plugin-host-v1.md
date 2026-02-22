@@ -2,8 +2,8 @@
 
 ## Status
 
-- State: Planned
-- Scope: Dashboard route/shell foundation + plugin-ready card host
+- State: In Progress
+- Scope: Dashboard route/shell + summary metadata endpoint + card host baseline implemented
 - Backlog reference: [docs/backlog.md](../backlog.md)
 - Parent dependencies:
   - [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
@@ -28,7 +28,24 @@ cards can be added without reworking routing/layout.
 2. No ranking/feed-health/trends/discovery backend implementation in this slice.
 3. No dashboard-specific prioritization controls UI in this slice.
 
-## Route and Layout Contract (Planned)
+## Implemented Checkpoint (2026-02-22)
+
+1. Added canonical dashboard route:
+   - `/app/dashboard` implemented in frontend router
+2. Updated dashboard rail behavior:
+   - `Dashboard` rail action now navigates to `/app/dashboard`
+3. Preserved workspace shell layout:
+   - left rail + navigation tree remain visible in dashboard view
+   - list/reader panes are replaced by dashboard host content area
+4. Added plugin-ready dashboard host baseline:
+   - deterministic card availability rendering (`ready`/`unavailable`/`degraded`)
+   - per-card failure isolation via card-level error boundaries
+   - registry seam for built-in and plugin-provided `dashboard_card` entries
+5. Added dashboard summary metadata API:
+   - `GET /api/v1/dashboard/summary`
+   - returns card availability metadata only (`status`, `reason`, `dependency_spec`, `last_updated_at`)
+
+## Route and Layout Contract
 
 1. Add route `/app/dashboard`.
 2. Dashboard rail action navigates to `/app/dashboard` (not scope reset).
@@ -45,33 +62,33 @@ cards can be added without reworking routing/layout.
 3. Card mount failures are isolated per card.
 4. Host accepts both built-in and plugin-provided `dashboard_card` entries.
 
-## API Surface (Planned)
+## API Surface
 
 Phase-1 summary API (lightweight):
 
 1. `GET /api/v1/dashboard/summary`
-   - includes card availability metadata only (status/reason/dependency)
+   - implemented: includes card availability metadata only (status/reason/dependency)
    - no heavy card data payload requirements in this slice
 
 Compatibility rule:
 
 1. Keep response contract aligned with full dashboard command-center spec.
 
-## Acceptance Criteria (for later implementation)
+## Acceptance Criteria
 
-1. `/app/dashboard` route loads with rail + navigation tree visible.
-2. Dashboard rail action navigates to `/app/dashboard`.
-3. Dashboard host renders card slots with deterministic unavailable/degraded states.
-4. Plugin card host integration point is wired and failure-isolated.
-5. Existing `/app` list/reader behavior remains unchanged.
+1. [x] `/app/dashboard` route loads with rail + navigation tree visible.
+2. [x] Dashboard rail action navigates to `/app/dashboard`.
+3. [x] Dashboard host renders card slots with deterministic unavailable/degraded states.
+4. [x] Plugin card host integration point is wired and failure-isolated.
+5. [x] Existing `/app` list/reader behavior remains unchanged.
 
-## Test Plan (for later implementation)
+## Test Plan
 
-1. Router/layout tests for `/app/dashboard`.
-2. Rail action navigation tests.
-3. Card host rendering tests for `ready`/`unavailable`/`degraded`.
-4. Error-boundary tests for per-card mount failures.
-5. API tests for summary endpoint auth and response contract.
+1. [x] Router/layout behavior tests for dashboard mode in workspace shell.
+2. [x] Rail action navigation tests.
+3. [x] Card host rendering tests for `ready`/`unavailable`/`degraded`.
+4. [ ] Error-boundary tests for per-card mount failures.
+5. [x] API tests for summary endpoint auth and response contract.
 
 ## Rollout Notes
 

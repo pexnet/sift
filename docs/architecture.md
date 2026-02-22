@@ -406,6 +406,11 @@ Design goals:
    - workspace navigation now renders a `Plugins` section from enabled/loaded plugin area metadata
    - frontend route `/app/plugins/$areaId` mounts plugin area views inside existing workspace shell
    - plugin area mounts run inside error-boundary isolation with `Plugin unavailable` fallback behavior
+22. Dashboard shell/plugin host baseline:
+   - frontend route `/app/dashboard` is implemented with workspace rail + navigation preserved
+   - dashboard rail action now routes to `/app/dashboard` instead of resetting workspace scope
+   - dashboard host renders card availability states (`ready`, `unavailable`, `degraded`) with per-card isolation
+   - summary availability API is available at `GET /api/v1/dashboard/summary`
 
 ## Frontend Delivery Standard
 
@@ -437,7 +442,8 @@ Design goals:
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
 3. Complete remaining frontend plugin host scope (broader extension points + fallback tests).
    - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
-4. Implement `/app/dashboard` shell with plugin-ready card contracts.
+4. Complete remaining dashboard shell scope (expanded card mounts + boundary tests) and transition into
+   command-center card/data rollout dependencies.
    - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`
 5. Resume stream ranking and scheduler/ingestion observability after plugin foundation stabilizes.
 

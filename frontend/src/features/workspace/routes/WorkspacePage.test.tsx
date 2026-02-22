@@ -20,6 +20,16 @@ let pluginAreasData: Array<{
   order: number;
   route_key: string;
 }> = [];
+let dashboardSummaryData: {
+  cards: Array<{
+    id: string;
+    title: string;
+    status: "ready" | "unavailable" | "degraded";
+    reason?: string | null;
+    dependency_spec?: string | null;
+  }>;
+  last_updated_at: string;
+} | undefined = undefined;
 
 vi.mock("@mui/material", async () => {
   const actual = await vi.importActual<typeof import("@mui/material")>("@mui/material");
@@ -75,6 +85,7 @@ vi.mock("../../../entities/navigation/model", async () => {
 vi.mock("../api/workspaceHooks", () => ({
   useNavigationQuery: () => ({ data: { ok: true }, isLoading: false, isError: false }),
   usePluginAreasQuery: () => ({ data: pluginAreasData, isLoading: false, isError: false }),
+  useDashboardSummaryQuery: () => ({ data: dashboardSummaryData, isLoading: false, isError: false }),
   useFoldersQuery: () => ({ data: [], isLoading: false, isError: false }),
   useFeedsQuery: () => ({ data: [], isLoading: false, isError: false }),
   useArticlesQuery: () => ({
@@ -170,6 +181,7 @@ describe("WorkspacePage", () => {
     markScopeReadMutate.mockReset();
     patchArticleMutate.mockReset();
     pluginAreasData = [];
+    dashboardSummaryData = undefined;
   });
 
   it("uses desktop 3-pane layout with visible navigation and splitters", () => {
@@ -248,5 +260,43 @@ describe("WorkspacePage", () => {
     expect(screen.getByRole("heading", { name: "Discover feeds" })).toBeVisible();
     expect(screen.getByText("Discovery controls coming next")).toBeVisible();
     expect(screen.queryByRole("separator", { name: "Resize reader pane" })).toBeNull();
+  });
+
+  it("renders dashboard host and keeps navigation shell", () => {
+    dashboardSummaryData = {
+      cards: [
+        {
+          id: "saved_followup",
+          title: "Saved follow-up",
+          status: "ready",
+        },
+      ],
+      last_updated_at: new Date().toISOString(),
+    };
+
+    render(
+      <WorkspacePage
+        search={{
+          scope_type: "system",
+          scope_id: "",
+          state: "all",
+          sort: "newest",
+          q: "",
+          article_id: "",
+        }}
+        density="compact"
+        navPreset="balanced"
+        themeMode="dark"
+        setThemeMode={vi.fn()}
+        setSearch={vi.fn()}
+        activeDashboard
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    expect(screen.getByText("Command-center shell is active with card availability contracts.")).toBeVisible();
+    expect(screen.queryByRole("separator", { name: "Resize reader pane" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Dashboard" }));
+    expect(navigateMock).toHaveBeenCalledWith({ to: "/app/dashboard" });
   });
 });

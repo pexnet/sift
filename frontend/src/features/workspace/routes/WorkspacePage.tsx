@@ -13,6 +13,7 @@ import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { findArticleById, getSelectedArticleId } from "../../../entities/article/model";
 import { getScopeLabel, toNavigationHierarchy } from "../../../entities/navigation/model";
 import type { WorkspaceSearch } from "../../../shared/types/contracts";
+import { DashboardHost } from "../../dashboard/components/DashboardHost";
 import { PluginAreaHost } from "../plugins/PluginAreaHost";
 import { ArticlesPane } from "../components/ArticlesPane";
 import { NavigationPane } from "../components/NavigationPane";
@@ -25,6 +26,7 @@ import {
   useCreateFeedMutation,
   useCreateFolderMutation,
   useDeleteFolderMutation,
+  useDashboardSummaryQuery,
   useFeedsQuery,
   useFoldersQuery,
   useMarkScopeAsReadMutation,
@@ -48,6 +50,7 @@ type WorkspacePageProps = {
   setThemeMode: (mode: "light" | "dark") => void;
   setSearch: (patch: Partial<WorkspaceSearch>) => void;
   activePluginAreaRouteKey?: string | null;
+  activeDashboard?: boolean;
 };
 
 type WorkspaceLayoutMode = "desktop" | "tablet" | "mobile";
@@ -61,6 +64,7 @@ export function WorkspacePage({
   setThemeMode,
   setSearch,
   activePluginAreaRouteKey = null,
+  activeDashboard = false,
 }: WorkspacePageProps) {
   const navigate = useNavigate();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -79,9 +83,11 @@ export function WorkspacePage({
 
   const navigationQuery = useNavigationQuery();
   const pluginAreasQuery = usePluginAreasQuery();
+  const dashboardSummaryQuery = useDashboardSummaryQuery(activeDashboard);
   const foldersQuery = useFoldersQuery();
   const feedsQuery = useFeedsQuery();
   const pluginAreas = pluginAreasQuery.data ?? [];
+  const isDashboardView = activeDashboard;
   const isPluginAreaView = activePluginAreaRouteKey !== null && activePluginAreaRouteKey.length > 0;
   const activePluginArea = pluginAreas.find((pluginArea) => pluginArea.route_key === activePluginAreaRouteKey) ?? null;
   const hierarchy = useMemo(
@@ -103,7 +109,8 @@ export function WorkspacePage({
     return mapping;
   }, [feedsQuery.data]);
 
-  const articlesQuery = useArticlesQuery(search, !isPluginAreaView);
+  const contentIsContextView = isDashboardView || isPluginAreaView;
+  const articlesQuery = useArticlesQuery(search, !contentIsContextView);
   const articles = articlesQuery.data?.items ?? [];
 
   const inferredSelectedArticleId = getSelectedArticleId(articles, search.article_id);
@@ -111,7 +118,7 @@ export function WorkspacePage({
     layoutMode === "mobile" && !search.article_id ? "" : inferredSelectedArticleId;
   const selectedArticle = findArticleById(articles, selectedArticleId);
 
-  const articleDetailQuery = useArticleDetailQuery(selectedArticleId, !isPluginAreaView);
+  const articleDetailQuery = useArticleDetailQuery(selectedArticleId, !contentIsContextView);
   const readerContentHtml = useMemo(
     () => toReaderHtml(articleDetailQuery.data?.content_text ?? ""),
     [articleDetailQuery.data?.content_text]
@@ -216,8 +223,8 @@ export function WorkspacePage({
       hierarchy={hierarchy}
       folders={foldersQuery.data ?? []}
       feedIconByFeedId={feedIconByFeedId}
-      selectedScopeType={isPluginAreaView ? "plugin" : search.scope_type}
-      selectedScopeKey={isPluginAreaView ? activePluginAreaRouteKey ?? "" : selectedScopeKey}
+      selectedScopeType={isDashboardView ? "dashboard" : isPluginAreaView ? "plugin" : search.scope_type}
+      selectedScopeKey={isDashboardView ? "dashboard" : isPluginAreaView ? activePluginAreaRouteKey ?? "" : selectedScopeKey}
       isLoading={navigationQuery.isLoading}
       isError={navigationQuery.isError}
       onSelectSystem={(systemKey) => {
@@ -300,7 +307,7 @@ export function WorkspacePage({
     badge: systemAllCount,
     active: usesDrawerNav
       ? navOpen
-      : search.scope_type !== "system" || search.state === "all",
+      : !contentIsContextView && (search.scope_type !== "system" || search.state === "all"),
     onClick: () => {
       if (usesDrawerNav) {
         setIsNavOpen((previous) => !previous);
@@ -315,7 +322,7 @@ export function WorkspacePage({
     label: "Saved",
     icon: <BookmarkBorderRoundedIcon fontSize="small" />,
     badge: systemSavedCount,
-    active: search.scope_type === "system" && search.state === "saved",
+    active: !contentIsContextView && search.scope_type === "system" && search.state === "saved",
     onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "saved", article_id: "" }),
   };
 
@@ -337,7 +344,8 @@ export function WorkspacePage({
           id: "dashboard",
           label: "Dashboard",
           icon: <SpaceDashboardRoundedIcon fontSize="small" />,
-          onClick: () => setSearch({ scope_type: "system", scope_id: "", state: "all", article_id: "" }),
+          active: isDashboardView,
+          onClick: () => void navigate({ to: "/app/dashboard" }),
         },
         feedsAction,
         savedAction,
@@ -380,8 +388,14 @@ export function WorkspacePage({
         </>
       )}
 
-      <Box className={layoutMode === "desktop" && !isPluginAreaView ? "workspace-content workspace-content--resizable" : "workspace-content"}>
-        {isPluginAreaView ? (
+      <Box className={layoutMode === "desktop" && !contentIsContextView ? "workspace-content workspace-content--resizable" : "workspace-content"}>
+        {isDashboardView ? (
+          <DashboardHost
+            summary={dashboardSummaryQuery.data}
+            isLoading={dashboardSummaryQuery.isLoading}
+            isError={dashboardSummaryQuery.isError}
+          />
+        ) : isPluginAreaView ? (
           <Box className="workspace-plugin-shell">
             {activePluginArea ? (
               <PluginAreaHost area={activePluginArea} />

@@ -772,6 +772,31 @@ body {
   overflow: auto;
 }
 
+.dashboard-shell {
+  background: var(--surface-list);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  overflow: auto;
+}
+
+.dashboard-shell__header {
+  margin-bottom: 0.85rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-card {
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+  background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft) 10%);
+  border-radius: 12px;
+  padding: 0.85rem 0.9rem;
+}
+
 .workspace-plugin-area {
   max-width: 760px;
   background: color-mix(in srgb, var(--surface) 90%, var(--accent-soft) 10%);

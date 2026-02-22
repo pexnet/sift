@@ -48,6 +48,18 @@ export type PluginArea = {
   order: number;
   route_key: string;
 };
+export type DashboardCardAvailabilityStatus = "ready" | "unavailable" | "degraded";
+export type DashboardCardAvailability = {
+  id: string;
+  title: string;
+  status: DashboardCardAvailabilityStatus;
+  reason?: string | null;
+  dependency_spec?: string | null;
+};
+export type DashboardSummary = {
+  cards: DashboardCardAvailability[];
+  last_updated_at: string;
+};
 
 export type ArticleScopeType = "system" | "folder" | "feed" | "stream";
 export type ArticleStateFilter = "all" | "unread" | "saved" | "archived" | "fresh" | "recent";

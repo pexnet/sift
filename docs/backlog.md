@@ -35,6 +35,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 4. Dashboard shell + plugin-ready card host:
   - implement `/app/dashboard` route and rail navigation behavior
   - preserve card availability contract and `dashboard_card` extension compatibility from first implementation
+  - implementation checkpoint (2026-02-22): `/app/dashboard` route, dashboard rail navigation, shell card host, and
+    `GET /api/v1/dashboard/summary` metadata endpoint are completed
   - spec: [docs/specs/dashboard-shell-plugin-host-v1.md](specs/dashboard-shell-plugin-host-v1.md)
 5. After plugin foundation is stable, resume dependency feature slices:
   - stream-level ranking/prioritization controls

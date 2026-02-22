@@ -12,6 +12,7 @@ import {
   getFeeds,
   getFolders,
   getNavigation,
+  getDashboardSummary,
   getPluginAreas,
   markScopeAsRead,
   patchArticleState,
@@ -40,6 +41,14 @@ export function usePluginAreasQuery() {
   return useQuery({
     queryKey: queryKeys.pluginAreas(),
     queryFn: getPluginAreas,
+  });
+}
+
+export function useDashboardSummaryQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.dashboardSummary(),
+    queryFn: getDashboardSummary,
+    enabled,
   });
 }
 

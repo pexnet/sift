@@ -1,5 +1,39 @@
 # Session Notes
 
+## 2026-02-22 (Dashboard Shell + Plugin Card Host Baseline)
+
+### Implemented This Session
+
+- Added dashboard summary metadata API:
+  - new endpoint `GET /api/v1/dashboard/summary` in `src/sift/api/routes/dashboard.py`
+  - endpoint returns deterministic card availability metadata (`ready` / `unavailable` / `degraded`)
+- Added frontend dashboard shell route and host:
+  - `/app/dashboard` route in frontend router
+  - dashboard rail action now navigates to `/app/dashboard`
+  - workspace rail + navigation remain visible while dashboard host replaces list/reader panes
+- Added plugin-ready dashboard card host baseline:
+  - `frontend/src/features/dashboard/components/DashboardHost.tsx`
+  - card-level isolation boundary and deterministic fallback handling
+  - built-in baseline `saved_followup` card registration plus unavailable/degraded fallback rendering
+
+### Verification
+
+- backend:
+  - `python -m ruff check src tests`
+  - `python -m mypy src --no-incremental`
+  - `python -m pytest tests/test_dashboard_api.py tests/test_plugins_api.py tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_stream_service.py tests/test_ingestion_service.py`
+- frontend:
+  - `npm --prefix frontend run lint`
+  - `npm --prefix frontend run typecheck`
+  - `npm --prefix frontend run test`
+  - `npm --prefix frontend run build`
+
+### Remaining Scope
+
+- Keep `docs/specs/dashboard-shell-plugin-host-v1.md` in progress for:
+  - explicit per-card render-failure boundary tests
+  - broader plugin-provided `dashboard_card` mount coverage prior to command-center card/data rollout
+
 ## 2026-02-22 (Frontend Plugin Host + Workspace Areas Baseline)
 
 ### Implemented This Session

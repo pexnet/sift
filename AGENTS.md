@@ -77,6 +77,7 @@ This file stores persistent project context for future Codex sessions.
 - `PATCH /api/v1/articles/{article_id}/state`
 - `POST /api/v1/articles/state/bulk`
 - `GET /api/v1/navigation`
+- `GET /api/v1/dashboard/summary`
 - `POST /api/v1/imports/opml`
 - `GET /api/v1/plugins/areas`
 - `GET /api/v1/plugins/status`
@@ -199,6 +200,11 @@ This file stores persistent project context for future Codex sessions.
   - workspace navigation renders a dedicated `Plugins` section from enabled plugin area metadata
   - `/app/plugins/$areaId` route mounts plugin area content inside workspace shell
   - plugin area mounts are isolated by error boundaries (`Plugin unavailable` fallback)
+- Dashboard shell/plugin host baseline is implemented:
+  - `/app/dashboard` route is implemented and keeps workspace rail + navigation visible
+  - desktop rail `Dashboard` action now routes to `/app/dashboard`
+  - dashboard host renders deterministic card states (`ready`, `unavailable`, `degraded`)
+  - summary metadata endpoint is available at `GET /api/v1/dashboard/summary`
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -216,7 +222,7 @@ This file stores persistent project context for future Codex sessions.
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
 3. Complete remaining frontend plugin host scope (broader extension points + fallback tests).
    - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
-4. Implement `/app/dashboard` shell on top of plugin-ready card contracts.
+4. Complete remaining `/app/dashboard` shell scope and continue into command-center card/data dependencies.
    - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`
 5. Resume ranking/observability feature slices after plugin foundation is stable.
 

@@ -4,6 +4,7 @@ import {
   parseArticleList,
   parsePatchArticleStateRequest,
 } from "../../entities/article/model";
+import { parseDashboardSummaryResponse } from "../../entities/navigation/dashboard";
 import { parsePluginAreasResponse } from "../../entities/navigation/plugins";
 import { parseNavigationResponse } from "../../entities/navigation/model";
 import type {
@@ -19,6 +20,7 @@ import type {
   FeedFolderCreateRequest,
   FeedFolderUpdateRequest,
   PatchArticleStateRequest,
+  DashboardSummary,
   PluginArea,
   WorkspaceSearch,
 } from "../types/contracts";
@@ -29,6 +31,7 @@ const ARTICLES_ENDPOINT = "/api/v1/articles";
 const FOLDERS_ENDPOINT = "/api/v1/folders";
 const FEEDS_ENDPOINT = "/api/v1/feeds";
 const PLUGIN_AREAS_ENDPOINT = "/api/v1/plugins/areas";
+const DASHBOARD_SUMMARY_ENDPOINT = "/api/v1/dashboard/summary";
 
 function toArticleSearchParams(search: WorkspaceSearch): URLSearchParams {
   const params = new URLSearchParams({
@@ -57,6 +60,11 @@ export async function getNavigation() {
 export async function getPluginAreas(): Promise<PluginArea[]> {
   const payload = await apiClient.get<unknown>(PLUGIN_AREAS_ENDPOINT);
   return parsePluginAreasResponse(payload);
+}
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  const payload = await apiClient.get<unknown>(DASHBOARD_SUMMARY_ENDPOINT);
+  return parseDashboardSummaryResponse(payload);
 }
 
 export async function getArticles(search: WorkspaceSearch): Promise<ArticleListResponse> {
