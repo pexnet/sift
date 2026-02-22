@@ -13,7 +13,12 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Resume dependency feature slices after plugin closure:
+1. Full article fetch on-demand v1 (new top priority):
+  - add reader-level `Fetch full article` action
+  - persist extracted fulltext separately from feed excerpt content
+  - keep initial behavior manual/on-demand only
+  - spec: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
+2. Resume dependency feature slices after plugin closure:
   - stream-level ranking/prioritization controls
   - scheduler and ingestion observability (metrics, latency, failures; spec:
     [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md))
@@ -162,21 +167,14 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - then Azure/Apple
 - Keep current local auth provider behavior unchanged as fallback.
 
-### 10) Full Article Fetch On-Demand
-
-- Add user-triggered `Fetch full article` action in reader to retrieve the full source-page content on demand.
-- Persist extracted fulltext separately from feed excerpt content and show source state in reader.
-- Keep initial version manual/on-demand only (no global auto-fetch).
-- Spec reference: [docs/specs/full-article-fetch-on-demand-v1.md](specs/full-article-fetch-on-demand-v1.md)
-
-### 11) Vector Database Integration Infrastructure
+### 10) Vector Database Integration Infrastructure
 
 - Move vector-database integration out of immediate `Next` and keep it as a later deferred capability.
 - Add plugin-boundary vector infrastructure for embeddings and semantic matching workflows.
 - Keep vector storage optional and provider-pluggable (for example `pgvector`, Qdrant, Weaviate).
 - Preserve core-ingestion independence so vector infrastructure remains non-blocking for baseline feeds/streams.
 
-### 12) Mobile UX Planning (Dedicated Session)
+### 11) Mobile UX Planning (Dedicated Session)
 
 - Keep current mobile runtime in read-focused mode.
 - Run a separate mobile planning/design session later to define:
@@ -197,4 +195,3 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 8. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
 9. Silent feeds for monitoring-only population.
 10. OIDC provider integration (Google, then Azure/Apple).
-11. Full article fetch on-demand (reader-triggered).

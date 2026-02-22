@@ -436,8 +436,10 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Resume stream ranking and scheduler/ingestion observability after plugin closure.
-2. Completed and archived on 2026-02-22:
+1. Implement full article fetch on-demand v1.
+   - spec: `docs/specs/full-article-fetch-on-demand-v1.md`
+2. Resume stream ranking and scheduler/ingestion observability after plugin closure.
+3. Completed and archived on 2026-02-22:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
@@ -694,20 +696,6 @@ Architecture implications:
 - Ensure ingest pipeline applies silent auto-read without changing matcher execution/evidence persistence.
 - Ensure unread/navigation counters remain coherent after silent toggle and ingest updates.
 
-### 9) Full Article Fetch On-Demand
-
-Planned capability:
-
-- Add reader-level on-demand full article fetch action for currently selected articles.
-- Fetch source page content from article canonical URL and extract main readable content.
-- Persist extracted fulltext separately from feed-provided excerpt and render it when available.
-
-Architecture implications:
-
-- Add persisted fulltext storage model (separate from `articles.content_text`) with fetch status and error metadata.
-- Add article-scoped fetch mutation endpoint and extend article detail payload with fulltext status/content source fields.
-- Add guarded outbound fetch pipeline (scheme restrictions, network safety checks, timeout/size bounds).
-
 ### Deferred Delivery Sequence (Post Current Core Priorities)
 
 1. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
@@ -720,4 +708,3 @@ Architecture implications:
 8. Plugin implementations (LLM summary, vector similarity).
 9. Silent feeds for monitoring-only population.
 10. OIDC provider integration (Google, then Azure/Apple).
-11. Full article fetch on-demand (reader-triggered).

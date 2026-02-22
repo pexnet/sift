@@ -216,10 +216,12 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Resume ranking/observability feature slices after plugin closure:
+1. Implement full article fetch on-demand v1:
+   - spec: `docs/specs/full-article-fetch-on-demand-v1.md`
+2. Resume ranking/observability feature slices after plugin closure:
    - stream-level ranking/prioritization controls
    - scheduler and ingestion observability
-2. Completed and archived:
+3. Completed and archived:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
@@ -244,10 +246,9 @@ This file stores persistent project context for future Codex sessions.
 ## Deferred
 
 1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
-2. Add reader-triggered full article fetch on demand (later priority).
-3. Add on-demand article LLM summary feature (later priority; spec:
+2. Add on-demand article LLM summary feature (later priority; spec:
    `docs/specs/article-llm-summary-on-demand-v1.md`).
-4. Complete dashboard command center v1 card/data rollout on top of `/app/dashboard` after spec-gate dependencies:
+3. Complete dashboard command center v1 card/data rollout on top of `/app/dashboard` after spec-gate dependencies:
    - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
    - `docs/specs/dashboard-command-center-v1.md`
    - `docs/specs/stream-ranking-prioritization-controls-v1.md`
@@ -255,8 +256,8 @@ This file stores persistent project context for future Codex sessions.
    - `docs/specs/monitoring-signal-scoring-v1.md`
    - `docs/specs/trends-detection-dashboard-v1.md`
    - `docs/specs/feed-recommendations-v1.md`
-5. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
-6. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
+4. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
+5. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
 
 ## Feature Notes
 

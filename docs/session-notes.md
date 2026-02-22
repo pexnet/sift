@@ -1,5 +1,23 @@
 # Session Notes
 
+## 2026-02-22 (Reprioritization: Full Article Fetch On-Demand to Top Priority)
+
+### Implemented This Session
+
+- Promoted `full article fetch on-demand v1` to the top active implementation priority.
+- Updated planning docs for alignment:
+  - `docs/backlog.md`
+  - `AGENTS.md`
+  - `docs/architecture.md`
+- Removed stale deferred references so `full article fetch` is no longer tracked as deferred.
+- Confirmed spec already exists and remains the implementation source:
+  - `docs/specs/full-article-fetch-on-demand-v1.md`
+
+### Verification
+
+- planning/docs consistency checks:
+  - `rg -n "full article fetch|full-article-fetch-on-demand|Next Delivery Sequence|Planned Next Moves|Deferred" docs/backlog.md AGENTS.md docs/architecture.md docs/session-notes.md`
+
 ## 2026-02-22 (Plugin Configuration Registry Follow-Up: Security + Budget Contracts)
 
 ### Implemented This Session
