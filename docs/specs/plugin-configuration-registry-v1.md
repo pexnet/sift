@@ -3,7 +3,7 @@
 ## Status
 
 - State: In Progress
-- Scope: Backend file-driven registry baseline implemented; diagnostics/admin surface remains planned
+- Scope: Centralized registry baseline and diagnostics read API implemented; security/budget follow-ups remain
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -66,7 +66,7 @@ Example logical entries:
 2. [x] Only enabled plugins are instantiated/registered.
 3. Disabled plugins:
    - [x] backend hooks are skipped
-   - [ ] UI areas are hidden (frontend host slice pending)
+   - [x] UI areas are hidden from `/api/v1/plugins/areas` and workspace plugin navigation
 4. [x] Validation errors fail with actionable messages (field-path details; plugin id included where applicable).
 5. [ ] Discovery provider wrappers enforce configured per-provider budgets/rate limits before external calls.
 6. [ ] Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
@@ -76,7 +76,7 @@ Example logical entries:
 Phase 1:
 
 1. File-driven config only (no admin write API).
-2. Read-only diagnostics endpoint may be added later (`/api/v1/plugins/status`).
+2. [x] Read-only diagnostics endpoint is available (`GET /api/v1/plugins/status`).
 
 Future phase:
 
@@ -91,8 +91,8 @@ Future phase:
 ## Acceptance Criteria
 
 1. [x] Plugin registry is loaded from one configuration file.
-2. [ ] Enabling/disabling a plugin changes both backend activation and UI visibility.
-3. [ ] Discover feeds and Bluesky plugin entries can be toggled independently.
+2. [x] Enabling/disabling a plugin changes both backend activation and UI visibility.
+3. [ ] Discover feeds and future plugin entries can be toggled independently.
 4. [x] Invalid registry entries produce clear startup/validation errors.
 5. [ ] Discovery plugin config can enforce free-tier-safe request budgets without code changes.
 

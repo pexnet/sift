@@ -214,17 +214,17 @@ This file stores persistent project context for future Codex sessions.
 
 ## Next Delivery Sequence
 
-1. Complete remaining plugin platform foundation v1 scope:
-   - registry source-of-truth and direct runtime cutover are already implemented
-   - finish broader capability contract coverage across backend/frontend extension points
-   - spec: `docs/specs/plugin-platform-foundation-v1.md`
-2. Complete remaining plugin runtime hardening scope (metrics export and telemetry validation).
+1. Complete remaining plugin runtime hardening scope (metrics export and telemetry validation).
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
-3. Complete remaining frontend plugin host scope (broader extension points + fallback tests).
-   - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
-4. Complete remaining `/app/dashboard` shell scope and continue into command-center card/data dependencies.
-   - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`
-5. Resume ranking/observability feature slices after plugin foundation is stable.
+2. Complete plugin configuration registry follow-ups (security and provider-budget contract coverage).
+   - spec: `docs/specs/plugin-configuration-registry-v1.md`
+3. Resume ranking/observability feature slices after plugin closure:
+   - stream-level ranking/prioritization controls
+   - scheduler and ingestion observability
+4. Completed and archived on 2026-02-22:
+   - `docs/specs/done/plugin-platform-foundation-v1.md`
+   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 
 ## Next UI Slice (Prioritized)
 
@@ -248,7 +248,7 @@ This file stores persistent project context for future Codex sessions.
 3. Add on-demand article LLM summary feature (later priority; spec:
    `docs/specs/article-llm-summary-on-demand-v1.md`).
 4. Complete dashboard command center v1 card/data rollout on top of `/app/dashboard` after spec-gate dependencies:
-   - `docs/specs/dashboard-shell-plugin-host-v1.md`
+   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
    - `docs/specs/dashboard-command-center-v1.md`
    - `docs/specs/stream-ranking-prioritization-controls-v1.md`
    - `docs/specs/feed-health-ops-panel-v1.md`

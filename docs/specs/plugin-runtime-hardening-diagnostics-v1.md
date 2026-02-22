@@ -5,7 +5,7 @@
 - State: In Progress
 - Scope: Runtime guardrails + diagnostics API baseline implemented; telemetry backend export remains pending
 - Backlog reference: [docs/backlog.md](../backlog.md)
-- Parent dependency: [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
+- Parent dependency: [docs/specs/done/plugin-platform-foundation-v1.md](done/plugin-platform-foundation-v1.md)
 
 ## Context
 
@@ -149,5 +149,5 @@ Required fields:
 
 - Product backlog: [docs/backlog.md](../backlog.md)
 - Related specs:
-  - [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
+  - [docs/specs/done/plugin-platform-foundation-v1.md](done/plugin-platform-foundation-v1.md)
   - [docs/specs/scheduler-ingestion-observability-v1.md](scheduler-ingestion-observability-v1.md)

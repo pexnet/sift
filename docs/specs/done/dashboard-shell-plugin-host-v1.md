@@ -2,12 +2,12 @@
 
 ## Status
 
-- State: In Progress
-- Scope: Dashboard route/shell + summary metadata endpoint + card host baseline implemented
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- State: Completed
+- Scope: Dashboard route/shell, summary metadata endpoint, and plugin-ready card host baseline delivered
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 - Parent dependencies:
-  - [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
-  - [docs/specs/frontend-plugin-host-workspace-areas-v1.md](frontend-plugin-host-workspace-areas-v1.md)
+  - [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
+  - [docs/specs/done/frontend-plugin-host-workspace-areas-v1.md](frontend-plugin-host-workspace-areas-v1.md)
 
 ## Context
 
@@ -98,7 +98,7 @@ Compatibility rule:
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
-  - [docs/specs/dashboard-command-center-v1.md](dashboard-command-center-v1.md)
-  - [docs/specs/stream-ranking-prioritization-controls-v1.md](stream-ranking-prioritization-controls-v1.md)
+  - [docs/specs/dashboard-command-center-v1.md](../dashboard-command-center-v1.md)
+  - [docs/specs/stream-ranking-prioritization-controls-v1.md](../stream-ranking-prioritization-controls-v1.md)

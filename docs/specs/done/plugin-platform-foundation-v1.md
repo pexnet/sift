@@ -2,9 +2,9 @@
 
 ## Status
 
-- State: In Progress
-- Scope: Backend foundation implementation started (registry + runtime cutover baseline complete)
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- State: Completed
+- Scope: Registry-driven runtime cutover and capability-gated plugin foundation completed
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 
 ## Context
 
@@ -112,15 +112,16 @@ Execution rule:
 1. [x] Plugin activation is driven only by registry config.
 2. [x] Legacy path-list activation is removed from runtime behavior.
 3. [x] Registry validation reports clear plugin id + field path errors.
-4. [ ] Enabled/disabled states are deterministic and observable via diagnostics.
+4. [x] Enabled/disabled states are deterministic and observable via diagnostics.
 5. [x] Existing built-in ingest/classifier plugin behavior remains functionally intact after cutover.
 
 ## Test Plan
 
 1. [x] Registry schema validation tests (valid and invalid samples).
-2. [ ] Startup tests for deterministic ordering and enable/disable behavior.
+2. [x] Startup/runtime tests for deterministic ordering and enable/disable behavior.
 3. [x] Regression tests ensuring ingest/classifier dispatch still works post-cutover.
-4. [ ] Config security tests for env-ref handling and forbidden plaintext secret fields.
+4. [ ] Deferred follow-up: config security tests for env-ref handling and forbidden plaintext secret fields
+   (`docs/specs/plugin-configuration-registry-v1.md`).
 
 ## Rollout Notes
 
@@ -130,7 +131,7 @@ Execution rule:
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
-  - [docs/specs/plugin-configuration-registry-v1.md](plugin-configuration-registry-v1.md)
-  - [docs/specs/plugin-ui-organization-v1.md](plugin-ui-organization-v1.md)
+  - [docs/specs/plugin-configuration-registry-v1.md](../plugin-configuration-registry-v1.md)
+  - [docs/specs/plugin-ui-organization-v1.md](../plugin-ui-organization-v1.md)

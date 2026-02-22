@@ -2,10 +2,10 @@
 
 ## Status
 
-- State: In Progress
-- Scope: Baseline host runtime + workspace plugin area routing/nav implemented
-- Backlog reference: [docs/backlog.md](../backlog.md)
-- Parent dependency: [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
+- State: Completed
+- Scope: Frontend plugin host runtime, workspace plugin IA, and route integration delivered
+- Backlog reference: [docs/backlog.md](../../backlog.md)
+- Parent dependency: [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
 
 ## Context
 
@@ -118,7 +118,7 @@ Note:
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
-  - [docs/specs/plugin-ui-organization-v1.md](plugin-ui-organization-v1.md)
-  - [docs/specs/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
+  - [docs/specs/plugin-ui-organization-v1.md](../plugin-ui-organization-v1.md)
+  - [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)

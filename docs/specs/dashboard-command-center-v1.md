@@ -5,13 +5,12 @@
 - State: Planned
 - Scope: Specification only (no implementation in this checkpoint)
 - Backlog reference: [docs/backlog.md](../backlog.md)
-- Foundation dependency: [docs/specs/dashboard-shell-plugin-host-v1.md](dashboard-shell-plugin-host-v1.md)
+- Foundation dependency: [docs/specs/done/dashboard-shell-plugin-host-v1.md](done/dashboard-shell-plugin-host-v1.md)
 
 ## Context
 
-Sift currently has a reader-first workspace at `/app` with a persistent left rail and navigation tree, but no dedicated
-dashboard route/page. The rail `Dashboard` action currently resets workspace scope instead of loading a command-center
-view.
+Sift currently has a reader-first workspace at `/app` plus a baseline `/app/dashboard` shell with availability-only
+card metadata. The full command-center data/card rollout remains unimplemented.
 
 Users need a true command center that supports daily triage and prioritization decisions without replacing existing list
 / reader workflows.
@@ -100,7 +99,7 @@ Dashboard shell must render unavailable cards deterministically and keep the res
 
 Dashboard implementation is blocked until these specs are drafted and linked:
 
-1. [docs/specs/dashboard-shell-plugin-host-v1.md](dashboard-shell-plugin-host-v1.md)
+1. [docs/specs/done/dashboard-shell-plugin-host-v1.md](done/dashboard-shell-plugin-host-v1.md)
 2. [docs/specs/stream-ranking-prioritization-controls-v1.md](stream-ranking-prioritization-controls-v1.md)
 3. [docs/specs/feed-health-ops-panel-v1.md](feed-health-ops-panel-v1.md)
 4. [docs/specs/monitoring-signal-scoring-v1.md](monitoring-signal-scoring-v1.md)

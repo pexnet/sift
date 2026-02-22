@@ -6,6 +6,24 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Plugin Platform Milestones (Completed on 2026-02-22)
+
+1. Plugin platform foundation v1 completed and archived:
+   - centralized registry loading/validation from `config/plugins.yaml`
+   - runtime cutover to registry activation (`SIFT_PLUGIN_REGISTRY_PATH`)
+   - legacy `plugin_paths` runtime behavior removed
+   - archived spec: `docs/specs/done/plugin-platform-foundation-v1.md`
+2. Frontend plugin host + workspace plugin IA v1 completed and archived:
+   - plugin area metadata endpoint (`GET /api/v1/plugins/areas`)
+   - workspace `Plugins` nav section and `/app/plugins/$areaId` route
+   - plugin area error-boundary isolation in workspace shell
+   - archived spec: `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+3. Dashboard shell + plugin-ready card host v1 completed and archived:
+   - `/app/dashboard` route and rail navigation integration
+   - summary metadata endpoint (`GET /api/v1/dashboard/summary`)
+   - card availability host with per-card failure isolation
+   - archived spec: `docs/specs/done/dashboard-shell-plugin-host-v1.md`
+
 ### Monitoring UI Milestones (Previously in Active Next UI Slice)
 
 1. Monitoring feed management v1 completed on 2026-02-16.

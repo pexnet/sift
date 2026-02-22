@@ -1,5 +1,39 @@
 # Session Notes
 
+## 2026-02-22 (Plugin Verification + Backlog/Spec Cleanup Pass)
+
+### Implemented This Session
+
+- Verified plugin-platform implementation status against current backend/frontend tests and static checks.
+- Archived completed plugin/dashboard foundation specs to `docs/specs/done/`:
+  - `plugin-platform-foundation-v1.md`
+  - `frontend-plugin-host-workspace-areas-v1.md`
+  - `dashboard-shell-plugin-host-v1.md`
+- Updated planning docs so active backlog reflects remaining work only:
+  - `docs/backlog.md`
+  - `AGENTS.md`
+  - `docs/architecture.md`
+  - `docs/backlog-history.md`
+- Updated spec references to use archived paths where applicable and corrected moved-spec relative links.
+- Clarified remaining plugin backlog scope:
+  - telemetry metrics export + contract assertions (`plugin-runtime-hardening-diagnostics-v1`)
+  - config security and provider-budget contract follow-ups (`plugin-configuration-registry-v1`)
+
+### Verification
+
+- backend tests:
+  - `python -m pytest tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py tests/test_dashboard_api.py`
+- frontend tests:
+  - `npm --prefix frontend run test -- --run src/features/workspace/plugins/registry.test.tsx src/features/workspace/plugins/PluginAreaHost.test.tsx src/features/workspace/components/NavigationPane.test.tsx src/features/workspace/routes/WorkspacePage.test.tsx src/features/dashboard/components/DashboardHost.test.tsx`
+- static checks:
+  - `python -m ruff check src/sift/plugins src/sift/core/runtime.py src/sift/api/routes/plugins.py src/sift/api/routes/dashboard.py tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_plugins_api.py tests/test_dashboard_api.py`
+  - `python -m mypy src/sift/plugins src/sift/core/runtime.py src/sift/api/routes/plugins.py src/sift/api/routes/dashboard.py --no-incremental`
+
+### Notes
+
+- `uv run` remains blocked in this local environment by `.venv/lib64` access errors; direct `python -m ...` commands
+  were used for backend verification.
+
 ## 2026-02-22 (Dashboard Shell + Plugin Card Host Baseline)
 
 ### Implemented This Session
@@ -30,7 +64,7 @@
 
 ### Remaining Scope
 
-- Keep `docs/specs/dashboard-shell-plugin-host-v1.md` in progress for:
+- Keep `docs/specs/done/dashboard-shell-plugin-host-v1.md` in progress for:
   - broader plugin-provided `dashboard_card` mount coverage prior to command-center card/data rollout
 
 ## 2026-02-22 (Frontend Plugin Host + Workspace Areas Baseline)
@@ -64,7 +98,7 @@
 
 ### Remaining Scope
 
-- Keep `docs/specs/frontend-plugin-host-workspace-areas-v1.md` in progress for:
+- Keep `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md` in progress for:
   - broader extension-point coverage beyond workspace-area baseline
 
 ## 2026-02-22 (Plugin Runtime Hardening + Diagnostics Baseline)
@@ -129,18 +163,18 @@
   commands were used for verification.
 - Remaining plugin-platform scope stays active:
   - runtime hardening/diagnostics (`docs/specs/plugin-runtime-hardening-diagnostics-v1.md`)
-  - frontend plugin host/workspace areas (`docs/specs/frontend-plugin-host-workspace-areas-v1.md`)
-  - dashboard shell host (`docs/specs/dashboard-shell-plugin-host-v1.md`)
+  - frontend plugin host/workspace areas (`docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`)
+  - dashboard shell host (`docs/specs/done/dashboard-shell-plugin-host-v1.md`)
 
 ## 2026-02-22 (Plugin-First Planning Session: Spec Set Authored)
 
 ### Implemented This Session
 
 - Authored new active planning specs for the plugin-first priority stack:
-  - `docs/specs/plugin-platform-foundation-v1.md`
+  - `docs/specs/done/plugin-platform-foundation-v1.md`
   - `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
-  - `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
-  - `docs/specs/dashboard-shell-plugin-host-v1.md`
+  - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+  - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 - Updated dashboard planning dependency wiring:
   - `docs/specs/dashboard-command-center-v1.md` now references dashboard shell host as an explicit foundation
     dependency/spec gate item
@@ -149,7 +183,7 @@
   - `AGENTS.md` `Next Delivery Sequence` now includes direct spec links
   - `docs/architecture.md` `Planned Next Moves` now includes direct spec links
   - dashboard spec-gate checklists in backlog/architecture/AGENTS now include
-    `docs/specs/dashboard-shell-plugin-host-v1.md`
+    `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 
 ### Verification
 
@@ -1745,3 +1779,4 @@
 
 - Backlog source of truth is maintained in `docs/backlog.md`.
 - This file remains the chronological session log only.
+

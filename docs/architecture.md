@@ -434,18 +434,17 @@ Design goals:
 
 ## Planned Next Moves (Current Core Priority Plan)
 
-1. Complete remaining plugin platform foundation v1 scope after registry/runtime cutover baseline:
-   - centralized registry-driven activation/configuration and direct cutover are now implemented
-   - finish broader capability-oriented contract coverage across backend/frontend extension points
-   - spec: `docs/specs/plugin-platform-foundation-v1.md`
-2. Complete remaining plugin runtime hardening scope (metrics export and deeper telemetry validation).
+1. Complete remaining plugin runtime hardening scope (metrics export and deeper telemetry validation).
    - spec: `docs/specs/plugin-runtime-hardening-diagnostics-v1.md`
-3. Complete remaining frontend plugin host scope (broader extension points + fallback tests).
-   - spec: `docs/specs/frontend-plugin-host-workspace-areas-v1.md`
-4. Complete remaining dashboard shell scope (expanded card mounts + boundary tests) and transition into
-   command-center card/data rollout dependencies.
-   - spec: `docs/specs/dashboard-shell-plugin-host-v1.md`
-5. Resume stream ranking and scheduler/ingestion observability after plugin foundation stabilizes.
+2. Complete plugin configuration registry v1 follow-ups:
+   - config security enforcement/tests for env-ref secret handling
+   - provider budget/rate-limit contract coverage for discovery-oriented plugin settings
+   - spec: `docs/specs/plugin-configuration-registry-v1.md`
+3. Resume stream ranking and scheduler/ingestion observability after plugin closure.
+4. Completed and archived on 2026-02-22:
+   - `docs/specs/done/plugin-platform-foundation-v1.md`
+   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
+   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
 
 ## Next UI Slice (Prioritized)
 
@@ -626,7 +625,7 @@ Architecture implications:
 - Extend existing `dashboard_card` plugin slot with source-priority context.
 - Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
 - Dashboard dependency spec gate before implementation:
-  - [docs/specs/dashboard-shell-plugin-host-v1.md](specs/dashboard-shell-plugin-host-v1.md)
+  - [docs/specs/done/dashboard-shell-plugin-host-v1.md](specs/done/dashboard-shell-plugin-host-v1.md)
   - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)

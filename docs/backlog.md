@@ -13,32 +13,16 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 ### Core Platform Priorities
 
-1. Plugin platform foundation v1 (new top priority):
-  - implement centralized plugin registry loading/validation from a single config file
-  - lock capability-oriented plugin contracts across ingest, classifier, discovery, summary, and dashboard surfaces
-  - remove legacy `plugin_paths` compatibility work from scope; use direct cutover only
-  - implementation checkpoint (2026-02-22): registry loader, runtime cutover, and capability-gated dispatch completed;
-    remaining scope is runtime hardening/diagnostics and frontend host integration
-  - spec: [docs/specs/plugin-platform-foundation-v1.md](specs/plugin-platform-foundation-v1.md)
-2. Plugin runtime hardening and operator visibility:
+1. Plugin runtime hardening and operator visibility (remaining closure slice):
   - add per-plugin fault isolation and bounded execution behavior for hook dispatch
-  - add plugin diagnostics/status surface and plugin-level telemetry contracts
-  - implementation checkpoint (2026-02-22): timeout-guarded ingest/classifier dispatch, runtime counters, and
-    admin diagnostics endpoint (`GET /api/v1/plugins/status`) are completed
+  - diagnostics/status API is implemented (`GET /api/v1/plugins/status`)
+  - remaining scope: metrics export wiring and telemetry contract assertions
   - spec: [docs/specs/plugin-runtime-hardening-diagnostics-v1.md](specs/plugin-runtime-hardening-diagnostics-v1.md)
-3. Frontend plugin host + workspace plugin IA:
-  - implement typed frontend extension registry host with error-boundary isolation
-  - add dedicated `Plugins` navigation section with plugin area visibility driven by registry enablement
-  - implementation checkpoint (2026-02-22): plugin area host runtime, `/app/plugins/$areaId` route, `Plugins`
-    navigation section, and backend `GET /api/v1/plugins/areas` metadata API are completed
-  - spec: [docs/specs/frontend-plugin-host-workspace-areas-v1.md](specs/frontend-plugin-host-workspace-areas-v1.md)
-4. Dashboard shell + plugin-ready card host:
-  - implement `/app/dashboard` route and rail navigation behavior
-  - preserve card availability contract and `dashboard_card` extension compatibility from first implementation
-  - implementation checkpoint (2026-02-22): `/app/dashboard` route, dashboard rail navigation, shell card host, and
-    `GET /api/v1/dashboard/summary` metadata endpoint are completed
-  - spec: [docs/specs/dashboard-shell-plugin-host-v1.md](specs/dashboard-shell-plugin-host-v1.md)
-5. After plugin foundation is stable, resume dependency feature slices:
+2. Plugin configuration registry v1 follow-ups:
+  - add config security enforcement/tests for env-ref secret handling
+  - add provider budget/rate-limit contract tests for discovery-oriented plugin settings
+  - spec: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
+3. Resume dependency feature slices after plugin closure:
   - stream-level ranking/prioritization controls
   - scheduler and ingestion observability (metrics, latency, failures; spec:
     [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md))
@@ -61,12 +45,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 ### Linked Specifications
 
 - Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
-- Plugin platform foundation v1: [docs/specs/plugin-platform-foundation-v1.md](specs/plugin-platform-foundation-v1.md)
 - Plugin runtime hardening/diagnostics v1:
   [docs/specs/plugin-runtime-hardening-diagnostics-v1.md](specs/plugin-runtime-hardening-diagnostics-v1.md)
-- Frontend plugin host/workspace areas v1:
-  [docs/specs/frontend-plugin-host-workspace-areas-v1.md](specs/frontend-plugin-host-workspace-areas-v1.md)
-- Dashboard shell/plugin host v1: [docs/specs/dashboard-shell-plugin-host-v1.md](specs/dashboard-shell-plugin-host-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
@@ -110,7 +90,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - alerts
   - follow-up detail tab
 - Dashboard spec gate checklist (required before implementation starts):
-  - [docs/specs/dashboard-shell-plugin-host-v1.md](specs/dashboard-shell-plugin-host-v1.md)
+  - [docs/specs/done/dashboard-shell-plugin-host-v1.md](specs/done/dashboard-shell-plugin-host-v1.md)
   - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
