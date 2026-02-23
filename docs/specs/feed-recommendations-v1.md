@@ -12,6 +12,9 @@ This spec defines a discovery workflow where users configure dedicated `Discover
 manually per stream. Discovery streams are separate from monitoring streams and are not seeded from saved/starred
 articles in v1.
 
+Provider execution strategy is intentionally split into a dedicated planning artifact:
+`docs/specs/search-provider-plugin-v1.md`.
+
 This document is a planning artifact and does not change backend/frontend behavior yet.
 
 ## Goal
@@ -20,7 +23,7 @@ Provide a practical discovery workflow:
 
 1. User manages one or more discovery streams.
 2. User triggers generation manually for a selected discovery stream.
-3. A plugin-backed discovery provider finds candidate feeds from stream query/options.
+3. Discovery generation delegates provider execution to the shared `search_provider` plugin capability.
 4. User reviews candidates and explicitly accepts or denies each one.
 5. Accepted candidates are added as feeds in Sift.
 
@@ -179,17 +182,12 @@ Add new discovery contract in plugin layer:
 3. `discover_feeds(...)`
    - Plugin method to return candidates from provided query/options seed.
 
-Provider strategy for v1:
+Provider execution dependency:
 
-1. Support an ordered provider chain via plugin config (first provider succeeds, then fallback).
-2. Recommended default provider set:
-   - `searxng` (self-hosted first choice).
-   - `brave_search` (managed API fallback/alternative).
-3. Optional provider adapters (config-gated):
-   - `google_custom_search` (legacy/free-tier constrained path).
-   - `duckduckgo_instant_answer` (metadata/seed helper only, not primary SERP discovery).
-4. Exclude retired/deprecated providers from the default matrix.
-5. All provider adapters must enforce strict request limits and timeouts.
+1. Discovery generation uses shared search provider infrastructure defined in
+   `docs/specs/search-provider-plugin-v1.md`.
+2. Ordered fallback, provider adapter behavior, and strict budget/timeout enforcement are specified in that dedicated
+   search-provider spec.
 
 ## Discovery Execution Flow (Planned)
 
@@ -197,7 +195,7 @@ Provider strategy for v1:
    - `match_query`
    - include/exclude keywords
    - optional language/source hints
-2. Execute provider search with per-run request budgets and timeout limits.
+2. Execute provider search by invoking shared `search_provider` capability with compiled query/options.
 3. For each result URL, resolve feed candidates using staged extraction:
    - direct feed URL parse (RSS/Atom/XML)
    - HTML autodiscovery link extraction (`rel="alternate"` with feed MIME types)
@@ -209,16 +207,10 @@ Provider strategy for v1:
 
 ## Rate Limiting and Free-Tier Budget Controls (Planned)
 
-1. Introduce config-driven provider budgets in discovery plugin settings:
-   - `max_requests_per_run`
-   - `max_requests_per_day`
-   - `min_interval_ms`
-   - `max_query_variants_per_stream`
-   - `max_results_per_query`
-2. Use conservative defaults so discovery stays within free-tier limits by default.
-3. Enforce limits before external calls; do not "best effort" beyond configured budgets.
-4. If a budget is exhausted mid-generation, return partial results with explicit budget warning metadata.
-5. Keep counters provider-scoped so one provider hitting limits does not block other configured providers.
+1. Provider budgets and timeout policies are defined and enforced by the shared
+   `docs/specs/search-provider-plugin-v1.md` contract.
+2. Discovery generation must surface explicit budget/timeout warning metadata from provider execution.
+3. Discovery workflow behavior must remain deterministic under partial-result outcomes.
 
 ## Workspace UI Placement (Planned)
 
@@ -251,7 +243,8 @@ Backend:
 2. API tests for auth boundaries, stream CRUD, listing filters/pagination, and decision transitions.
 3. Decision rule tests for denied suppression, manual reset, and `resolved_existing`.
 4. Plugin tests for timeout/failure handling and candidate validation.
-5. Provider budget/rate-limit tests for per-run and daily caps with partial-result warning behavior.
+5. Provider budget/rate-limit execution behavior is validated by search-provider tests; discovery tests assert
+   propagation of provider warnings/partial-result metadata.
 
 Frontend:
 

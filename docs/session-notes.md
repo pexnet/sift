@@ -1,5 +1,32 @@
 # Session Notes
 
+## 2026-02-22 (Planning Split: Search Provider Plugin vs Discover Feeds Workflow)
+
+### Implemented This Session
+
+- Added a standalone planning spec for provider infrastructure:
+  - `docs/specs/search-provider-plugin-v1.md`
+- Refined discover-feeds spec scope to focus on discovery streams/recommendation workflow and explicitly depend on
+  shared search-provider infrastructure:
+  - `docs/specs/feed-recommendations-v1.md`
+- Updated planning/backlog docs for split ownership and dependency ordering:
+  - `docs/backlog.md`
+  - `docs/architecture.md`
+  - `docs/specs/plugin-configuration-registry-v1.md`
+  - `docs/specs/dashboard-command-center-v1.md`
+  - `AGENTS.md`
+- Preserved API surface in planning docs as-is for this docs-only checkpoint (no runtime/code behavior changes).
+
+### Verification
+
+- docs consistency checks:
+  - `rg -n "searxng|brave_search|google_custom_search|duckduckgo_instant_answer|provider chain" docs AGENTS.md`
+  - `rg -n "search-provider-plugin-v1.md" docs AGENTS.md`
+  - `rg -n "feed-recommendations-v1.md" docs AGENTS.md`
+- scope checks:
+  - confirmed no completed-history docs were modified
+  - confirmed no API/code files were modified
+
 ## 2026-02-22 (GitFlow + CI/CD + GHCR Release Pipeline Implementation)
 
 ### Implemented This Session
@@ -1917,5 +1944,98 @@
 
 - Backlog source of truth is maintained in `docs/backlog.md`.
 - This file remains the chronological session log only.
+
+### Scheduler/Ingestion Observability v1 (Increment 1, 2026-02-23)
+
+- Implemented shared observability runtime helpers:
+  - `src/sift/observability/metrics.py` in-memory Prometheus-text metrics collector for API/scheduler/worker/ingestion
+  - `src/sift/observability/logging.py` structured JSON logger setup + request-id context propagation
+- Added observability settings to `src/sift/config.py`:
+  - `observability_enabled`, `metrics_enabled`, `metrics_path`, `log_level`, `log_format`, `log_redact_fields`,
+    `request_id_header`
+- API runtime wiring (`src/sift/main.py`):
+  - request middleware now propagates/generates `X-Request-Id`
+  - structured API lifecycle events emitted (`api.request.start|complete|error`)
+  - `/metrics` endpoint now exports combined runtime + plugin telemetry metrics
+- Scheduler/worker/ingest instrumentation:
+  - replaced scheduler/worker `print` diagnostics with structured events
+  - scheduler emits loop/enqueue/queue metrics + loop start/complete/error events
+  - worker job wrapper emits `worker.job.start|complete|error` and records worker duration/result metrics
+  - ingestion service emits `ingest.run.start|complete|error` and records run/result + entry counters
+- Added and updated tests:
+  - new `tests/test_observability_api.py` for request-id and `/metrics` contract coverage
+  - new `tests/test_worker_jobs.py` for worker result metric coverage
+  - extended `tests/test_ingestion_service.py` to assert ingest run metric result labels
+
+### Verification (2026-02-23)
+
+- `python -m ruff check src/sift/config.py src/sift/main.py src/sift/observability/logging.py src/sift/observability/metrics.py src/sift/services/ingestion_service.py src/sift/tasks/scheduler.py src/sift/tasks/worker.py src/sift/tasks/jobs.py tests/test_observability_api.py tests/test_worker_jobs.py tests/test_ingestion_service.py`
+- `python -m mypy src/sift/observability src/sift/main.py src/sift/tasks/scheduler.py src/sift/tasks/worker.py src/sift/tasks/jobs.py src/sift/services/ingestion_service.py src/sift/config.py`
+- `python -m pytest tests/test_observability_api.py tests/test_worker_jobs.py tests/test_ingestion_service.py tests/test_scheduler.py`
+
+### Scheduler/Ingestion Observability v1 (Increment 2, 2026-02-23)
+
+- Added logging and failure-path observability tests:
+  - `tests/test_observability_logging.py` validates JSON redaction behavior and request-id context fallback
+  - `tests/test_observability_api.py` now includes exception-path middleware coverage:
+    - `api.request.error` event carries request ID
+    - `sift_http_requests_total{status_class="5xx"}` increments on uncaught handler failures
+    - request-id context is reset after exception
+- Added operator documentation:
+  - `docs/observability-runbook.md` with:
+    - runtime config matrix
+    - metric dictionary
+    - log event catalog
+    - redaction policy
+    - VictoriaMetrics/VMUI and VictoriaLogs setup notes
+- Linked runbook from architecture doc in observability section:
+  - `docs/architecture.md`
+
+### Verification (2026-02-23, Increment 2)
+
+- `python -m ruff check tests/test_observability_api.py tests/test_observability_logging.py`
+- `python -m pytest tests/test_observability_api.py tests/test_observability_logging.py`
+
+### Scheduler/Ingestion Observability v1 (Increment 3, 2026-02-23)
+
+- Added per-process scrapeable metrics servers for non-API runtimes:
+  - new module `src/sift/observability/metrics_server.py`
+  - scheduler and worker start dedicated HTTP metrics servers at startup
+- Added new observability configuration in `src/sift/config.py`:
+  - `metrics_bind_host` (`SIFT_METRICS_BIND_HOST`)
+  - `metrics_scheduler_port` (`SIFT_METRICS_SCHEDULER_PORT`, default `9101`)
+  - `metrics_worker_port` (`SIFT_METRICS_WORKER_PORT`, default `9102`)
+- Wired runtime startup integration:
+  - `src/sift/tasks/scheduler.py` now starts scrape endpoint before scheduler loop
+  - `src/sift/tasks/worker.py` now starts scrape endpoint before worker loop
+- Added dedicated metrics server tests:
+  - `tests/test_metrics_server.py`
+  - coverage includes enabled/disabled startup and 404 path behavior
+- Updated operator docs:
+  - expanded `docs/observability-runbook.md` with scheduler/worker scrape endpoints and sample scrape config targets
+  - updated architecture observability notes in `docs/architecture.md`
+
+### Verification (2026-02-23, Increment 3)
+
+- `python -m ruff check src/sift/config.py src/sift/observability/metrics_server.py src/sift/tasks/scheduler.py src/sift/tasks/worker.py tests/test_metrics_server.py`
+- `python -m mypy src/sift/observability/metrics_server.py src/sift/tasks/scheduler.py src/sift/tasks/worker.py src/sift/config.py`
+- `python -m pytest tests/test_metrics_server.py tests/test_scheduler.py tests/test_worker_jobs.py tests/test_observability_api.py tests/test_observability_logging.py tests/test_ingestion_service.py`
+
+### Scheduler/Ingestion Observability v1 (Archive + Planning Alignment, 2026-02-23)
+
+- Archived completed observability spec:
+  - moved `docs/specs/scheduler-ingestion-observability-v1.md` to
+    `docs/specs/done/scheduler-ingestion-observability-v1.md`
+  - marked spec status as completed and added implemented-checkpoint summary
+- Updated planning source-of-truth docs to reflect completion:
+  - `docs/backlog.md` core priorities now advance to search-provider platform after stream ranking
+  - `docs/backlog-history.md` now includes a completed observability milestone entry
+  - `docs/architecture.md` and `AGENTS.md` now list observability as completed and update next delivery sequence
+- Updated completed-spec references:
+  - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md` now points to archived observability spec location
+
+### Verification (2026-02-23, Archive + Planning Alignment)
+
+- `rg -n "scheduler-ingestion-observability-v1.md|Search provider plugin platform v1|Next Delivery Sequence|Archived" AGENTS.md docs/backlog.md docs/backlog-history.md docs/architecture.md docs/specs/done`
 
 

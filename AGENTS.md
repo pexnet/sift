@@ -92,10 +92,14 @@ This file stores persistent project context for future Codex sessions.
   - Ingest job wrapper (`src/sift/tasks/jobs.py`)
   - Scheduler loop that enqueues due feeds by `fetch_interval_minutes`
   - Worker process consuming ingest queue
+  - Scheduler and worker dedicated scrape endpoints for runtime metrics
 - Config controls:
   - `SIFT_INGEST_QUEUE_NAME`
   - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
   - `SIFT_SCHEDULER_BATCH_SIZE`
+  - `SIFT_METRICS_BIND_HOST`
+  - `SIFT_METRICS_SCHEDULER_PORT`
+  - `SIFT_METRICS_WORKER_PORT`
 - Dedupe guard:
   - Scheduler uses RQ-compatible stable job IDs (`ingest-<feed_id>`) for dedupe.
   - Legacy `ingest:<feed_id>` IDs are still checked for upgrade-safe dedupe behavior.
@@ -215,6 +219,11 @@ This file stores persistent project context for future Codex sessions.
   - backend endpoint is available at `POST /api/v1/articles/{article_id}/fulltext/fetch`
   - article detail now includes fulltext status/content fields and `content_source`
   - extracted fulltext is persisted separately from feed excerpt content
+- Scheduler/ingestion observability v1 is implemented:
+  - API request correlation (`X-Request-Id`) and structured API lifecycle events
+  - Prometheus-compatible metrics contracts for API/scheduler/worker/ingest/plugin runtime
+  - dedicated scheduler/worker scrape endpoints with configurable host/ports
+  - operator runbook is available at `docs/observability-runbook.md`
 - Development seed bootstrap is implemented:
   - creates default local user when enabled
   - imports OPML feed folders/feeds
@@ -225,10 +234,12 @@ This file stores persistent project context for future Codex sessions.
 ## Next Delivery Sequence
 
 1. Stream-level ranking/prioritization controls.
-2. Scheduler and ingestion observability.
+2. Search provider plugin platform v1 (ordered provider chain + strict budgets/timeouts).
 3. Recently completed and archived:
+   - `docs/specs/done/scheduler-ingestion-observability-v1.md`
+4. Previously completed and archived:
    - `docs/specs/done/full-article-fetch-on-demand-v1.md`
-4. Completed and archived:
+5. Completed and archived:
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
    - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
@@ -264,6 +275,7 @@ This file stores persistent project context for future Codex sessions.
    - `docs/specs/feed-health-ops-panel-v1.md`
    - `docs/specs/monitoring-signal-scoring-v1.md`
    - `docs/specs/trends-detection-dashboard-v1.md`
+   - `docs/specs/search-provider-plugin-v1.md`
    - `docs/specs/feed-recommendations-v1.md`
 4. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
 5. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
@@ -278,6 +290,12 @@ This file stores persistent project context for future Codex sessions.
 - Classifier plugin direction:
   - implement as plugin hooks, not hard-coded core logic
   - support provider/model versioning, score/confidence, and failure isolation
+- Search provider plugin direction:
+  - keep provider execution in a shared `search_provider` capability (`search_feeds(request)`)
+  - enforce ordered provider fallback plus strict per-provider budgets/timeouts in shared runtime
+- Discover feeds workflow direction:
+  - keep discovery streams/recommendation lifecycle separate from provider adapter internals
+  - consume shared search-provider infrastructure instead of duplicating provider logic in discovery workflow
 - LLM plugin direction:
   - use a shared LLM capability plugin contract with operation-specific hooks
   - summary is the first planned LLM operation in that shared contract

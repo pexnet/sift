@@ -274,6 +274,7 @@ more hooks:
 - `on_article_ingested(article)` for ingest-time enrichment/transformation.
 - `classify_stream(article, stream)` for stream relevance decisions with confidence.
 - Planned hooks:
+  - `search_feeds(request)` for provider-chain-backed blog/feed search (shared infrastructure)
   - `discover_feeds(seed_query, options)` for discovery-stream feed candidate lookup
   - `summarize_article(article, options)` for on-demand reader summary generation
   - scoring
@@ -419,6 +420,16 @@ Design goals:
    - endpoint `POST /api/v1/articles/{article_id}/fulltext/fetch` performs user-triggered fulltext fetch/extraction
    - article detail response now includes fulltext status/content fields and `content_source`
    - extracted fulltext is persisted in `article_fulltexts` and rendered in reader when available
+24. Scheduler/API/ingestion observability baseline:
+   - request correlation middleware adds/propagates `X-Request-Id` on API responses
+   - API request lifecycle emits structured events (`api.request.start|complete|error`)
+   - process-level Prometheus metrics endpoint is exposed at configurable `SIFT_METRICS_PATH` (`/metrics` default)
+   - scheduler and worker now expose dedicated scrape endpoints via configurable metrics host/ports
+     (`SIFT_METRICS_BIND_HOST`, `SIFT_METRICS_SCHEDULER_PORT`, `SIFT_METRICS_WORKER_PORT`)
+   - scheduler loop/enqueue outcomes, queue depth/oldest age, worker job outcomes, and ingestion run counters/duration
+     are emitted under `sift_*` observability metric names
+   - scheduler/worker runtimes now emit structured operational events instead of `print` diagnostics
+   - operator runbook: `docs/observability-runbook.md`
 
 ## Frontend Delivery Standard
 
@@ -458,8 +469,10 @@ Current delivery automation is GitHub Actions + GHCR based:
 ## Planned Next Moves (Current Core Priority Plan)
 
 1. Stream-level ranking/prioritization controls.
-2. Scheduler and ingestion observability.
-3. Completed and archived on 2026-02-22:
+2. Search provider plugin platform v1 (ordered provider chain + strict provider budgets/timeouts).
+3. Completed and archived on 2026-02-23:
+   - `docs/specs/done/scheduler-ingestion-observability-v1.md`
+4. Completed and archived on 2026-02-22:
    - `docs/specs/done/full-article-fetch-on-demand-v1.md`
    - `docs/specs/done/plugin-platform-foundation-v1.md`
    - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
@@ -619,8 +632,9 @@ Architecture implications:
 - Add `feed_recommendations` model with decision status including `resolved_existing`.
 - Add `feed_recommendation_sources` attribution table so one candidate can map to many discovery streams.
 - Keep denied candidate suppression state and manual reset semantics in recommendation state transitions.
-- Add a provider-adapter abstraction with ordered fallback support (`searxng` primary, managed API alternatives).
-- Add provider-scoped budget/rate-limit enforcement (per-run + daily caps + request spacing) to protect free tiers.
+- Discovery provider execution depends on shared `search_provider` plugin infrastructure spec:
+  [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
+- Consume provider-scoped budget/rate-limit/timeout enforcement from shared search-provider runtime.
 - Add staged feed resolution pipeline (direct feed parse -> HTML autodiscovery -> constrained heuristic feed-path probes).
 
 ### 4) Dashboard as Command Center
@@ -652,6 +666,7 @@ Architecture implications:
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
   - [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
   - [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
+  - [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
   - [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 
 ### 5) Duplicate Candidate Review (Iteration 1)
@@ -673,7 +688,8 @@ Architecture implications:
 
 Planned plugins:
 
-- Discover feeds plugin (stream-driven feed discovery with provider-backed candidate lookup).
+- Search provider plugin (shared provider chain + strict budgets/timeouts for feed/blog lookup).
+- Discover feeds plugin (stream-driven recommendation workflow consuming shared search provider infrastructure).
 - LLM summarization plugin (initial provider target: Ollama Cloud).
   - spec reference: [docs/specs/article-llm-summary-on-demand-v1.md](specs/article-llm-summary-on-demand-v1.md)
 - Vector similarity plugin for article/topic relatedness and future semantic monitoring workflows.
@@ -721,11 +737,12 @@ Architecture implications:
 
 1. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
 2. Dashboard v1 command center card/data rollout (only after dashboard dependency spec gate checklist is complete).
-3. Discover feeds v1 (discovery streams + recommendation decisions).
-4. Duplicate candidate review screen.
-5. Trends detection for selected feed folders (dashboard-oriented).
-6. Advanced search query acceleration (PostgreSQL-oriented).
-7. Vector-database integration infrastructure (plugin-boundary embeddings support).
-8. Plugin implementations (LLM summary, vector similarity).
-9. Silent feeds for monitoring-only population.
-10. OIDC provider integration (Google, then Azure/Apple).
+3. Search provider plugin v1 (ordered provider chain + strict provider budgets/timeouts).
+4. Discover feeds v1 (discovery streams + recommendation decisions).
+5. Duplicate candidate review screen.
+6. Trends detection for selected feed folders (dashboard-oriented).
+7. Advanced search query acceleration (PostgreSQL-oriented).
+8. Vector-database integration infrastructure (plugin-boundary embeddings support).
+9. Plugin implementations (LLM summary, vector similarity).
+10. Silent feeds for monitoring-only population.
+11. OIDC provider integration (Google, then Azure/Apple).

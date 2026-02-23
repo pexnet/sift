@@ -1,7 +1,9 @@
 import hashlib
 import json
+import logging
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from time import perf_counter
 from uuid import UUID
 
 import feedparser
@@ -11,11 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.db.models import Article, Feed, RawEntry
 from sift.domain.schemas import FeedIngestResult
+from sift.observability.metrics import get_observability_metrics
 from sift.plugins.base import ArticleContext
 from sift.plugins.manager import PluginManager
 from sift.services.dedup_service import build_content_fingerprint, dedup_service, normalize_canonical_url
 from sift.services.rule_service import rule_service
 from sift.services.stream_service import stream_service
+
+logger = logging.getLogger(__name__)
 
 
 class FeedNotFoundError(Exception):
@@ -91,17 +96,77 @@ def _normalize_article(entry: feedparser.FeedParserDict) -> tuple[str, str | Non
     return title, canonical_url, content_text, language, published_at
 
 
+def _ingest_result_from_http_error(error: httpx.HTTPError) -> str:
+    if isinstance(error, httpx.NetworkError):
+        return "network_error"
+    return "http_error"
+
+
+def _record_ingest_observability(
+    *,
+    feed_id: UUID,
+    result_label: str,
+    result: FeedIngestResult,
+    started_at: float,
+    error: Exception | None = None,
+) -> None:
+    duration_seconds = perf_counter() - started_at
+    duration_ms = int(duration_seconds * 1000)
+    get_observability_metrics().record_ingest_run(
+        result=result_label,
+        duration_seconds=duration_seconds,
+        fetched_count=result.fetched_count,
+        inserted_count=result.inserted_count,
+        duplicate_count=result.duplicate_count,
+        filtered_count=result.filtered_count,
+        plugin_processed_count=result.plugin_processed_count,
+    )
+    log_extra = {
+        "feed_id": str(feed_id),
+        "result": result_label,
+        "duration_ms": duration_ms,
+        "fetched_count": result.fetched_count,
+        "inserted_count": result.inserted_count,
+        "duplicate_count": result.duplicate_count,
+        "filtered_count": result.filtered_count,
+        "plugin_processed_count": result.plugin_processed_count,
+        "error_count": len(result.errors),
+    }
+    if error is None:
+        logger.info("ingest.run.complete", extra={"event": "ingest.run.complete", **log_extra})
+        return
+    logger.error(
+        "ingest.run.error",
+        extra={
+            "event": "ingest.run.error",
+            **log_extra,
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+        },
+    )
+
+
 class IngestionService:
     async def ingest_feed(
         self, session: AsyncSession, feed_id: UUID, plugin_manager: PluginManager
     ) -> FeedIngestResult:
+        started_at = perf_counter()
+        logger.info("ingest.run.start", extra={"event": "ingest.run.start", "feed_id": str(feed_id)})
+
         query = select(Feed).where(Feed.id == feed_id)
         feed_result = await session.execute(query)
         feed = feed_result.scalar_one_or_none()
+        result = FeedIngestResult(feed_id=feed_id)
         if feed is None:
-            raise FeedNotFoundError(f"Feed {feed_id} not found")
-
-        result = FeedIngestResult(feed_id=feed.id)
+            error = FeedNotFoundError(f"Feed {feed_id} not found")
+            _record_ingest_observability(
+                feed_id=feed_id,
+                result_label="missing",
+                result=result,
+                started_at=started_at,
+                error=error,
+            )
+            raise error
 
         headers: dict[str, str] = {}
         if feed.etag:
@@ -119,6 +184,13 @@ class IngestionService:
             feed.last_fetch_error_at = fetched_at
             await session.commit()
             result.errors.append(str(exc))
+            _record_ingest_observability(
+                feed_id=feed.id,
+                result_label=_ingest_result_from_http_error(exc),
+                result=result,
+                started_at=started_at,
+                error=exc,
+            )
             return result
 
         fetched_at = datetime.now(UTC)
@@ -130,6 +202,12 @@ class IngestionService:
             feed.last_fetch_error = None
             feed.last_fetch_success_at = fetched_at
             await session.commit()
+            _record_ingest_observability(
+                feed_id=feed.id,
+                result_label="not_modified",
+                result=result,
+                started_at=started_at,
+            )
             return result
 
         if response.status_code != 200:
@@ -138,6 +216,13 @@ class IngestionService:
             feed.last_fetch_error_at = fetched_at
             await session.commit()
             result.errors.append(message)
+            _record_ingest_observability(
+                feed_id=feed.id,
+                result_label="http_status_error",
+                result=result,
+                started_at=started_at,
+                error=RuntimeError(message),
+            )
             return result
 
         parsed = feedparser.parse(response.content)
@@ -258,6 +343,12 @@ class IngestionService:
         feed.last_fetch_error = None
         feed.last_fetch_success_at = fetched_at
         await session.commit()
+        _record_ingest_observability(
+            feed_id=feed.id,
+            result_label="success",
+            result=result,
+            started_at=started_at,
+        )
         return result
 
 

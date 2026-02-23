@@ -14,8 +14,8 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 ### Core Platform Priorities
 
 1. Stream-level ranking/prioritization controls.
-2. Scheduler and ingestion observability (metrics, latency, failures; spec:
-   [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)).
+2. Search provider plugin platform v1 (ordered provider chain + strict provider budgets/timeouts; spec:
+   [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)).
 
 ### Next UI Slice
 
@@ -37,6 +37,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 ### Linked Specifications
 
 - Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
+- Search provider plugin v1: [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
@@ -44,14 +45,14 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - Stream ranking/prioritization controls v1:
   [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
 - Feed health ops panel v1: [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
-- Scheduler/ingestion observability v1:
-  [docs/specs/scheduler-ingestion-observability-v1.md](specs/scheduler-ingestion-observability-v1.md)
 - Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
 - Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
 - Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
   use saved/starred article seeds in v1.
 - Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
   enforce free-tier-safe per-provider request budgets/rate limits by default.
+- Planning decision (2026-02-22): Search provider infrastructure is split into
+  `docs/specs/search-provider-plugin-v1.md`; discover-feeds spec now focuses on stream/recommendation workflow.
 
 ## Deferred (Not Prioritized Yet)
 
@@ -85,6 +86,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
   - [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
   - [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
+  - [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
   - [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 - Rule:
   - dashboard implementation starts only after all checklist dependency specs are drafted and linked.
@@ -144,17 +146,28 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 - When a feed is switched to silent, existing unread for that feed should be bulk-marked read.
 - Spec reference: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 
-### 8) Discover Feeds (Discovery Streams)
+### 8) Search Provider Plugin Platform v1
+
+- Add standalone search provider plugin infrastructure as reusable backend capability.
+- Scope:
+  - ordered provider-chain execution with deterministic fallback
+  - strict provider budgets/rate limits/timeouts
+  - backend-first ephemeral search result APIs
+- Spec reference: [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
+
+### 9) Discover Feeds (Discovery Streams)
 
 - Add the `Discover feeds` vertical slice using separate `discovery_streams` (not monitoring stream reuse).
 - Implement discovery-stream generation and recommendation decision flow:
   - discovery stream CRUD
   - manual generation trigger
   - recommendation accept/deny/reset workflow
-- Keep provider execution behind ordered adapters with free-tier-safe budgets/rate limits.
+- Discovery workflow depends on shared search-provider infrastructure for provider execution and budget/timeout
+  enforcement.
+- Dependency spec: [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
 - Spec reference: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 
-### 9) OIDC Provider Integration
+### 10) OIDC Provider Integration
 
 - Add external identity provider support on top of existing `auth_identities` foundation.
 - Delivery order:
@@ -162,14 +175,14 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
   - then Azure/Apple
 - Keep current local auth provider behavior unchanged as fallback.
 
-### 10) Vector Database Integration Infrastructure
+### 11) Vector Database Integration Infrastructure
 
 - Move vector-database integration out of immediate `Next` and keep it as a later deferred capability.
 - Add plugin-boundary vector infrastructure for embeddings and semantic matching workflows.
 - Keep vector storage optional and provider-pluggable (for example `pgvector`, Qdrant, Weaviate).
 - Preserve core-ingestion independence so vector infrastructure remains non-blocking for baseline feeds/streams.
 
-### 11) Mobile UX Planning (Dedicated Session)
+### 12) Mobile UX Planning (Dedicated Session)
 
 - Keep current mobile runtime in read-focused mode.
 - Run a separate mobile planning/design session later to define:
@@ -182,11 +195,12 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 
 1. Monitoring feed management v2 follow-ups.
 2. Dashboard v1 (priority inbox and command-center widgets; start only after dashboard spec-gate checklist is complete).
-3. Discover feeds v1 (discovery streams + recommendation decisions).
-4. Duplicate-candidate settings view.
-5. Trends detection for selected feed folders (dashboard-oriented).
-6. Advanced search query acceleration (PostgreSQL-oriented).
-7. Vector-database integration infrastructure (plugin-boundary embeddings support).
-8. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
-9. Silent feeds for monitoring-only population.
-10. OIDC provider integration (Google, then Azure/Apple).
+3. Search provider plugin v1 (ordered provider chain + strict provider budgets/timeouts).
+4. Discover feeds v1 (discovery streams + recommendation decisions).
+5. Duplicate-candidate settings view.
+6. Trends detection for selected feed folders (dashboard-oriented).
+7. Advanced search query acceleration (PostgreSQL-oriented).
+8. Vector-database integration infrastructure (plugin-boundary embeddings support).
+9. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+10. Silent feeds for monitoring-only population.
+11. OIDC provider integration (Google, then Azure/Apple).

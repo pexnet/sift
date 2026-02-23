@@ -36,6 +36,27 @@ class Settings(BaseSettings):
     plugin_timeout_discovery_ms: int = 5000
     plugin_timeout_summary_ms: int = 5000
     plugin_diagnostics_enabled: bool = True
+    observability_enabled: bool = True
+    metrics_enabled: bool = True
+    metrics_path: str = "/metrics"
+    metrics_bind_host: str = "0.0.0.0"
+    metrics_scheduler_port: int = 9101
+    metrics_worker_port: int = 9102
+    log_level: str = "INFO"
+    log_format: str = "json"
+    log_redact_fields: list[str] = Field(
+        default_factory=lambda: [
+            "password",
+            "token",
+            "authorization",
+            "cookie",
+            "session_id",
+            "content_text",
+            "content_html",
+            "payload",
+        ]
+    )
+    request_id_header: str = "X-Request-Id"
 
 
 @lru_cache

@@ -2,9 +2,9 @@
 
 ## Status
 
-- State: In Progress
-- Scope: Scheduler + ingestion observability backend runtime slice
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- State: Completed (2026-02-23)
+- Scope: Scheduler + ingestion observability backend runtime slice (implemented)
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 
 ## Context
 
@@ -45,7 +45,7 @@ compatible with VictoriaMetrics and VictoriaLogs.
 2. Keep existing `/api/v1/*` endpoints unchanged.
 3. Add response header `X-Request-Id` for API responses.
 
-### Configuration Additions (Planned)
+### Configuration Additions (Implemented)
 
 1. `SIFT_OBSERVABILITY_ENABLED` (`true` default)
 2. `SIFT_METRICS_ENABLED` (`true` default)
@@ -153,6 +153,25 @@ compatible with VictoriaMetrics and VictoriaLogs.
 2. Document VictoriaMetrics/VictoriaLogs compatibility and VMUI-first setup notes.
 3. Document optional Grafana integration path as non-required.
 
+## Implemented Checkpoint (2026-02-23)
+
+1. Phase 1 completed:
+   - centralized structured logger setup shared by API/scheduler/worker
+   - scheduler/worker `print` diagnostics replaced with structured events
+   - request-id middleware added with response header propagation
+   - ingestion start/complete/error event emission implemented
+2. Phase 2 completed:
+   - metrics registry/helper implementation added
+   - API `/metrics` endpoint export implemented
+   - API request metrics instrumentation implemented
+   - scheduler loop/enqueue + queue gauge instrumentation implemented
+   - worker job outcome/duration instrumentation implemented
+   - ingestion run/result + entry counter instrumentation implemented
+   - scheduler and worker now expose dedicated scrape endpoints on configurable metrics ports
+3. Phase 3 completed:
+   - operator runbook added at `docs/observability-runbook.md`
+   - VictoriaMetrics/VictoriaLogs setup notes included
+
 ## Test Cases and Scenarios
 
 1. Redaction tests:
@@ -182,5 +201,5 @@ compatible with VictoriaMetrics and VictoriaLogs.
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
-- Related dashboard planning: [docs/specs/dashboard-command-center-v1.md](dashboard-command-center-v1.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
+- Related dashboard planning: [docs/specs/dashboard-command-center-v1.md](../dashboard-command-center-v1.md)

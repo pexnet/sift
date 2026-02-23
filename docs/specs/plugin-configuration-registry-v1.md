@@ -43,19 +43,23 @@ Top-level structure:
 
 Example logical entries:
 
-1. `discover_feeds`:
+1. `search_provider`:
    - enabled true/false
    - provider chain (`searxng`, `brave_search`, optional adapters)
    - provider credentials/env references
-   - generation limits and provider budgets:
+   - provider budgets and limits:
      - `max_requests_per_run`
      - `max_requests_per_day`
      - `min_interval_ms`
      - `max_query_variants_per_stream`
      - `max_results_per_query`
    - fallback policy and timeout settings
+2. `discover_feeds`:
+   - enabled true/false
+   - discovery workflow settings (stream generation/recommendation behavior)
+   - consumes shared provider execution via `search_provider` capability
    - UI area label `Discover feeds`
-2. `bluesky`:
+3. `bluesky`:
    - enabled true/false
    - auth/api parameters
    - UI area label `Bluesky`
@@ -68,7 +72,7 @@ Example logical entries:
    - [x] backend hooks are skipped
    - [x] UI areas are hidden from `/api/v1/plugins/areas` and workspace plugin navigation
 4. [x] Validation errors fail with actionable messages (field-path details; plugin id included where applicable).
-5. [x] Discovery settings contract enforces provider budget/rate-limit fields at registry validation time.
+5. [x] Search-provider settings contract enforces provider budget/rate-limit fields at registry validation time.
 6. [ ] Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
 
 ## Implemented Checkpoint (2026-02-22)
@@ -76,7 +80,8 @@ Example logical entries:
 1. Added strict security validation for sensitive settings keys:
    - sensitive values must be environment variable references (for example `${SIFT_API_KEY}`)
    - plaintext secret/token/password/api-key values are rejected at registry validation time
-2. Added discover-feeds budget contract validation:
+2. Added search-provider budget contract validation (current runtime path uses discover-feeds settings shape and will
+   be expanded in follow-up):
    - validates provider-chain shape
    - validates per-provider budget fields:
      - `max_requests_per_run`
@@ -87,7 +92,7 @@ Example logical entries:
    - validates `max_requests_per_day >= max_requests_per_run`
 3. Added registry tests for:
    - sensitive settings env-ref enforcement
-   - valid/invalid discover-feeds budget contract scenarios
+   - valid/invalid provider budget contract scenarios
 
 ## API and Admin Surface (Future Direction)
 
@@ -112,7 +117,7 @@ Future phase:
 2. [x] Enabling/disabling a plugin changes both backend activation and UI visibility.
 3. [x] Discover feeds and future plugin entries can be toggled independently.
 4. [x] Invalid registry entries produce clear startup/validation errors.
-5. [x] Discovery plugin config can enforce free-tier-safe request budget contracts without code changes.
+5. [x] Search-provider plugin config can enforce free-tier-safe request budget contracts without code changes.
 
 ## Test Plan
 
@@ -120,7 +125,7 @@ Future phase:
 2. [x] Runtime tests for enabled vs disabled plugin registration.
 3. [ ] UI navigation tests confirming hidden/visible plugin areas based on toggles.
 4. [x] Regression tests for existing plugin manager behavior.
-5. [x] Discovery budget/rate-limit config contract tests (schema and bounds validation).
+5. [x] Search-provider budget/rate-limit config contract tests (schema and bounds validation).
 6. [ ] Deferred runtime behavior tests for cap exhaustion and partial-result warning metadata.
 
 ## Rollout Notes

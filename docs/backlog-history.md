@@ -6,6 +6,21 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Scheduler/Ingestion Observability v1 (Completed on 2026-02-23)
+
+1. Structured observability baseline completed across API, scheduler, and worker runtimes:
+   - centralized JSON logging contract with redaction support
+   - request-id propagation (`X-Request-Id`) for API request correlation
+2. Prometheus-compatible metrics baseline completed:
+   - API `/metrics` export with HTTP/runtime/plugin metric names
+   - scheduler/worker runtime instrumentation for loop/job outcomes and durations
+   - ingestion run metrics for success/error/not-modified paths and entry counters
+3. Dedicated scheduler/worker scrape endpoints completed:
+   - configurable runtime metrics host/ports
+   - operator runbook documented at `docs/observability-runbook.md`
+4. Spec archived:
+   - `docs/specs/done/scheduler-ingestion-observability-v1.md`
+
 ### Full Article Fetch On-Demand v1 (Completed on 2026-02-22)
 
 1. Reader full-article fetch action is implemented:

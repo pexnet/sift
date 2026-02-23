@@ -104,7 +104,8 @@ Dashboard implementation is blocked until these specs are drafted and linked:
 3. [docs/specs/feed-health-ops-panel-v1.md](feed-health-ops-panel-v1.md)
 4. [docs/specs/monitoring-signal-scoring-v1.md](monitoring-signal-scoring-v1.md)
 5. [docs/specs/trends-detection-dashboard-v1.md](trends-detection-dashboard-v1.md)
-6. [docs/specs/feed-recommendations-v1.md](feed-recommendations-v1.md)
+6. [docs/specs/search-provider-plugin-v1.md](search-provider-plugin-v1.md)
+7. [docs/specs/feed-recommendations-v1.md](feed-recommendations-v1.md)
 
 ## Frontend Plan (for later implementation)
 
@@ -148,4 +149,5 @@ Backend:
 ## Backlog References
 
 - Product backlog: [docs/backlog.md](../backlog.md)
+- Related spec: [docs/specs/search-provider-plugin-v1.md](search-provider-plugin-v1.md)
 - Related spec: [docs/specs/feed-recommendations-v1.md](feed-recommendations-v1.md)

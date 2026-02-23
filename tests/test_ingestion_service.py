@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
 from sift.db.models import Article, Feed
+from sift.observability.metrics import MetricSample, get_observability_metrics
 from sift.services.dedup_service import build_content_fingerprint, dedup_service, normalize_canonical_url
 from sift.services.ingestion_service import _make_source_id, _parse_published_at, ingestion_service
 
@@ -93,6 +94,14 @@ class _ResponseStub:
         self.headers = headers or {}
 
 
+def _sample_map(samples: list[MetricSample], *, label_keys: tuple[str, ...]) -> dict[tuple[str, ...], float]:
+    mapped: dict[tuple[str, ...], float] = {}
+    for sample in samples:
+        key = tuple(sample.labels[key] for key in label_keys)
+        mapped[key] = sample.value
+    return mapped
+
+
 @pytest.mark.asyncio
 async def test_ingest_feed_sets_last_fetch_success_at_on_304(monkeypatch) -> None:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -139,6 +148,9 @@ async def test_ingest_feed_sets_last_fetch_success_at_on_304(monkeypatch) -> Non
 
 @pytest.mark.asyncio
 async def test_ingest_feed_sets_last_fetch_success_at_on_success_and_error_timestamp_on_failure(monkeypatch) -> None:
+    metrics = get_observability_metrics()
+    metrics.reset()
+
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -206,5 +218,10 @@ async def test_ingest_feed_sets_last_fetch_success_at_on_success_and_error_times
         assert refreshed_failure_feed is not None
         assert refreshed_failure_feed.last_fetch_error is not None
         assert refreshed_failure_feed.last_fetch_error_at is not None
+
+        snapshot = metrics.snapshot()
+        run_totals = _sample_map(snapshot["sift_ingest_runs_total"], label_keys=("result",))
+        assert run_totals[("success",)] == 1.0
+        assert run_totals[("network_error",)] == 1.0
 
     await engine.dispose()

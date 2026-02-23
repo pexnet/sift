@@ -159,4 +159,4 @@ Required fields:
 - Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
   - [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)
-  - [docs/specs/scheduler-ingestion-observability-v1.md](../scheduler-ingestion-observability-v1.md)
+  - [docs/specs/done/scheduler-ingestion-observability-v1.md](scheduler-ingestion-observability-v1.md)
