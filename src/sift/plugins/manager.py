@@ -14,18 +14,13 @@ from sift.plugins.base import (
     StreamClassificationDecision,
     StreamClassifierContext,
 )
+from sift.plugins.capabilities import required_method_for_capability
 from sift.plugins.registry import PluginRegistryEntry
 from sift.plugins.telemetry import PluginMetricSample, PluginTelemetryCollector
 
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
-
-_CAPABILITY_METHODS: dict[str, str] = {
-    "ingest_hook": "on_article_ingested",
-    "stream_classifier": "classify_stream",
-    "search_provider": "search_feeds",
-}
 
 _DEFAULT_TIMEOUTS_MS: dict[str, int] = {
     "ingest_hook": 2000,
@@ -113,7 +108,7 @@ def _new_runtime_state(entry: PluginRegistryEntry) -> PluginRuntimeState:
 
 def _capability_contract_error(plugin: LoadedPlugin) -> str | None:
     for capability in plugin.capabilities:
-        required_method = _CAPABILITY_METHODS.get(capability)
+        required_method = required_method_for_capability(capability)
         if required_method is None:
             continue
         handler = getattr(plugin.implementation, required_method, None)
@@ -137,6 +132,8 @@ class PluginManager:
     ) -> None:
         self._plugins: list[LoadedPlugin] = []
         self._plugins_by_id: dict[str, LoadedPlugin] = {}
+        self._registry_entries_by_id: dict[str, PluginRegistryEntry] = {}
+        self._registry_order: list[str] = []
         self._runtime_states: dict[str, PluginRuntimeState] = {}
         self._state_order: list[str] = []
         self._diagnostics_enabled = diagnostics_enabled
@@ -152,11 +149,15 @@ class PluginManager:
     def load_from_registry(self, plugins: list[PluginRegistryEntry]) -> None:
         self._plugins = []
         self._plugins_by_id = {}
+        self._registry_entries_by_id = {}
+        self._registry_order = []
         self._runtime_states = {}
         self._state_order = []
         self._dispatch_failures_by_capability = {}
 
         for entry in plugins:
+            self._registry_entries_by_id[entry.id] = entry.model_copy(deep=True)
+            self._registry_order.append(entry.id)
             state = _new_runtime_state(entry)
             self._runtime_states[entry.id] = state
             self._state_order.append(entry.id)
@@ -226,6 +227,9 @@ class PluginManager:
 
     def list_plugin_ids_by_capability(self, capability: str) -> list[str]:
         return [plugin.id for plugin in self._plugins if capability in plugin.capabilities]
+
+    def get_registry_entries(self) -> list[PluginRegistryEntry]:
+        return [self._registry_entries_by_id[plugin_id].model_copy(deep=True) for plugin_id in self._registry_order]
 
     @property
     def diagnostics_enabled(self) -> bool:

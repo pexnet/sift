@@ -218,7 +218,9 @@ Implemented slices are tracked at capability level here; detailed completion chr
    - feed lifecycle/health APIs and archive behavior.
 6. Plugin platform:
    - centralized registry/runtime cutover,
-   - capability-gated dispatch, timeout/fault isolation, diagnostics, and plugin telemetry metrics,
+   - shared capability contract metadata, capability-gated dispatch, timeout/fault isolation,
+     diagnostics, and plugin telemetry metrics,
+   - runtime-loaded registry snapshot surfaced by plugin manager for API-level config consistency,
    - search-provider capability baseline (`search_feeds`) with validated provider-chain config.
 7. Frontend integration baselines:
    - workspace plugin areas and route host (`/app/plugins/$areaId`),
@@ -231,7 +233,7 @@ Implemented slices are tracked at capability level here; detailed completion chr
    - authenticated search endpoints for configured providers and ephemeral feed candidate results:
      - `GET /api/v1/search/providers`
      - `POST /api/v1/search/feeds`
-   - ordered provider fallback and in-process provider budget/rate enforcement.
+   - ordered provider fallback, persistent daily budget ledger enforcement, and explicit warning metadata.
 
 ## Frontend Delivery Standard
 

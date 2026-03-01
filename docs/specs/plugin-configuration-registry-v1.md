@@ -3,7 +3,8 @@
 ## Status
 
 - State: In Progress
-- Scope: Centralized registry baseline, diagnostics read API, and security/budget contract validation implemented
+- Scope: Centralized registry baseline, diagnostics read API, security/budget contract validation, shared capability
+  contract metadata, and runtime registry snapshot consumption by API surfaces implemented
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -73,15 +74,16 @@ Example logical entries:
    - [x] UI areas are hidden from `/api/v1/plugins/areas` and workspace plugin navigation
 4. [x] Validation errors fail with actionable messages (field-path details; plugin id included where applicable).
 5. [x] Search-provider settings contract enforces provider budget/rate-limit fields at registry validation time.
-6. [ ] Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
+6. [x] Budget exhaustion produces partial results with explicit warning metadata (no silent overage).
+7. [x] Runtime API surfaces (`/api/v1/plugins/areas`, `/api/v1/search/providers`, `/api/v1/search/feeds`) consume
+   runtime-loaded plugin registry snapshot from plugin manager (no per-request registry file reload drift).
 
 ## Implemented Checkpoint (2026-02-22)
 
 1. Added strict security validation for sensitive settings keys:
    - sensitive values must be environment variable references (for example `${SIFT_API_KEY}`)
    - plaintext secret/token/password/api-key values are rejected at registry validation time
-2. Added search-provider budget contract validation (current runtime path uses discover-feeds settings shape and will
-   be expanded in follow-up):
+2. Added search-provider budget contract validation:
    - validates provider-chain shape
    - validates per-provider budget fields:
      - `max_requests_per_run`
@@ -93,6 +95,13 @@ Example logical entries:
 3. Added registry tests for:
    - sensitive settings env-ref enforcement
    - valid/invalid provider budget contract scenarios
+
+## Implemented Checkpoint (2026-03-01)
+
+1. Added shared plugin capability metadata module to align registry validation and runtime capability contract checks.
+2. Plugin manager now stores and exposes runtime-loaded registry entries for downstream API surfaces.
+3. Plugin/search route config resolution now uses runtime manager registry snapshot for consistency with loaded plugins.
+4. Added coverage for runtime registry snapshot usage in plugin/search API tests.
 
 ## API and Admin Surface (Future Direction)
 
@@ -126,7 +135,7 @@ Future phase:
 3. [ ] UI navigation tests confirming hidden/visible plugin areas based on toggles.
 4. [x] Regression tests for existing plugin manager behavior.
 5. [x] Search-provider budget/rate-limit config contract tests (schema and bounds validation).
-6. [ ] Deferred runtime behavior tests for cap exhaustion and partial-result warning metadata.
+6. [x] Runtime behavior tests for cap exhaustion and partial-result warning metadata.
 
 ## Rollout Notes
 

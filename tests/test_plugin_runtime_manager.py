@@ -357,6 +357,9 @@ def test_load_from_registry_marks_load_and_contract_failures(monkeypatch: pytest
         ]
     )
 
+    registry_entries = manager.get_registry_entries()
+    assert [entry.id for entry in registry_entries] == ["load_error", "missing_method", "ok_ingest"]
+
     assert manager.names() == ["ok_ingest"]
     snapshots = {item.plugin_id: item for item in manager.get_status_snapshots()}
 

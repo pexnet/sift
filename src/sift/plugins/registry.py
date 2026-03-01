@@ -6,18 +6,7 @@ from typing import Any
 import yaml  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-VALID_PLUGIN_CAPABILITIES = frozenset(
-    {
-        "ingest_hook",
-        "stream_classifier",
-        "search_provider",
-        "discover_feeds",
-        "summarize_article",
-        "dashboard_card",
-        "workspace_area",
-        "command_palette_action",
-    }
-)
+from sift.plugins.capabilities import VALID_PLUGIN_CAPABILITIES
 
 logger = logging.getLogger(__name__)
 

@@ -42,6 +42,14 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - runtime provider adapters baseline:
     - `searxng`
     - `brave_search`
+- Search provider platform v1 slice 3 implemented:
+  - persistent daily provider budget ledger (`search_provider_budget_daily`),
+  - DB-backed hard enforcement for `max_requests_per_day` and `min_interval_ms` across restarts/processes,
+  - explicit warning metadata in search responses (`warning_details` with stable warning codes).
+- Plugin architecture hardening implemented:
+  - shared plugin capability metadata contract (`src/sift/plugins/capabilities.py`),
+  - runtime-loaded plugin registry snapshot exposed by plugin manager,
+  - search/plugin API surfaces now resolve plugin config from runtime snapshot (not per-request file reload).
 
 ## Active Priorities
 

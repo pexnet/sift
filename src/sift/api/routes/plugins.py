@@ -5,7 +5,6 @@ from sift.config import get_settings
 from sift.core.runtime import get_plugin_manager
 from sift.db.models import User
 from sift.domain.schemas import PluginAreaOut, PluginCapabilityRuntimeCountersOut, PluginStatusOut
-from sift.plugins.registry import load_plugin_registry
 
 router = APIRouter()
 
@@ -14,13 +13,11 @@ router = APIRouter()
 async def list_plugin_areas(current_user: User = Depends(get_current_user)) -> list[PluginAreaOut]:
     del current_user
 
-    settings = get_settings()
     manager = get_plugin_manager()
     status_by_id = {snapshot.plugin_id: snapshot for snapshot in manager.get_status_snapshots()}
-    registry = load_plugin_registry(settings.plugin_registry_path)
 
     areas: list[PluginAreaOut] = []
-    for entry in registry.plugins:
+    for entry in manager.get_registry_entries():
         if not entry.enabled:
             continue
         if "workspace_area" not in entry.capabilities:

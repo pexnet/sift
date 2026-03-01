@@ -3,6 +3,33 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Plugin Architecture Hardening + Search Provider v1 Slice 3)
+
+### Implemented This Session
+
+- Plugin architecture/runtime consistency hardening:
+  - added shared capability contract metadata (`src/sift/plugins/capabilities.py`),
+  - plugin manager now stores/exposes runtime-loaded registry entries (`get_registry_entries()`),
+  - `/api/v1/plugins/areas` and `/api/v1/search/*` now resolve config from runtime manager snapshot rather than
+    per-request registry reload.
+- Search provider v1 slice 3:
+  - added DB-backed daily provider budget ledger (`search_provider_budget_daily` + Alembic migration
+    `20260301_0017`),
+  - enforced persistent `max_requests_per_day` and `min_interval_ms` budget constraints in search orchestration,
+  - retained run-local `max_requests_per_run` cap enforcement,
+  - added explicit response warning metadata (`warning_details`) with stable warning codes.
+- Added/updated tests for:
+  - persistent daily budget enforcement across service instances,
+  - search API/runtime behavior with runtime snapshot-backed registry resolution,
+  - plugin areas API runtime snapshot behavior,
+  - plugin manager runtime registry snapshot access.
+
+### Verification
+
+- `python -m ruff check src/sift/plugins/capabilities.py src/sift/plugins/registry.py src/sift/plugins/manager.py src/sift/api/routes/plugins.py src/sift/api/routes/search.py src/sift/services/search_service.py src/sift/db/models.py tests/test_search_service.py tests/test_search_api.py tests/test_plugins_api.py tests/test_plugin_runtime_manager.py alembic/versions/20260301_0017_search_provider_budget_daily.py`
+- `python -m mypy src/sift/plugins src/sift/api/routes/search.py src/sift/api/routes/plugins.py src/sift/services/search_service.py src/sift/db/models.py tests/test_search_service.py tests/test_search_api.py tests/test_plugins_api.py tests/test_plugin_runtime_manager.py --no-incremental`
+- `python -m pytest tests/test_search_service.py tests/test_search_api.py tests/test_plugins_api.py tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py`
+
 ## 2026-03-01 (Search Provider Plugin v1 Slice 2: Ordered Fallback + Budget Enforcement + Adapter Baseline)
 
 ### Implemented This Session

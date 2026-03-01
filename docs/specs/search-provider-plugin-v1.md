@@ -3,9 +3,9 @@
 ## Status
 
 - State: In Progress
-- Scope: runtime capability contract, registry validation, authenticated API baseline, ordered fallback, in-process
-  budget/rate enforcement, and `searxng`/`brave_search` adapter baselines implemented; persistent daily budget storage,
-  provider hardening, and discover-flow integration remain pending
+- Scope: runtime capability contract, registry validation, authenticated API baseline, ordered fallback,
+  `searxng`/`brave_search` adapter baselines, persistent daily budget storage, and explicit warning metadata are
+  implemented; provider hardening follow-ups and discover-flow integration remain pending
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -90,6 +90,18 @@ Enforcement requirements:
 2. Daily/run caps are hard limits, not best-effort.
 3. Timeout is enforced per adapter call.
 4. Budget exhaustion returns explicit warning metadata and partial results when applicable.
+
+## Implemented Checkpoint (2026-03-01 Slice 3)
+
+1. Added DB-backed daily budget ledger (`search_provider_budget_daily`) to persist provider usage by UTC day.
+2. Search-provider budget enforcement now uses persistent state for:
+   - `max_requests_per_day`
+   - `min_interval_ms`
+3. Run-local hard cap remains enforced per execution:
+   - `max_requests_per_run`
+4. Search feed responses now include explicit warning metadata (`warning_details`) with stable warning codes.
+5. Search and plugin-area API config resolution now reads runtime-loaded registry snapshot from plugin manager instead
+   of per-request file reload.
 
 ## Integration with Discover Feeds
 

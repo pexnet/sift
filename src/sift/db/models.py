@@ -1,7 +1,7 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
-from sqlalchemy import UUID, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import UUID, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from sift.db.base import Base
@@ -242,3 +242,14 @@ class StreamClassifierRun(Base):
     error_message: Mapped[str | None] = mapped_column(String(1000))
     duration_ms: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class SearchProviderBudgetDaily(TimestampMixin, Base):
+    __tablename__ = "search_provider_budget_daily"
+    __table_args__ = (UniqueConstraint("provider_id", "day_utc", name="uq_search_provider_budget_daily_provider_day"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    day_utc: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    requests_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_request_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)

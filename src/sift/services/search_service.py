@@ -1,10 +1,15 @@
-import asyncio
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import or_, select, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from sift.core.runtime import get_plugin_manager
-from sift.plugins.base import SearchFeedsRequest, SearchFeedsResult
+from sift.db.models import SearchProviderBudgetDaily
+from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest
 
 
 @dataclass(slots=True)
@@ -17,17 +22,21 @@ class SearchProviderBudget:
 
 
 @dataclass(slots=True)
-class _ProviderBudgetState:
-    requests_today: int = 0
-    day_utc: datetime | None = None
-    last_request_at: datetime | None = None
+class SearchWarning:
+    code: str
+    provider: str | None
+    message: str
+
+
+@dataclass(slots=True)
+class SearchExecutionResult:
+    provider: str
+    candidates: list[SearchFeedCandidate]
+    warnings: list[str]
+    warning_details: list[SearchWarning]
 
 
 class SearchProviderService:
-    def __init__(self) -> None:
-        self._budget_state: dict[str, _ProviderBudgetState] = {}
-        self._lock = asyncio.Lock()
-
     @staticmethod
     def parse_provider_budgets(raw_budgets: dict[str, Any]) -> dict[str, SearchProviderBudget]:
         parsed: dict[str, SearchProviderBudget] = {}
@@ -44,32 +53,52 @@ class SearchProviderService:
         return parsed
 
     def reset_budget_state(self) -> None:
-        self._budget_state = {}
+        # Legacy test helper: budget state is now persisted in DB; there is no in-memory cache to clear.
+        return None
 
     async def search_with_fallback(
         self,
         *,
         plugin_name: str,
+        session: AsyncSession,
         query: str,
         max_results: int,
         provider_chain: list[str],
         provider_budgets: dict[str, SearchProviderBudget],
         provider_settings: dict[str, dict[str, Any]],
         metadata: dict[str, str],
-    ) -> SearchFeedsResult | None:
+    ) -> SearchExecutionResult | None:
         warnings: list[str] = []
+        warning_details: list[SearchWarning] = []
         run_counts: dict[str, int] = {}
         manager = get_plugin_manager()
 
         for provider in provider_chain:
             budget = provider_budgets.get(provider)
             if budget is None:
-                warnings.append(f"{provider}: missing provider budget configuration")
+                self._append_warning(
+                    warnings=warnings,
+                    warning_details=warning_details,
+                    provider=provider,
+                    code="missing_provider_budget_config",
+                    message="missing provider budget configuration",
+                )
                 continue
 
-            allowed, reason = await self._try_reserve_budget_slot(provider=provider, budget=budget, run_counts=run_counts)
+            allowed, code, reason = await self._try_reserve_budget_slot(
+                session=session,
+                provider=provider,
+                budget=budget,
+                run_counts=run_counts,
+            )
             if not allowed:
-                warnings.append(f"{provider}: {reason}")
+                self._append_warning(
+                    warnings=warnings,
+                    warning_details=warning_details,
+                    provider=provider,
+                    code=code or "budget_slot_unavailable",
+                    message=reason or "provider budget slot unavailable",
+                )
                 continue
 
             request = SearchFeedsRequest(
@@ -81,55 +110,185 @@ class SearchProviderService:
             )
             result = await manager.search_feeds(plugin_name=plugin_name, request=request)
             if result is None:
-                warnings.append(f"{provider}: invocation failed or timed out")
+                self._append_warning(
+                    warnings=warnings,
+                    warning_details=warning_details,
+                    provider=provider,
+                    code="provider_invocation_failed",
+                    message="invocation failed or timed out",
+                )
                 continue
 
-            provider_warnings = [f"{provider}: {item}" for item in result.warnings]
+            for provider_warning in result.warnings:
+                self._append_warning(
+                    warnings=warnings,
+                    warning_details=warning_details,
+                    provider=provider,
+                    code="provider_warning",
+                    message=provider_warning,
+                )
             if result.candidates:
-                return SearchFeedsResult(
+                return SearchExecutionResult(
                     provider=result.provider,
                     candidates=result.candidates,
-                    warnings=warnings + provider_warnings,
+                    warnings=warnings,
+                    warning_details=warning_details,
                 )
 
-            warnings.extend(provider_warnings)
-            warnings.append(f"{provider}: no candidates returned")
+            self._append_warning(
+                warnings=warnings,
+                warning_details=warning_details,
+                provider=provider,
+                code="provider_no_candidates",
+                message="no candidates returned",
+            )
 
         if not warnings:
             return None
-        return SearchFeedsResult(provider=provider_chain[0] if provider_chain else "unconfigured", candidates=[], warnings=warnings)
+        return SearchExecutionResult(
+            provider=provider_chain[0] if provider_chain else "unconfigured",
+            candidates=[],
+            warnings=warnings,
+            warning_details=warning_details,
+        )
 
     async def _try_reserve_budget_slot(
         self,
         *,
+        session: AsyncSession,
         provider: str,
         budget: SearchProviderBudget,
         run_counts: dict[str, int],
-    ) -> tuple[bool, str | None]:
+    ) -> tuple[bool, str | None, str | None]:
         now = datetime.now(UTC)
-        async with self._lock:
-            run_count = run_counts.get(provider, 0)
-            if run_count >= budget.max_requests_per_run:
-                return False, "max_requests_per_run exhausted"
+        run_count = run_counts.get(provider, 0)
+        if run_count >= budget.max_requests_per_run:
+            return False, "max_requests_per_run_exhausted", "max_requests_per_run exhausted"
 
-            state = self._budget_state.setdefault(provider, _ProviderBudgetState())
-            if state.day_utc is None or state.day_utc.date() != now.date():
-                state.day_utc = now
-                state.requests_today = 0
-                state.last_request_at = None
+        day_utc = now.date()
+        await self._ensure_daily_budget_row(session=session, provider=provider, day_utc=day_utc, now=now)
 
-            if state.requests_today >= budget.max_requests_per_day:
-                return False, "max_requests_per_day exhausted"
-
-            if state.last_request_at is not None:
-                elapsed_ms = int((now - state.last_request_at).total_seconds() * 1000)
-                if elapsed_ms < budget.min_interval_ms:
-                    return False, f"min_interval_ms not satisfied ({elapsed_ms}ms < {budget.min_interval_ms}ms)"
-
-            state.requests_today += 1
-            state.last_request_at = now
+        cutoff = now - timedelta(milliseconds=budget.min_interval_ms)
+        update_result = await session.execute(
+            update(SearchProviderBudgetDaily)
+            .where(
+                SearchProviderBudgetDaily.provider_id == provider,
+                SearchProviderBudgetDaily.day_utc == day_utc,
+                SearchProviderBudgetDaily.requests_count < budget.max_requests_per_day,
+                or_(
+                    SearchProviderBudgetDaily.last_request_at.is_(None),
+                    SearchProviderBudgetDaily.last_request_at <= cutoff,
+                ),
+            )
+            .values(
+                requests_count=SearchProviderBudgetDaily.requests_count + 1,
+                last_request_at=now,
+                updated_at=now,
+            )
+        )
+        rowcount = int(getattr(update_result, "rowcount", 0) or 0)
+        if rowcount > 0:
+            await session.commit()
             run_counts[provider] = run_count + 1
-            return True, None
+            return True, None, None
+
+        state_result = await session.execute(
+            select(SearchProviderBudgetDaily.requests_count, SearchProviderBudgetDaily.last_request_at).where(
+                SearchProviderBudgetDaily.provider_id == provider,
+                SearchProviderBudgetDaily.day_utc == day_utc,
+            )
+        )
+        state_row = state_result.one_or_none()
+        if state_row is None:
+            return False, "budget_state_unavailable", "provider budget state unavailable"
+
+        requests_count, last_request_at = state_row
+        if requests_count >= budget.max_requests_per_day:
+            return False, "max_requests_per_day_exhausted", "max_requests_per_day exhausted"
+
+        normalized_last_request_at = self._normalize_timestamp(last_request_at)
+        if normalized_last_request_at is not None:
+            elapsed_ms = int((now - normalized_last_request_at).total_seconds() * 1000)
+            if elapsed_ms < budget.min_interval_ms:
+                return (
+                    False,
+                    "min_interval_ms_not_satisfied",
+                    f"min_interval_ms not satisfied ({elapsed_ms}ms < {budget.min_interval_ms}ms)",
+                )
+
+        return False, "budget_slot_unavailable", "provider budget slot unavailable"
+
+    async def _ensure_daily_budget_row(
+        self,
+        *,
+        session: AsyncSession,
+        provider: str,
+        day_utc: date,
+        now: datetime,
+    ) -> None:
+        values = {
+            "provider_id": provider,
+            "day_utc": day_utc,
+            "requests_count": 0,
+            "last_request_at": None,
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        dialect_name = session.get_bind().dialect.name
+        if dialect_name == "sqlite":
+            await session.execute(
+                sqlite_insert(SearchProviderBudgetDaily).values(**values).on_conflict_do_nothing(
+                    index_elements=[SearchProviderBudgetDaily.provider_id, SearchProviderBudgetDaily.day_utc]
+                )
+            )
+            return
+        if dialect_name == "postgresql":
+            await session.execute(
+                postgresql_insert(SearchProviderBudgetDaily).values(**values).on_conflict_do_nothing(
+                    index_elements=[SearchProviderBudgetDaily.provider_id, SearchProviderBudgetDaily.day_utc]
+                )
+            )
+            return
+
+        existing = await session.execute(
+            select(SearchProviderBudgetDaily.id).where(
+                SearchProviderBudgetDaily.provider_id == provider,
+                SearchProviderBudgetDaily.day_utc == day_utc,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            return
+        session.add(
+            SearchProviderBudgetDaily(
+                provider_id=provider,
+                day_utc=day_utc,
+                requests_count=0,
+                last_request_at=None,
+            )
+        )
+        await session.flush()
+
+    @staticmethod
+    def _normalize_timestamp(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value
+
+    @staticmethod
+    def _append_warning(
+        *,
+        warnings: list[str],
+        warning_details: list[SearchWarning],
+        provider: str | None,
+        code: str,
+        message: str,
+    ) -> None:
+        prefix = f"{provider}: " if provider else ""
+        warnings.append(f"{prefix}{message}")
+        warning_details.append(SearchWarning(code=code, provider=provider, message=message))
 
 
 search_provider_service = SearchProviderService()

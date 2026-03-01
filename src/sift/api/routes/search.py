@@ -1,17 +1,20 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.api.deps.auth import get_current_user
 from sift.config import get_settings
 from sift.core.runtime import get_plugin_manager
 from sift.db.models import User
+from sift.db.session import get_db_session
 from sift.domain.schemas import (
     SearchFeedCandidateOut,
     SearchFeedsOut,
     SearchFeedsRequestIn,
     SearchProviderBudgetOut,
     SearchProvidersOut,
+    SearchWarningOut,
 )
 from sift.plugins.registry import PluginRegistryEntry, load_plugin_registry
 from sift.services.search_service import search_provider_service
@@ -19,10 +22,17 @@ from sift.services.search_service import search_provider_service
 router = APIRouter()
 
 
-def _resolve_search_provider_entry() -> tuple[PluginRegistryEntry, dict[str, Any]]:
-    settings = get_settings()
-    registry = load_plugin_registry(settings.plugin_registry_path)
-    for entry in registry.plugins:
+def _resolve_search_provider_entry(manager: Any) -> tuple[PluginRegistryEntry, dict[str, Any]]:
+    entries: list[PluginRegistryEntry]
+    get_registry_entries = getattr(manager, "get_registry_entries", None)
+    if callable(get_registry_entries):
+        entries = get_registry_entries()
+    else:
+        settings = get_settings()
+        registry = load_plugin_registry(settings.plugin_registry_path)
+        entries = registry.plugins
+
+    for entry in entries:
         if not entry.enabled:
             continue
         if "search_provider" not in entry.capabilities:
@@ -37,8 +47,7 @@ def _resolve_search_provider_entry() -> tuple[PluginRegistryEntry, dict[str, Any
     )
 
 
-def _require_loaded_search_provider(plugin_id: str) -> None:
-    manager = get_plugin_manager()
+def _require_loaded_search_provider(manager: Any, plugin_id: str) -> None:
     snapshots = {snapshot.plugin_id: snapshot for snapshot in manager.get_status_snapshots()}
     snapshot = snapshots.get(plugin_id)
     if snapshot is None or not snapshot.loaded:
@@ -52,8 +61,9 @@ def _require_loaded_search_provider(plugin_id: str) -> None:
 async def get_search_providers(current_user: User = Depends(get_current_user)) -> SearchProvidersOut:
     del current_user
 
-    entry, search_settings = _resolve_search_provider_entry()
-    _require_loaded_search_provider(entry.id)
+    manager = get_plugin_manager()
+    entry, search_settings = _resolve_search_provider_entry(manager)
+    _require_loaded_search_provider(manager, entry.id)
     settings = get_settings()
 
     provider_chain = [str(item) for item in search_settings.get("provider_chain", [])]
@@ -78,9 +88,11 @@ async def get_search_providers(current_user: User = Depends(get_current_user)) -
 async def search_feeds(
     payload: SearchFeedsRequestIn,
     current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
 ) -> SearchFeedsOut:
-    entry, search_settings = _resolve_search_provider_entry()
-    _require_loaded_search_provider(entry.id)
+    manager = get_plugin_manager()
+    entry, search_settings = _resolve_search_provider_entry(manager)
+    _require_loaded_search_provider(manager, entry.id)
     provider_chain = [str(item).strip() for item in search_settings.get("provider_chain", []) if str(item).strip()]
     raw_budgets = search_settings.get("provider_budgets")
     raw_providers = search_settings.get("providers")
@@ -97,6 +109,7 @@ async def search_feeds(
 
     result = await search_provider_service.search_with_fallback(
         plugin_name=entry.id,
+        session=session,
         query=payload.query.strip(),
         max_results=payload.max_results,
         provider_chain=provider_chain,
@@ -111,6 +124,7 @@ async def search_feeds(
             provider_chain=provider_chain,
             candidates=[],
             warnings=["search provider returned no result"],
+            warning_details=[],
         )
 
     return SearchFeedsOut(
@@ -128,4 +142,8 @@ async def search_feeds(
             for item in result.candidates[: payload.max_results]
         ],
         warnings=list(result.warnings),
+        warning_details=[
+            SearchWarningOut(code=detail.code, provider=detail.provider, message=detail.message)
+            for detail in result.warning_details
+        ],
     )

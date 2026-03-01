@@ -505,9 +505,16 @@ class SearchFeedCandidateOut(BaseModel):
     provider: str
 
 
+class SearchWarningOut(BaseModel):
+    code: str
+    provider: str | None = None
+    message: str
+
+
 class SearchFeedsOut(BaseModel):
     query: str
     provider: str | None
     provider_chain: list[str]
     candidates: list[SearchFeedCandidateOut]
     warnings: list[str] = Field(default_factory=list)
+    warning_details: list[SearchWarningOut] = Field(default_factory=list)

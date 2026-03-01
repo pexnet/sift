@@ -1,6 +1,8 @@
+from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -11,9 +13,13 @@ from sift.db.models import User
 from sift.db.session import get_db_session
 from sift.main import app
 from sift.plugins.manager import PluginStatusSnapshot
+from sift.plugins.registry import PluginBackendConfig, PluginRegistryEntry, PluginUIAreaConfig, PluginUIConfig
 
 
 class _PluginManagerStub:
+    def get_registry_entries(self) -> list[PluginRegistryEntry]:
+        return []
+
     def get_status_snapshots(self) -> list[PluginStatusSnapshot]:
         return [
             PluginStatusSnapshot(
@@ -37,6 +43,43 @@ class _PluginManagerStub:
 
 
 class _PluginManagerAreasStub:
+    def get_registry_entries(self) -> list[PluginRegistryEntry]:
+        return [
+            PluginRegistryEntry(
+                id="discover_feeds",
+                enabled=True,
+                backend=PluginBackendConfig(class_path="sift.plugins.builtin.noop:NoopPlugin"),
+                capabilities=["workspace_area"],
+                ui=PluginUIConfig(
+                    area=PluginUIAreaConfig(title="Discover feeds", icon="search", order=10, route_key="discover-feeds")
+                ),
+                settings={},
+            ),
+            PluginRegistryEntry(
+                id="hidden_disabled",
+                enabled=False,
+                backend=PluginBackendConfig(class_path="sift.plugins.builtin.noop:NoopPlugin"),
+                capabilities=["workspace_area"],
+                ui=PluginUIConfig(area=PluginUIAreaConfig(title="Hidden disabled", icon="bolt", order=20, route_key="hidden")),
+                settings={},
+            ),
+            PluginRegistryEntry(
+                id="hidden_unloaded",
+                enabled=True,
+                backend=PluginBackendConfig(class_path="sift.plugins.builtin.noop:NoopPlugin"),
+                capabilities=["workspace_area"],
+                ui=PluginUIConfig(area=PluginUIAreaConfig(title="Hidden unloaded", icon="alert", order=30, route_key="hidden")),
+                settings={},
+            ),
+            PluginRegistryEntry(
+                id="no_ui",
+                enabled=True,
+                backend=PluginBackendConfig(class_path="sift.plugins.builtin.noop:NoopPlugin"),
+                capabilities=["workspace_area"],
+                settings={},
+            ),
+        ]
+
     def get_status_snapshots(self) -> list[PluginStatusSnapshot]:
         return [
             PluginStatusSnapshot(
@@ -64,7 +107,7 @@ class _PluginManagerAreasStub:
         ]
 
 
-def test_plugins_status_requires_admin_and_returns_shape(monkeypatch) -> None:
+def test_plugins_status_requires_admin_and_returns_shape(monkeypatch: pytest.MonkeyPatch) -> None:
     db_path = Path("test_plugins_api.db")
     if db_path.exists():
         db_path.unlink()
@@ -88,7 +131,7 @@ def test_plugins_status_requires_admin_and_returns_shape(monkeypatch) -> None:
 
     admin, non_admin = asyncio.run(prepare())
 
-    async def override_db_session():
+    async def override_db_session() -> AsyncGenerator[object]:
         async with session_maker() as session:
             yield session
 
@@ -127,7 +170,7 @@ def test_plugins_status_requires_admin_and_returns_shape(monkeypatch) -> None:
             db_path.unlink()
 
 
-def test_plugins_status_returns_404_when_diagnostics_disabled(monkeypatch) -> None:
+def test_plugins_status_returns_404_when_diagnostics_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     db_path = Path("test_plugins_api_diagnostics_off.db")
     if db_path.exists():
         db_path.unlink()
@@ -149,7 +192,7 @@ def test_plugins_status_returns_404_when_diagnostics_disabled(monkeypatch) -> No
 
     admin = asyncio.run(prepare())
 
-    async def override_db_session():
+    async def override_db_session() -> AsyncGenerator[object]:
         async with session_maker() as session:
             yield session
 
@@ -175,66 +218,16 @@ def test_plugins_status_returns_404_when_diagnostics_disabled(monkeypatch) -> No
             db_path.unlink()
 
 
-def test_plugins_areas_returns_enabled_loaded_workspace_areas_only(monkeypatch, tmp_path: Path) -> None:
-    registry_path = tmp_path / "plugins.yaml"
-    registry_path.write_text(
-        """
-version: 1
-plugins:
-  - id: discover_feeds
-    enabled: true
-    backend:
-      class_path: sift.plugins.builtin.noop:NoopPlugin
-    capabilities:
-      - workspace_area
-    ui:
-      area:
-        title: Discover feeds
-        icon: search
-        order: 10
-        route_key: discover-feeds
-    settings: {}
-  - id: hidden_disabled
-    enabled: false
-    backend:
-      class_path: sift.plugins.builtin.noop:NoopPlugin
-    capabilities:
-      - workspace_area
-    ui:
-      area:
-        title: Hidden disabled
-        icon: bolt
-        order: 20
-    settings: {}
-  - id: hidden_unloaded
-    enabled: true
-    backend:
-      class_path: sift.plugins.builtin.noop:NoopPlugin
-    capabilities:
-      - workspace_area
-    ui:
-      area:
-        title: Hidden unloaded
-        icon: alert
-        order: 30
-    settings: {}
-  - id: no_ui
-    enabled: true
-    backend:
-      class_path: sift.plugins.builtin.noop:NoopPlugin
-    capabilities:
-      - workspace_area
-    settings: {}
-""".strip(),
-        encoding="utf-8",
-    )
-
+def test_plugins_areas_returns_enabled_loaded_workspace_areas_only(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     async def override_current_user() -> User:
         return User(email="plugin-user@example.com", is_admin=False)
 
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.plugins.get_plugin_manager", lambda: _PluginManagerAreasStub())
-    monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(registry_path))
+    monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(tmp_path / "missing-registry.yaml"))
     get_settings.cache_clear()
 
     from sift.core.runtime import get_plugin_manager
