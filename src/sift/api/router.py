@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from sift.api.routes.articles import router as articles_router
 from sift.api.routes.auth import router as auth_router
 from sift.api.routes.dashboard import router as dashboard_router
+from sift.api.routes.discovery import router as discovery_router
 from sift.api.routes.feeds import router as feeds_router
 from sift.api.routes.folders import router as folders_router
 from sift.api.routes.health import router as health_router
@@ -17,6 +18,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
+api_router.include_router(discovery_router, prefix="/discovery", tags=["discovery"])
 api_router.include_router(feeds_router, prefix="/feeds", tags=["feeds"])
 api_router.include_router(folders_router, prefix="/folders", tags=["folders"])
 api_router.include_router(articles_router, prefix="/articles", tags=["articles"])

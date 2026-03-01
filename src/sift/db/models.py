@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime
 
-from sqlalchemy import UUID, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import UUID, Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from sift.db.base import Base
@@ -207,6 +207,24 @@ class KeywordStream(TimestampMixin, Base):
     classifier_plugin: Mapped[str | None] = mapped_column(String(128), index=True)
     classifier_config_json: Mapped[str] = mapped_column(Text, default="{}")
     classifier_min_confidence: Mapped[float] = mapped_column(Float, default=0.7)
+
+
+class DiscoveryStream(TimestampMixin, Base):
+    __tablename__ = "discovery_streams"
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_discovery_streams_user_name"),
+        Index("ix_discovery_streams_user_active_priority", "user_id", "is_active", "priority"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
+    match_query: Mapped[str | None] = mapped_column(Text)
+    include_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    exclude_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
 
 
 class KeywordStreamMatch(Base):

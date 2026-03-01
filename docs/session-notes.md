@@ -3,6 +3,34 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Discover Feeds v1 Slice 1: Discovery Streams + Manual Generation API)
+
+### Implemented This Session
+
+- Added discovery-stream persistence and migration:
+  - SQLAlchemy model: `discovery_streams`
+  - Alembic migration: `20260301_0018_discovery_streams.py`
+- Added discovery-stream service and API baseline:
+  - `GET /api/v1/discovery/streams`
+  - `POST /api/v1/discovery/streams`
+  - `PATCH /api/v1/discovery/streams/{stream_id}`
+  - `DELETE /api/v1/discovery/streams/{stream_id}`
+  - `POST /api/v1/discovery/streams/{stream_id}/generate`
+- Generation behavior (slice 1):
+  - compiles bounded query variants from `match_query` + include/exclude keywords,
+  - resolves active search-provider runtime config from plugin-manager registry snapshot,
+  - delegates provider execution to shared search-provider fallback/budget runtime,
+  - returns deduped ephemeral candidates with warning details (no recommendation persistence yet).
+- Added tests:
+  - service tests (`tests/test_discovery_service.py`)
+  - API tests (`tests/test_discovery_api.py`)
+
+### Verification
+
+- `python -m ruff check src/sift/api/router.py src/sift/api/routes/discovery.py src/sift/db/models.py src/sift/domain/schemas.py src/sift/services/discovery_service.py tests/test_discovery_api.py tests/test_discovery_service.py alembic/versions/20260301_0018_discovery_streams.py`
+- `python -m mypy src/sift/api/routes/discovery.py src/sift/services/discovery_service.py src/sift/domain/schemas.py src/sift/db/models.py tests/test_discovery_api.py tests/test_discovery_service.py --no-incremental`
+- `python -m pytest tests/test_discovery_service.py tests/test_discovery_api.py tests/test_search_api.py`
+
 ## 2026-03-01 (Search Provider Plugin v1 Completion: Provider Hardening Closeout + Spec Archive)
 
 ### Implemented This Session

@@ -403,6 +403,40 @@ class KeywordStreamOut(BaseModel):
     updated_at: datetime
 
 
+class DiscoveryStreamCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool = True
+    priority: int = Field(default=100, ge=0, le=10000)
+    match_query: str | None = Field(default=None, max_length=5000)
+    include_keywords: list[str] = Field(default_factory=list)
+    exclude_keywords: list[str] = Field(default_factory=list)
+
+
+class DiscoveryStreamUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    is_active: bool | None = None
+    priority: int | None = Field(default=None, ge=0, le=10000)
+    match_query: str | None = Field(default=None, max_length=5000)
+    include_keywords: list[str] | None = None
+    exclude_keywords: list[str] | None = None
+
+
+class DiscoveryStreamOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    name: str
+    description: str | None
+    is_active: bool
+    priority: int
+    match_query: str | None
+    include_keywords: list[str]
+    exclude_keywords: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
 class StreamArticleOut(BaseModel):
     matched_at: datetime
     match_reason: str | None = None
@@ -509,6 +543,22 @@ class SearchWarningOut(BaseModel):
     code: str
     provider: str | None = None
     message: str
+
+
+class DiscoveryStreamGenerateRequestIn(BaseModel):
+    max_results_per_query: int = Field(default=10, ge=1, le=50)
+    max_candidates: int = Field(default=50, ge=1, le=200)
+
+
+class DiscoveryStreamGenerateOut(BaseModel):
+    stream_id: UUID
+    provider_chain: list[str]
+    query_variants: list[str]
+    attempted_queries: int
+    candidate_count: int
+    candidates: list[SearchFeedCandidateOut]
+    warnings: list[str] = Field(default_factory=list)
+    warning_details: list[SearchWarningOut] = Field(default_factory=list)
 
 
 class SearchFeedsOut(BaseModel):

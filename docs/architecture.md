@@ -189,6 +189,7 @@ Design goals:
 - `auth_identities`: provider-aware identities (`local` now, OIDC providers later)
 - `user_sessions`: server-side session records for cookie auth
 - `api_tokens`: token records for future machine-to-machine access
+- `discovery_streams`: user-scoped feed-discovery criteria definitions (`match_query`, include/exclude keyword JSON)
 
 ## Planned Model Extensions
 
@@ -234,6 +235,16 @@ Implemented slices are tracked at capability level here; detailed completion chr
      - `GET /api/v1/search/providers`
      - `POST /api/v1/search/feeds`
    - ordered provider fallback, persistent daily budget ledger enforcement, and explicit warning metadata.
+10. Discover feeds API baseline:
+   - authenticated discovery stream management endpoints:
+     - `GET /api/v1/discovery/streams`
+     - `POST /api/v1/discovery/streams`
+     - `PATCH /api/v1/discovery/streams/{stream_id}`
+     - `DELETE /api/v1/discovery/streams/{stream_id}`
+   - manual generation endpoint:
+     - `POST /api/v1/discovery/streams/{stream_id}/generate`
+   - generation compiles bounded query variants from discovery stream criteria and delegates provider execution to the
+     shared search-provider runtime.
 
 ## Frontend Delivery Standard
 
