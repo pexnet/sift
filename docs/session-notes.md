@@ -3,6 +3,20 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Reprioritization: Search Provider First, Stream Ranking Deferred)
+
+### Implemented This Session
+
+- Updated active core priorities so search-provider infrastructure is now the immediate implementation focus.
+- Moved stream-level ranking/prioritization controls out of `Next` and into `Deferred` for now.
+- Updated:
+  - `docs/backlog.md`
+  - `docs/current-state.md`
+
+### Verification
+
+- `rg -n "Core Platform Priorities|Stream-level ranking|Search provider plugin platform v1|Deferred for now" docs/backlog.md docs/current-state.md`
+
 ## 2026-03-01 (Architecture Compaction Pass + Planning Context Review)
 
 ### Implemented This Session

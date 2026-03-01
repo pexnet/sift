@@ -33,8 +33,11 @@ For architecture details, use [docs/architecture.md](architecture.md).
 
 ## Active Priorities
 
-1. Stream-level ranking/prioritization controls.
-2. Search provider plugin platform v1 (ordered provider fallback + strict budgets/timeouts).
+1. Search provider plugin platform v1 (ordered provider fallback + strict budgets/timeouts).
+
+Deferred for now:
+
+- Stream-level ranking/prioritization controls.
 
 ## Known Product Constraints
 
