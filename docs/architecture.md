@@ -243,8 +243,13 @@ Implemented slices are tracked at capability level here; detailed completion chr
      - `DELETE /api/v1/discovery/streams/{stream_id}`
    - manual generation endpoint:
      - `POST /api/v1/discovery/streams/{stream_id}/generate`
-   - generation compiles bounded query variants from discovery stream criteria and delegates provider execution to the
-     shared search-provider runtime.
+   - recommendation lifecycle endpoints:
+     - `GET /api/v1/discovery/recommendations`
+     - `PATCH /api/v1/discovery/recommendations/{recommendation_id}` (`accept`/`deny`)
+     - `POST /api/v1/discovery/recommendations/{recommendation_id}/reset`
+     - `GET /api/v1/discovery/recommendations/summary`
+   - generation compiles bounded query variants from discovery stream criteria, delegates provider execution to the
+     shared search-provider runtime, and upserts recommendation/source attribution rows.
 
 ## Frontend Delivery Standard
 

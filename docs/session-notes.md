@@ -3,6 +3,38 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Discover Feeds v1 Slice 2: Recommendation Persistence + Decisions API)
+
+### Implemented This Session
+
+- Added discovery recommendation persistence model and source attribution:
+  - `feed_recommendations`
+  - `feed_recommendation_sources`
+  - Alembic migration: `20260301_0019_feed_recommendations.py`
+- Extended discovery generation behavior:
+  - generation now upserts deduped recommendations by normalized URL,
+  - source attribution rows are upserted per `(recommendation_id, discovery_stream_id)`,
+  - existing user feed URLs are auto-marked `resolved_existing`.
+- Added recommendation lifecycle APIs:
+  - `GET /api/v1/discovery/recommendations`
+  - `PATCH /api/v1/discovery/recommendations/{recommendation_id}` (`accept` / `deny`)
+  - `POST /api/v1/discovery/recommendations/{recommendation_id}/reset`
+  - `GET /api/v1/discovery/recommendations/summary`
+- Added decision behavior:
+  - `accept` creates feed for pending recommendations and links `accepted_feed_id`,
+  - `deny` suppresses resurfacing until reset,
+  - global-feed-URL conflict during accept resolves to `resolved_existing` when the feed already belongs to the user;
+    otherwise returns actionable validation error.
+- Added/updated tests:
+  - `tests/test_discovery_service.py`
+  - `tests/test_discovery_api.py`
+
+### Verification
+
+- `python -m ruff check src/sift/db/models.py alembic/versions/20260301_0019_feed_recommendations.py src/sift/domain/schemas.py src/sift/services/discovery_service.py src/sift/api/routes/discovery.py tests/test_discovery_service.py tests/test_discovery_api.py`
+- `python -m mypy src/sift/services/discovery_service.py src/sift/api/routes/discovery.py src/sift/domain/schemas.py src/sift/db/models.py tests/test_discovery_service.py tests/test_discovery_api.py --no-incremental`
+- `python -m pytest tests/test_discovery_service.py tests/test_discovery_api.py tests/test_search_api.py`
+
 ## 2026-03-01 (Discover Feeds v1 Slice 1: Discovery Streams + Manual Generation API)
 
 ### Implemented This Session

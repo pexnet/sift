@@ -227,6 +227,53 @@ class DiscoveryStream(TimestampMixin, Base):
     exclude_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
 
 
+class FeedRecommendation(TimestampMixin, Base):
+    __tablename__ = "feed_recommendations"
+    __table_args__ = (
+        UniqueConstraint("user_id", "feed_url_normalized", name="uq_feed_recommendations_user_url"),
+        Index("ix_feed_recommendations_user_status_created", "user_id", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", index=True)
+    feed_url: Mapped[str] = mapped_column(String(2000), nullable=False)
+    feed_url_normalized: Mapped[str] = mapped_column(String(2000), nullable=False)
+    feed_title: Mapped[str | None] = mapped_column(String(1000))
+    site_url: Mapped[str | None] = mapped_column(String(2000))
+    confidence: Mapped[float | None] = mapped_column(Float)
+    provider: Mapped[str] = mapped_column(String(128), nullable=False)
+    evidence_json: Mapped[str | None] = mapped_column(Text)
+    accepted_feed_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("feeds.id", ondelete="SET NULL"), index=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class FeedRecommendationSource(Base):
+    __tablename__ = "feed_recommendation_sources"
+    __table_args__ = (
+        UniqueConstraint(
+            "recommendation_id",
+            "discovery_stream_id",
+            name="uq_feed_recommendation_sources_recommendation_stream",
+        ),
+        Index("ix_feed_recommendation_sources_stream_created", "discovery_stream_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    recommendation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("feed_recommendations.id", ondelete="CASCADE"),
+        index=True,
+    )
+    discovery_stream_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("discovery_streams.id", ondelete="CASCADE"),
+        index=True,
+    )
+    provider_confidence: Mapped[float | None] = mapped_column(Float)
+    evidence_json: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
 class KeywordStreamMatch(Base):
     __tablename__ = "keyword_stream_matches"
     __table_args__ = (UniqueConstraint("stream_id", "article_id", name="uq_keyword_stream_matches_stream_article"),)

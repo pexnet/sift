@@ -2,8 +2,11 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
+- State: In progress
+- Implemented slices:
+  - Slice 1: discovery streams CRUD + manual generation API baseline
+  - Slice 2: recommendation persistence + decision/reset/summary APIs
+- Remaining scope: recommendation workflow hardening and UI integration slices
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context

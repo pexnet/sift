@@ -1,6 +1,7 @@
+from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.api.deps.auth import get_current_user
@@ -12,11 +13,17 @@ from sift.domain.schemas import (
     DiscoveryStreamGenerateRequestIn,
     DiscoveryStreamOut,
     DiscoveryStreamUpdate,
+    FeedRecommendationDecisionIn,
+    FeedRecommendationListOut,
+    FeedRecommendationOut,
+    FeedRecommendationSummaryOut,
     SearchFeedCandidateOut,
     SearchWarningOut,
 )
 from sift.services.discovery_service import (
     DiscoveryGenerationUnavailableError,
+    DiscoveryRecommendationNotFoundError,
+    DiscoveryRecommendationValidationError,
     DiscoveryStreamConflictError,
     DiscoveryStreamNotFoundError,
     DiscoveryStreamValidationError,
@@ -113,6 +120,9 @@ async def generate_discovery_stream_candidates(
         query_variants=result.query_variants,
         attempted_queries=len(result.query_variants),
         candidate_count=len(result.candidates),
+        persisted_count=result.persisted_count,
+        pending_count=result.pending_count,
+        resolved_existing_count=result.resolved_existing_count,
         candidates=[
             SearchFeedCandidateOut(
                 title=item.title,
@@ -128,4 +138,98 @@ async def generate_discovery_stream_candidates(
             SearchWarningOut(code=detail.code, provider=detail.provider, message=detail.message)
             for detail in result.warning_details
         ],
+    )
+
+
+@router.get("/recommendations", response_model=FeedRecommendationListOut)
+async def list_feed_recommendations(
+    status_filter: Literal["pending", "accepted", "denied", "resolved_existing"] | None = Query(default=None, alias="status"),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> FeedRecommendationListOut:
+    recommendations, total, sources_by_recommendation = await discovery_service.list_recommendations(
+        session=session,
+        user_id=current_user.id,
+        status_filter=status_filter,
+        limit=limit,
+        offset=offset,
+    )
+    return FeedRecommendationListOut(
+        items=[
+            discovery_service.recommendation_to_out(
+                recommendation,
+                sources=sources_by_recommendation.get(recommendation.id, []),
+            )
+            for recommendation in recommendations
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/recommendations/summary", response_model=FeedRecommendationSummaryOut)
+async def recommendation_summary(
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> FeedRecommendationSummaryOut:
+    summary = await discovery_service.recommendation_summary(session=session, user_id=current_user.id)
+    return FeedRecommendationSummaryOut(**summary)
+
+
+@router.patch("/recommendations/{recommendation_id}", response_model=FeedRecommendationOut)
+async def decide_recommendation(
+    recommendation_id: UUID,
+    payload: FeedRecommendationDecisionIn,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> FeedRecommendationOut:
+    try:
+        recommendation = await discovery_service.decide_recommendation(
+            session=session,
+            user_id=current_user.id,
+            recommendation_id=recommendation_id,
+            decision=payload.decision,
+        )
+    except DiscoveryRecommendationNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except DiscoveryRecommendationValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    sources_by_recommendation = await discovery_service.load_sources_by_recommendation(
+        session=session,
+        recommendation_ids=[recommendation.id],
+    )
+    return discovery_service.recommendation_to_out(
+        recommendation,
+        sources=sources_by_recommendation.get(recommendation.id, []),
+    )
+
+
+@router.post("/recommendations/{recommendation_id}/reset", response_model=FeedRecommendationOut)
+async def reset_recommendation(
+    recommendation_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> FeedRecommendationOut:
+    try:
+        recommendation = await discovery_service.reset_recommendation(
+            session=session,
+            user_id=current_user.id,
+            recommendation_id=recommendation_id,
+        )
+    except DiscoveryRecommendationNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except DiscoveryRecommendationValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    sources_by_recommendation = await discovery_service.load_sources_by_recommendation(
+        session=session,
+        recommendation_ids=[recommendation.id],
+    )
+    return discovery_service.recommendation_to_out(
+        recommendation,
+        sources=sources_by_recommendation.get(recommendation.id, []),
     )

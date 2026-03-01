@@ -1,23 +1,35 @@
 import json
 from dataclasses import dataclass
-from typing import Any
+from datetime import UTC, datetime
+from typing import Any, Literal, cast
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
-from sqlalchemy import select
+from pydantic import ValidationError
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.config import get_settings
 from sift.core.runtime import get_plugin_manager
-from sift.db.models import DiscoveryStream
-from sift.domain.schemas import DiscoveryStreamCreate, DiscoveryStreamOut, DiscoveryStreamUpdate
+from sift.db.models import DiscoveryStream, Feed, FeedRecommendation, FeedRecommendationSource
+from sift.domain.schemas import (
+    DiscoveryStreamCreate,
+    DiscoveryStreamOut,
+    DiscoveryStreamUpdate,
+    FeedCreate,
+    FeedRecommendationOut,
+    FeedRecommendationSourceOut,
+)
 from sift.plugins.base import SearchFeedCandidate
 from sift.plugins.registry import PluginRegistryEntry, load_plugin_registry
 from sift.search.query_language import SearchQuerySyntaxError, parse_search_query
+from sift.services.dedup_service import normalize_canonical_url
+from sift.services.feed_service import FeedAlreadyExistsError, feed_service
 from sift.services.search_service import SearchProviderBudget, SearchWarning, search_provider_service
 
 _SUPPORTED_SCHEMES = frozenset({"http", "https"})
+_RECOMMENDATION_STATUS_VALUES = frozenset({"pending", "accepted", "denied", "resolved_existing"})
 
 
 class DiscoveryStreamConflictError(Exception):
@@ -33,6 +45,14 @@ class DiscoveryStreamNotFoundError(Exception):
 
 
 class DiscoveryGenerationUnavailableError(Exception):
+    pass
+
+
+class DiscoveryRecommendationNotFoundError(Exception):
+    pass
+
+
+class DiscoveryRecommendationValidationError(Exception):
     pass
 
 
@@ -52,6 +72,9 @@ class DiscoveryGenerationResult:
     candidates: list[SearchFeedCandidate]
     warnings: list[str]
     warning_details: list[SearchWarning]
+    persisted_count: int
+    pending_count: int
+    resolved_existing_count: int
 
 
 def _normalize_keywords(keywords: list[str]) -> list[str]:
@@ -86,7 +109,7 @@ def _normalize_optional_text(value: str | None) -> str | None:
     return normalized or None
 
 
-def _normalize_candidate_url(url: str) -> str | None:
+def _normalize_candidate_url(url: str | None) -> str | None:
     normalized = _normalize_optional_text(url)
     if normalized is None:
         return None
@@ -234,6 +257,39 @@ def _dedupe_candidates(candidates: list[SearchFeedCandidate], max_candidates: in
         if len(deduped) >= max_candidates:
             break
     return deduped
+
+
+def _normalize_recommendation_url(url: str) -> str:
+    normalized = normalize_canonical_url(url)
+    if normalized:
+        return normalized
+    return url.strip().lower()
+
+
+def _to_json_payload(payload: dict[str, Any] | None) -> str | None:
+    if payload is None:
+        return None
+    return json.dumps(payload, separators=(",", ":"), sort_keys=True)
+
+
+def _from_json_payload(raw: str | None) -> dict[str, Any] | None:
+    if not raw:
+        return None
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(loaded, dict):
+        return None
+    return loaded
+
+
+def _fallback_feed_title(feed_url: str) -> str:
+    parsed = urlparse(feed_url)
+    host = parsed.netloc.strip()
+    if host:
+        return host
+    return "Discovered feed"
 
 
 class DiscoveryService:
@@ -389,7 +445,13 @@ class DiscoveryService:
             aggregated_candidates.extend(result.candidates)
 
         candidates = _dedupe_candidates(aggregated_candidates, max_candidates)
-
+        persisted_count, pending_count, resolved_existing_count = await self._persist_generated_recommendations(
+            session=session,
+            user_id=user_id,
+            stream=stream,
+            candidates=candidates,
+            query_variants=query_variants,
+        )
         return DiscoveryGenerationResult(
             stream_id=stream.id,
             provider_chain=runtime_config.provider_chain,
@@ -397,7 +459,368 @@ class DiscoveryService:
             candidates=candidates,
             warnings=warnings,
             warning_details=warning_details,
+            persisted_count=persisted_count,
+            pending_count=pending_count,
+            resolved_existing_count=resolved_existing_count,
         )
+
+    async def list_recommendations(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        status_filter: Literal["pending", "accepted", "denied", "resolved_existing"] | None,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[FeedRecommendation], int, dict[UUID, list[FeedRecommendationSourceOut]]]:
+        where_clauses = [FeedRecommendation.user_id == user_id]
+        if status_filter is not None:
+            where_clauses.append(FeedRecommendation.status == status_filter)
+
+        total_query = select(func.count()).select_from(select(FeedRecommendation.id).where(*where_clauses).subquery())
+        total = int((await session.execute(total_query)).scalar_one() or 0)
+
+        rows_query = (
+            select(FeedRecommendation)
+            .where(*where_clauses)
+            .order_by(FeedRecommendation.updated_at.desc(), FeedRecommendation.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        rows_result = await session.execute(rows_query)
+        recommendations = list(rows_result.scalars().all())
+        recommendation_ids = [recommendation.id for recommendation in recommendations]
+        sources_by_recommendation = await self.load_sources_by_recommendation(
+            session=session,
+            recommendation_ids=recommendation_ids,
+        )
+        return recommendations, total, sources_by_recommendation
+
+    async def decide_recommendation(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        recommendation_id: UUID,
+        decision: Literal["accept", "deny"],
+    ) -> FeedRecommendation:
+        recommendation = await self.get_recommendation(
+            session=session,
+            user_id=user_id,
+            recommendation_id=recommendation_id,
+        )
+        if recommendation is None:
+            raise DiscoveryRecommendationNotFoundError(f"Recommendation {recommendation_id} not found")
+
+        now = datetime.now(UTC)
+        if decision == "deny":
+            if recommendation.status in {"accepted", "resolved_existing"}:
+                raise DiscoveryRecommendationValidationError("Only pending recommendations can be denied")
+            recommendation.status = "denied"
+            recommendation.decided_at = now
+            recommendation.accepted_feed_id = None
+            recommendation.last_seen_at = now
+            await session.commit()
+            await session.refresh(recommendation)
+            return recommendation
+
+        if recommendation.status == "denied":
+            raise DiscoveryRecommendationValidationError("Denied recommendation must be reset before accepting")
+
+        existing_feed = await self._find_existing_user_feed_for_recommendation(
+            session=session,
+            user_id=user_id,
+            recommendation=recommendation,
+        )
+        if existing_feed is not None:
+            recommendation.status = "resolved_existing"
+            recommendation.accepted_feed_id = existing_feed.id
+            recommendation.decided_at = now
+            recommendation.last_seen_at = now
+            await session.commit()
+            await session.refresh(recommendation)
+            return recommendation
+
+        try:
+            payload = FeedCreate.model_validate(
+                {
+                    "title": (recommendation.feed_title or _fallback_feed_title(recommendation.feed_url)).strip(),
+                    "url": recommendation.feed_url,
+                    "site_url": recommendation.site_url,
+                }
+            )
+        except ValidationError as exc:
+            raise DiscoveryRecommendationValidationError("Recommendation URL is invalid and cannot be accepted") from exc
+
+        try:
+            created_feed = await feed_service.create_feed(session=session, data=payload, user_id=user_id)
+        except FeedAlreadyExistsError as exc:
+            existing_feed = await self._find_existing_user_feed_for_recommendation(
+                session=session,
+                user_id=user_id,
+                recommendation=recommendation,
+            )
+            if existing_feed is None:
+                raise DiscoveryRecommendationValidationError(
+                    "Feed URL already exists globally and is unavailable for this user"
+                ) from exc
+            recommendation.status = "resolved_existing"
+            recommendation.accepted_feed_id = existing_feed.id
+            recommendation.decided_at = now
+            recommendation.last_seen_at = now
+            await session.commit()
+            await session.refresh(recommendation)
+            return recommendation
+
+        recommendation.status = "accepted"
+        recommendation.accepted_feed_id = created_feed.id
+        recommendation.decided_at = now
+        recommendation.last_seen_at = now
+        await session.commit()
+        await session.refresh(recommendation)
+        return recommendation
+
+    async def reset_recommendation(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        recommendation_id: UUID,
+    ) -> FeedRecommendation:
+        recommendation = await self.get_recommendation(
+            session=session,
+            user_id=user_id,
+            recommendation_id=recommendation_id,
+        )
+        if recommendation is None:
+            raise DiscoveryRecommendationNotFoundError(f"Recommendation {recommendation_id} not found")
+        if recommendation.status != "denied":
+            raise DiscoveryRecommendationValidationError("Only denied recommendations can be reset")
+        recommendation.status = "pending"
+        recommendation.decided_at = None
+        recommendation.accepted_feed_id = None
+        recommendation.last_seen_at = datetime.now(UTC)
+        await session.commit()
+        await session.refresh(recommendation)
+        return recommendation
+
+    async def recommendation_summary(self, *, session: AsyncSession, user_id: UUID) -> dict[str, int]:
+        query = (
+            select(FeedRecommendation.status, func.count())
+            .where(FeedRecommendation.user_id == user_id)
+            .group_by(FeedRecommendation.status)
+        )
+        result = await session.execute(query)
+        counts = {status: int(count) for status, count in result.all() if isinstance(status, str)}
+        pending_count = counts.get("pending", 0)
+        denied_count = counts.get("denied", 0)
+        accepted_count = counts.get("accepted", 0)
+        resolved_existing_count = counts.get("resolved_existing", 0)
+        total_count = pending_count + denied_count + accepted_count + resolved_existing_count
+        return {
+            "pending_count": pending_count,
+            "denied_count": denied_count,
+            "accepted_count": accepted_count,
+            "resolved_existing_count": resolved_existing_count,
+            "total_count": total_count,
+        }
+
+    async def get_recommendation(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        recommendation_id: UUID,
+    ) -> FeedRecommendation | None:
+        query = select(FeedRecommendation).where(
+            FeedRecommendation.id == recommendation_id,
+            FeedRecommendation.user_id == user_id,
+        )
+        result = await session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def _persist_generated_recommendations(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        stream: DiscoveryStream,
+        candidates: list[SearchFeedCandidate],
+        query_variants: list[str],
+    ) -> tuple[int, int, int]:
+        if not candidates:
+            return 0, 0, 0
+
+        now = datetime.now(UTC)
+        user_feeds_by_normalized = await self._load_user_feed_map(session=session, user_id=user_id)
+
+        candidate_by_normalized: dict[str, SearchFeedCandidate] = {}
+        for candidate in candidates:
+            normalized_url = _normalize_recommendation_url(candidate.url)
+            candidate_by_normalized[normalized_url] = candidate
+
+        normalized_urls = list(candidate_by_normalized.keys())
+        existing_query = select(FeedRecommendation).where(
+            FeedRecommendation.user_id == user_id,
+            FeedRecommendation.feed_url_normalized.in_(normalized_urls),
+        )
+        existing_result = await session.execute(existing_query)
+        existing_by_normalized = {
+            recommendation.feed_url_normalized: recommendation for recommendation in existing_result.scalars().all()
+        }
+
+        touched_recommendations: list[FeedRecommendation] = []
+        for normalized_url, candidate in candidate_by_normalized.items():
+            existing_feed = user_feeds_by_normalized.get(normalized_url)
+            recommendation = existing_by_normalized.get(normalized_url)
+            recommendation_evidence = {
+                "query_variants": query_variants,
+                "description": candidate.description,
+                "provider": candidate.provider,
+            }
+
+            if recommendation is None:
+                status: Literal["pending", "resolved_existing"] = (
+                    "resolved_existing" if existing_feed is not None else "pending"
+                )
+                recommendation = FeedRecommendation(
+                    user_id=user_id,
+                    status=status,
+                    feed_url=candidate.url,
+                    feed_url_normalized=normalized_url,
+                    feed_title=_normalize_optional_text(candidate.title),
+                    site_url=_normalize_optional_text(candidate.site_url),
+                    confidence=None,
+                    provider=candidate.provider,
+                    evidence_json=_to_json_payload(recommendation_evidence),
+                    accepted_feed_id=existing_feed.id if existing_feed is not None else None,
+                    decided_at=now if existing_feed is not None else None,
+                    last_seen_at=now,
+                )
+                session.add(recommendation)
+                touched_recommendations.append(recommendation)
+                continue
+
+            recommendation.feed_url = candidate.url
+            recommendation.feed_title = _normalize_optional_text(candidate.title) or recommendation.feed_title
+            recommendation.site_url = _normalize_optional_text(candidate.site_url) or recommendation.site_url
+            recommendation.provider = candidate.provider
+            recommendation.evidence_json = _to_json_payload(recommendation_evidence)
+            recommendation.last_seen_at = now
+            if existing_feed is not None:
+                recommendation.status = "resolved_existing"
+                recommendation.accepted_feed_id = existing_feed.id
+                recommendation.decided_at = now
+            elif recommendation.status == "resolved_existing":
+                recommendation.status = "pending"
+                recommendation.accepted_feed_id = None
+                recommendation.decided_at = None
+            if recommendation.status not in _RECOMMENDATION_STATUS_VALUES:
+                recommendation.status = "pending"
+            touched_recommendations.append(recommendation)
+
+        await session.flush()
+        await self._upsert_generation_sources(
+            session=session,
+            stream=stream,
+            recommendations=touched_recommendations,
+            query_variants=query_variants,
+        )
+        await session.commit()
+
+        persisted_count = len(touched_recommendations)
+        pending_count = sum(1 for recommendation in touched_recommendations if recommendation.status == "pending")
+        resolved_existing_count = sum(
+            1 for recommendation in touched_recommendations if recommendation.status == "resolved_existing"
+        )
+        return persisted_count, pending_count, resolved_existing_count
+
+    async def _upsert_generation_sources(
+        self,
+        *,
+        session: AsyncSession,
+        stream: DiscoveryStream,
+        recommendations: list[FeedRecommendation],
+        query_variants: list[str],
+    ) -> None:
+        if not recommendations:
+            return
+
+        recommendation_ids = [recommendation.id for recommendation in recommendations]
+        existing_source_query = select(FeedRecommendationSource).where(
+            FeedRecommendationSource.discovery_stream_id == stream.id,
+            FeedRecommendationSource.recommendation_id.in_(recommendation_ids),
+        )
+        existing_source_result = await session.execute(existing_source_query)
+        existing_sources = {source.recommendation_id: source for source in existing_source_result.scalars().all()}
+        source_evidence = _to_json_payload({"query_variants": query_variants, "stream_name": stream.name})
+
+        for recommendation in recommendations:
+            source = existing_sources.get(recommendation.id)
+            if source is None:
+                session.add(
+                    FeedRecommendationSource(
+                        recommendation_id=recommendation.id,
+                        discovery_stream_id=stream.id,
+                        provider_confidence=recommendation.confidence,
+                        evidence_json=source_evidence,
+                    )
+                )
+                continue
+            source.provider_confidence = recommendation.confidence
+            source.evidence_json = source_evidence
+
+        await session.flush()
+
+    async def _load_user_feed_map(self, *, session: AsyncSession, user_id: UUID) -> dict[str, Feed]:
+        query = select(Feed).where(Feed.owner_id == user_id)
+        result = await session.execute(query)
+        feeds = list(result.scalars().all())
+        by_normalized_url: dict[str, Feed] = {}
+        for feed in feeds:
+            normalized_url = _normalize_recommendation_url(feed.url)
+            if normalized_url not in by_normalized_url:
+                by_normalized_url[normalized_url] = feed
+        return by_normalized_url
+
+    async def _find_existing_user_feed_for_recommendation(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        recommendation: FeedRecommendation,
+    ) -> Feed | None:
+        user_feeds_by_normalized = await self._load_user_feed_map(session=session, user_id=user_id)
+        return user_feeds_by_normalized.get(recommendation.feed_url_normalized)
+
+    async def load_sources_by_recommendation(
+        self,
+        *,
+        session: AsyncSession,
+        recommendation_ids: list[UUID],
+    ) -> dict[UUID, list[FeedRecommendationSourceOut]]:
+        if not recommendation_ids:
+            return {}
+        query = (
+            select(FeedRecommendationSource, DiscoveryStream.name)
+            .outerjoin(DiscoveryStream, DiscoveryStream.id == FeedRecommendationSource.discovery_stream_id)
+            .where(FeedRecommendationSource.recommendation_id.in_(recommendation_ids))
+            .order_by(FeedRecommendationSource.created_at.asc())
+        )
+        result = await session.execute(query)
+        by_recommendation_id: dict[UUID, list[FeedRecommendationSourceOut]] = {}
+        for source, stream_name in result.all():
+            item = FeedRecommendationSourceOut(
+                id=source.id,
+                recommendation_id=source.recommendation_id,
+                discovery_stream_id=source.discovery_stream_id,
+                discovery_stream_name=str(stream_name) if isinstance(stream_name, str) else None,
+                provider_confidence=source.provider_confidence,
+                evidence=_from_json_payload(source.evidence_json),
+                created_at=source.created_at,
+            )
+            by_recommendation_id.setdefault(source.recommendation_id, []).append(item)
+        return by_recommendation_id
 
     def to_out(self, stream: DiscoveryStream) -> DiscoveryStreamOut:
         return DiscoveryStreamOut(
@@ -412,6 +835,32 @@ class DiscoveryService:
             exclude_keywords=_keywords_from_json(stream.exclude_keywords_json),
             created_at=stream.created_at,
             updated_at=stream.updated_at,
+        )
+
+    def recommendation_to_out(
+        self,
+        recommendation: FeedRecommendation,
+        *,
+        sources: list[FeedRecommendationSourceOut] | None = None,
+    ) -> FeedRecommendationOut:
+        status_value = recommendation.status if recommendation.status in _RECOMMENDATION_STATUS_VALUES else "pending"
+        return FeedRecommendationOut(
+            id=recommendation.id,
+            user_id=recommendation.user_id,
+            status=cast(Literal["pending", "accepted", "denied", "resolved_existing"], status_value),
+            feed_url=recommendation.feed_url,
+            feed_url_normalized=recommendation.feed_url_normalized,
+            feed_title=recommendation.feed_title,
+            site_url=recommendation.site_url,
+            confidence=recommendation.confidence,
+            provider=recommendation.provider,
+            evidence=_from_json_payload(recommendation.evidence_json),
+            accepted_feed_id=recommendation.accepted_feed_id,
+            decided_at=recommendation.decided_at,
+            last_seen_at=recommendation.last_seen_at,
+            created_at=recommendation.created_at,
+            updated_at=recommendation.updated_at,
+            sources=sources or [],
         )
 
 

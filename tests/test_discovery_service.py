@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
-from sift.db.models import User
+from sift.db.models import Feed, User
 from sift.domain.schemas import DiscoveryStreamCreate
 from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest, SearchFeedsResult
 from sift.plugins.manager import PluginStatusSnapshot
@@ -145,3 +145,56 @@ async def test_discovery_stream_generate_caps_query_variants_and_dedupes_candida
     assert len(result.candidates) == 1
     assert result.candidates[0].url == "https://example.com/feed.xml"
     assert result.candidates[0].site_url == "https://example.com"
+    assert result.persisted_count == 1
+    assert result.pending_count == 1
+    assert result.resolved_existing_count == 0
+
+
+@pytest.mark.asyncio
+async def test_discovery_generation_marks_existing_user_feed_as_resolved_existing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = _DiscoverySearchManagerStub()
+    monkeypatch.setattr("sift.services.discovery_service.get_plugin_manager", lambda: manager)
+    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: manager)
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="discovery-existing@example.com")
+        session.add(user)
+        await session.flush()
+        session.add(Feed(owner_id=user.id, title="Existing feed", url="https://example.com/feed.xml"))
+        await session.commit()
+
+        stream = await discovery_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=DiscoveryStreamCreate(name="Threat intel", include_keywords=["threat"]),
+        )
+        result = await discovery_service.generate_for_stream(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            max_results_per_query=10,
+            max_candidates=20,
+        )
+
+        recommendations, total, _ = await discovery_service.list_recommendations(
+            session=session,
+            user_id=user.id,
+            status_filter=None,
+            limit=20,
+            offset=0,
+        )
+
+    await engine.dispose()
+
+    assert result.persisted_count == 1
+    assert result.pending_count == 0
+    assert result.resolved_existing_count == 1
+    assert total == 1
+    assert recommendations[0].status == "resolved_existing"

@@ -50,7 +50,7 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - provider adapter hardening with warning-coded timeout/network/http/json/payload handling,
   - runtime candidate URL normalization and de-duplication,
   - archived spec: `docs/specs/done/search-provider-plugin-v1.md`.
-- Discover feeds v1 slice 1 implemented:
+- Discover feeds v1 slices 1-2 implemented:
   - discovery stream persistence (`discovery_streams`) with authenticated CRUD API:
     - `GET /api/v1/discovery/streams`
     - `POST /api/v1/discovery/streams`
@@ -59,7 +59,13 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - manual discovery generation endpoint:
     - `POST /api/v1/discovery/streams/{stream_id}/generate`
   - generation delegates to shared search-provider runtime, compiles bounded query variants from stream criteria, and
-    returns deduped ephemeral candidates plus warning metadata.
+    upserts deduped recommendations with source attribution.
+  - recommendation lifecycle APIs:
+    - `GET /api/v1/discovery/recommendations`
+    - `PATCH /api/v1/discovery/recommendations/{recommendation_id}` (`accept` / `deny`)
+    - `POST /api/v1/discovery/recommendations/{recommendation_id}/reset`
+    - `GET /api/v1/discovery/recommendations/summary`
+  - existing user feed URLs are auto-resolved as `resolved_existing` during generation and excluded from pending work.
 - Plugin architecture hardening implemented:
   - shared plugin capability metadata contract (`src/sift/plugins/capabilities.py`),
   - runtime-loaded plugin registry snapshot exposed by plugin manager,

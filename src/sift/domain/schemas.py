@@ -437,6 +437,54 @@ class DiscoveryStreamOut(BaseModel):
     updated_at: datetime
 
 
+class FeedRecommendationSourceOut(BaseModel):
+    id: UUID
+    recommendation_id: UUID
+    discovery_stream_id: UUID
+    discovery_stream_name: str | None = None
+    provider_confidence: float | None = None
+    evidence: dict[str, Any] | None = None
+    created_at: datetime
+
+
+class FeedRecommendationOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    status: Literal["pending", "accepted", "denied", "resolved_existing"]
+    feed_url: str
+    feed_url_normalized: str
+    feed_title: str | None = None
+    site_url: str | None = None
+    confidence: float | None = None
+    provider: str
+    evidence: dict[str, Any] | None = None
+    accepted_feed_id: UUID | None = None
+    decided_at: datetime | None = None
+    last_seen_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+    sources: list[FeedRecommendationSourceOut] = Field(default_factory=list)
+
+
+class FeedRecommendationListOut(BaseModel):
+    items: list[FeedRecommendationOut]
+    total: int
+    limit: int
+    offset: int
+
+
+class FeedRecommendationDecisionIn(BaseModel):
+    decision: Literal["accept", "deny"]
+
+
+class FeedRecommendationSummaryOut(BaseModel):
+    pending_count: int
+    denied_count: int
+    accepted_count: int
+    resolved_existing_count: int
+    total_count: int
+
+
 class StreamArticleOut(BaseModel):
     matched_at: datetime
     match_reason: str | None = None
@@ -556,6 +604,9 @@ class DiscoveryStreamGenerateOut(BaseModel):
     query_variants: list[str]
     attempted_queries: int
     candidate_count: int
+    persisted_count: int
+    pending_count: int
+    resolved_existing_count: int
     candidates: list[SearchFeedCandidateOut]
     warnings: list[str] = Field(default_factory=list)
     warning_details: list[SearchWarningOut] = Field(default_factory=list)
