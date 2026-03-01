@@ -7,7 +7,13 @@ from importlib import import_module
 from time import perf_counter
 from typing import Any, TypeVar
 
-from sift.plugins.base import ArticleContext, StreamClassificationDecision, StreamClassifierContext
+from sift.plugins.base import (
+    ArticleContext,
+    SearchFeedsRequest,
+    SearchFeedsResult,
+    StreamClassificationDecision,
+    StreamClassifierContext,
+)
 from sift.plugins.registry import PluginRegistryEntry
 from sift.plugins.telemetry import PluginMetricSample, PluginTelemetryCollector
 
@@ -18,11 +24,13 @@ _T = TypeVar("_T")
 _CAPABILITY_METHODS: dict[str, str] = {
     "ingest_hook": "on_article_ingested",
     "stream_classifier": "classify_stream",
+    "search_provider": "search_feeds",
 }
 
 _DEFAULT_TIMEOUTS_MS: dict[str, int] = {
     "ingest_hook": 2000,
     "stream_classifier": 3000,
+    "search_provider": 5000,
     "discover_feeds": 5000,
     "summarize_article": 5000,
 }
@@ -121,6 +129,7 @@ class PluginManager:
         *,
         timeout_ingest_ms: int = 2000,
         timeout_classifier_ms: int = 3000,
+        timeout_search_provider_ms: int = 5000,
         timeout_discovery_ms: int = 5000,
         timeout_summary_ms: int = 5000,
         diagnostics_enabled: bool = True,
@@ -135,6 +144,7 @@ class PluginManager:
         self._capability_timeouts_ms: dict[str, int] = dict(_DEFAULT_TIMEOUTS_MS)
         self._capability_timeouts_ms["ingest_hook"] = max(1, timeout_ingest_ms)
         self._capability_timeouts_ms["stream_classifier"] = max(1, timeout_classifier_ms)
+        self._capability_timeouts_ms["search_provider"] = max(1, timeout_search_provider_ms)
         self._capability_timeouts_ms["discover_feeds"] = max(1, timeout_discovery_ms)
         self._capability_timeouts_ms["summarize_article"] = max(1, timeout_summary_ms)
         self._telemetry = telemetry_collector or PluginTelemetryCollector()
@@ -213,6 +223,9 @@ class PluginManager:
 
     def names(self) -> list[str]:
         return [plugin.id for plugin in self._plugins]
+
+    def list_plugin_ids_by_capability(self, capability: str) -> list[str]:
+        return [plugin.id for plugin in self._plugins if capability in plugin.capabilities]
 
     @property
     def diagnostics_enabled(self) -> bool:
@@ -422,5 +435,35 @@ class PluginManager:
             callback=classify_callback,
         )
         if isinstance(result, StreamClassificationDecision):
+            return result
+        return None
+
+    async def search_feeds(
+        self,
+        *,
+        plugin_name: str,
+        request: SearchFeedsRequest,
+    ) -> SearchFeedsResult | None:
+        plugin = self._plugins_by_id.get(plugin_name)
+        if plugin is None:
+            return None
+        if "search_provider" not in plugin.capabilities:
+            return None
+        search_feeds = getattr(plugin.implementation, "search_feeds", None)
+        if not callable(search_feeds):
+            return None
+        handler = search_feeds
+
+        async def search_callback(
+            handler: Callable[[SearchFeedsRequest], Awaitable[SearchFeedsResult | None]] = handler,
+        ) -> SearchFeedsResult | None:
+            return await handler(request)
+
+        result = await self._invoke_plugin(
+            plugin=plugin,
+            capability="search_provider",
+            callback=search_callback,
+        )
+        if isinstance(result, SearchFeedsResult):
             return result
         return None

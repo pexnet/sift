@@ -11,6 +11,7 @@ def get_plugin_manager() -> PluginManager:
     manager = PluginManager(
         timeout_ingest_ms=settings.plugin_timeout_ingest_ms,
         timeout_classifier_ms=settings.plugin_timeout_classifier_ms,
+        timeout_search_provider_ms=settings.plugin_timeout_search_provider_ms,
         timeout_discovery_ms=settings.plugin_timeout_discovery_ms,
         timeout_summary_ms=settings.plugin_timeout_summary_ms,
         diagnostics_enabled=settings.plugin_diagnostics_enabled,

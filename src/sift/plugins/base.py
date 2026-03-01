@@ -50,3 +50,34 @@ class StreamClassifierPlugin(Protocol):
         stream: StreamClassifierContext,
     ) -> StreamClassificationDecision | None:
         """Return optional classification decision for article/stream relevance."""
+
+
+@dataclass(slots=True)
+class SearchFeedsRequest:
+    query: str
+    provider_chain: list[str]
+    max_results: int
+    metadata: Mapping[str, str]
+
+
+@dataclass(slots=True)
+class SearchFeedCandidate:
+    title: str
+    url: str
+    site_url: str | None
+    description: str | None
+    provider: str
+
+
+@dataclass(slots=True)
+class SearchFeedsResult:
+    provider: str
+    candidates: list[SearchFeedCandidate]
+    warnings: list[str]
+
+
+class SearchProviderPlugin(Protocol):
+    name: str
+
+    async def search_feeds(self, request: SearchFeedsRequest) -> SearchFeedsResult | None:
+        """Return optional ephemeral feed/blog candidates for a search request."""

@@ -14,6 +14,30 @@ plugins:
     capabilities:
       - stream_classifier
     settings: {}
+  - id: search_provider
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin
+    capabilities:
+      - search_provider
+    settings:
+      search_provider:
+        provider_chain:
+          - searxng
+          - brave_search
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+          brave_search:
+            max_requests_per_run: 5
+            max_requests_per_day: 25
+            min_interval_ms: 400
+            max_query_variants_per_stream: 4
+            max_results_per_query: 10
   - id: discover_feeds
     enabled: true
     backend:

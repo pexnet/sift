@@ -228,6 +228,76 @@ plugins:
     assert discover_settings["provider_chain"] == ["searxng", "brave_search"]
 
 
+def test_load_plugin_registry_rejects_search_provider_unknown_provider(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: search_provider
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin
+    capabilities:
+      - search_provider
+    settings:
+      search_provider:
+        provider_chain:
+          - unknown_provider
+        provider_budgets:
+          unknown_provider:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+""".strip(),
+    )
+
+    with pytest.raises(PluginRegistryError) as exc_info:
+        load_plugin_registry(str(registry_path))
+    assert "settings.search_provider.provider_chain: unknown provider 'unknown_provider'" in str(exc_info.value)
+
+
+def test_load_plugin_registry_accepts_valid_search_provider_contract(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: search_provider
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin
+    capabilities:
+      - search_provider
+    settings:
+      search_provider:
+        provider_chain:
+          - searxng
+          - brave_search
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+          brave_search:
+            max_requests_per_run: 5
+            max_requests_per_day: 25
+            min_interval_ms: 400
+            max_query_variants_per_stream: 4
+            max_results_per_query: 10
+""".strip(),
+    )
+
+    registry = load_plugin_registry(str(registry_path))
+    search_settings = registry.plugins[0].settings["search_provider"]
+    assert isinstance(search_settings, dict)
+    assert search_settings["provider_chain"] == ["searxng", "brave_search"]
+
+
 @pytest.mark.asyncio
 async def test_plugin_manager_dispatches_by_registry_capability(tmp_path: Path) -> None:
     registry_path = _write_registry(

@@ -5,7 +5,14 @@ from datetime import UTC, datetime
 import pytest
 
 import sift.plugins.manager as plugin_manager_module
-from sift.plugins.base import ArticleContext, StreamClassificationDecision, StreamClassifierContext
+from sift.plugins.base import (
+    ArticleContext,
+    SearchFeedCandidate,
+    SearchFeedsRequest,
+    SearchFeedsResult,
+    StreamClassificationDecision,
+    StreamClassifierContext,
+)
 from sift.plugins.manager import PluginManager
 from sift.plugins.registry import PluginRegistryEntry
 from sift.plugins.telemetry import PluginMetricSample
@@ -43,14 +50,39 @@ class _NoClassifierMethodPlugin:
     pass
 
 
-def _entry(*, plugin_id: str, class_path: str, capabilities: list[str], enabled: bool = True) -> PluginRegistryEntry:
+class _SearchProviderPlugin:
+    async def search_feeds(self, request: SearchFeedsRequest) -> SearchFeedsResult:
+        provider = request.provider_chain[0] if request.provider_chain else "searxng"
+        return SearchFeedsResult(
+            provider=provider,
+            candidates=[
+                SearchFeedCandidate(
+                    title=f"{request.query} feed",
+                    url="https://example.com/feed.xml",
+                    site_url="https://example.com",
+                    description="example",
+                    provider=provider,
+                )
+            ],
+            warnings=[],
+        )
+
+
+def _entry(
+    *,
+    plugin_id: str,
+    class_path: str,
+    capabilities: list[str],
+    enabled: bool = True,
+    settings: dict[str, object] | None = None,
+) -> PluginRegistryEntry:
     return PluginRegistryEntry.model_validate(
         {
             "id": plugin_id,
             "enabled": enabled,
             "backend": {"class_path": class_path},
             "capabilities": capabilities,
-            "settings": {},
+            "settings": settings or {},
         }
     )
 
@@ -120,6 +152,54 @@ async def test_classifier_timeout_marks_timeout_counter(monkeypatch: pytest.Monk
 
     snapshot = {item.plugin_id: item for item in manager.get_status_snapshots()}["slow_classifier"]
     assert snapshot.runtime_counters["stream_classifier"]["timeout_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_search_provider_dispatch_records_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    plugins_by_path = {"test.plugins:search": _SearchProviderPlugin()}
+    monkeypatch.setattr(plugin_manager_module, "_load_plugin", lambda path: plugins_by_path[path])
+
+    manager = PluginManager(timeout_search_provider_ms=250)
+    manager.load_from_registry(
+        [
+            _entry(
+                plugin_id="search_provider",
+                class_path="test.plugins:search",
+                capabilities=["search_provider"],
+                settings={
+                    "search_provider": {
+                        "provider_chain": ["searxng"],
+                        "provider_budgets": {
+                            "searxng": {
+                                "max_requests_per_run": 10,
+                                "max_requests_per_day": 100,
+                                "min_interval_ms": 250,
+                                "max_query_variants_per_stream": 5,
+                                "max_results_per_query": 25,
+                            }
+                        },
+                    }
+                },
+            )
+        ]
+    )
+
+    result = await manager.search_feeds(
+        plugin_name="search_provider",
+        request=SearchFeedsRequest(
+            query="ai",
+            provider_chain=["searxng", "brave_search"],
+            max_results=10,
+            metadata={},
+        ),
+    )
+    assert result is not None
+    assert result.provider == "searxng"
+    assert len(result.candidates) == 1
+    assert result.candidates[0].url == "https://example.com/feed.xml"
+
+    snapshot = {item.plugin_id: item for item in manager.get_status_snapshots()}["search_provider"]
+    assert snapshot.runtime_counters["search_provider"]["success_count"] == 1
 
 
 @pytest.mark.asyncio

@@ -10,6 +10,7 @@ VALID_PLUGIN_CAPABILITIES = frozenset(
     {
         "ingest_hook",
         "stream_classifier",
+        "search_provider",
         "discover_feeds",
         "summarize_article",
         "dashboard_card",
@@ -35,6 +36,14 @@ _DISCOVERY_BUDGET_FIELDS = (
     "min_interval_ms",
     "max_query_variants_per_stream",
     "max_results_per_query",
+)
+_SEARCH_PROVIDER_ALLOWED_PROVIDER_IDS = frozenset(
+    {
+        "searxng",
+        "brave_search",
+        "google_custom_search",
+        "duckduckgo_instant_answer",
+    }
 )
 
 
@@ -92,6 +101,8 @@ class PluginRegistryEntry(BaseModel):
     @model_validator(mode="after")
     def validate_settings_contract(self) -> "PluginRegistryEntry":
         errors = _collect_sensitive_settings_errors(settings=self.settings, path="settings")
+        if "search_provider" in self.capabilities:
+            errors.extend(_collect_search_provider_settings_errors(self.settings))
         if "discover_feeds" in self.capabilities:
             errors.extend(_collect_discovery_settings_errors(self.settings))
         if errors:
@@ -147,44 +158,86 @@ def _is_sensitive_key(normalized_key: str) -> bool:
 
 
 def _collect_discovery_settings_errors(settings: dict[str, Any]) -> list[str]:
+    return _collect_provider_settings_errors(
+        settings=settings,
+        settings_key="discover_feeds",
+        required=False,
+    )
+
+
+def _collect_search_provider_settings_errors(settings: dict[str, Any]) -> list[str]:
+    return _collect_provider_settings_errors(
+        settings=settings,
+        settings_key="search_provider",
+        required=True,
+        allowed_provider_ids=_SEARCH_PROVIDER_ALLOWED_PROVIDER_IDS,
+    )
+
+
+def _collect_provider_settings_errors(
+    *,
+    settings: dict[str, Any],
+    settings_key: str,
+    required: bool,
+    allowed_provider_ids: frozenset[str] | None = None,
+) -> list[str]:
     if not settings:
-        return []
-    raw_discovery = settings.get("discover_feeds")
-    if raw_discovery is None:
-        return []
-    if not isinstance(raw_discovery, dict):
-        return ["settings.discover_feeds: must be a mapping object"]
+        return [f"settings.{settings_key}: required when capability '{settings_key}' is enabled"] if required else []
+
+    raw_config = settings.get(settings_key)
+    if raw_config is None:
+        return [f"settings.{settings_key}: required when capability '{settings_key}' is enabled"] if required else []
+    if not isinstance(raw_config, dict):
+        return [f"settings.{settings_key}: must be a mapping object"]
 
     errors: list[str] = []
-    provider_chain = raw_discovery.get("provider_chain")
-    if provider_chain is not None:
-        if not isinstance(provider_chain, list) or not provider_chain:
-            errors.append("settings.discover_feeds.provider_chain: must be a non-empty list when provided")
-        elif not all(isinstance(item, str) and item.strip() for item in provider_chain):
-            errors.append("settings.discover_feeds.provider_chain: entries must be non-empty strings")
+    provider_chain = raw_config.get("provider_chain")
+    chain_path = f"settings.{settings_key}.provider_chain"
+    if not isinstance(provider_chain, list) or not provider_chain:
+        errors.append(f"{chain_path}: must be a non-empty list")
+        provider_chain_values: list[str] = []
+    else:
+        provider_chain_values = []
+        for item in provider_chain:
+            if not isinstance(item, str) or not item.strip():
+                errors.append(f"{chain_path}: entries must be non-empty strings")
+                continue
+            provider_id = item.strip()
+            provider_chain_values.append(provider_id)
+            if allowed_provider_ids is not None and provider_id not in allowed_provider_ids:
+                allowed = ", ".join(sorted(allowed_provider_ids))
+                errors.append(f"{chain_path}: unknown provider '{provider_id}'. Allowed: {allowed}")
 
-    provider_budgets = raw_discovery.get("provider_budgets")
-    if provider_budgets is not None:
-        if not isinstance(provider_budgets, dict) or not provider_budgets:
-            errors.append("settings.discover_feeds.provider_budgets: must be a non-empty mapping when provided")
-            return errors
-        for provider, budget in provider_budgets.items():
-            provider_path = f"settings.discover_feeds.provider_budgets.{provider}"
-            if not isinstance(provider, str) or not provider.strip():
-                errors.append(f"{provider_path}: provider key must be a non-empty string")
-                continue
-            if not isinstance(budget, dict):
-                errors.append(f"{provider_path}: budget config must be a mapping object")
-                continue
-            for field in _DISCOVERY_BUDGET_FIELDS:
-                value = budget.get(field)
-                field_path = f"{provider_path}.{field}"
-                if not isinstance(value, int) or value < 1:
-                    errors.append(f"{field_path}: must be an integer >= 1")
-            max_per_run = budget.get("max_requests_per_run")
-            max_per_day = budget.get("max_requests_per_day")
-            if isinstance(max_per_run, int) and isinstance(max_per_day, int) and max_per_day < max_per_run:
-                errors.append(f"{provider_path}.max_requests_per_day: must be >= max_requests_per_run")
+    provider_budgets = raw_config.get("provider_budgets")
+    budgets_path = f"settings.{settings_key}.provider_budgets"
+    if not isinstance(provider_budgets, dict) or not provider_budgets:
+        errors.append(f"{budgets_path}: must be a non-empty mapping")
+        return errors
+
+    for provider, budget in provider_budgets.items():
+        provider_path = f"{budgets_path}.{provider}"
+        if not isinstance(provider, str) or not provider.strip():
+            errors.append(f"{provider_path}: provider key must be a non-empty string")
+            continue
+        provider_id = provider.strip()
+        if allowed_provider_ids is not None and provider_id not in allowed_provider_ids:
+            allowed = ", ".join(sorted(allowed_provider_ids))
+            errors.append(f"{provider_path}: unknown provider '{provider_id}'. Allowed: {allowed}")
+        if provider_chain_values and provider_id not in provider_chain_values:
+            errors.append(f"{provider_path}: provider is not present in provider_chain")
+        if not isinstance(budget, dict):
+            errors.append(f"{provider_path}: budget config must be a mapping object")
+            continue
+        for field in _DISCOVERY_BUDGET_FIELDS:
+            value = budget.get(field)
+            field_path = f"{provider_path}.{field}"
+            if not isinstance(value, int) or value < 1:
+                errors.append(f"{field_path}: must be an integer >= 1")
+        max_per_run = budget.get("max_requests_per_run")
+        max_per_day = budget.get("max_requests_per_day")
+        if isinstance(max_per_run, int) and isinstance(max_per_day, int) and max_per_day < max_per_run:
+            errors.append(f"{provider_path}.max_requests_per_day: must be >= max_requests_per_run")
+
     return errors
 
 

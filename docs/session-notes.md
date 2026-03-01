@@ -3,6 +3,29 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Search Provider Plugin v1 Slice 1: Runtime Contract + Registry Validation + API Baseline)
+
+### Implemented This Session
+
+- Added `search_provider` plugin capability contract and runtime dispatch:
+  - plugin manager now supports `search_feeds(request)` capability invocation and timeout control.
+  - new plugin timeout setting: `SIFT_PLUGIN_TIMEOUT_SEARCH_PROVIDER_MS`.
+- Added search-provider registry validation:
+  - `settings.search_provider` is now required when `search_provider` capability is enabled.
+  - validates non-empty provider chain, provider budget contract, and allowlisted provider ids.
+- Added baseline no-op search-provider plugin implementation:
+  - `src/sift/plugins/builtin/search_provider_noop.py`
+- Added first authenticated search-provider APIs:
+  - `GET /api/v1/search/providers`
+  - `POST /api/v1/search/feeds`
+- Updated default plugin registry to include enabled `search_provider` plugin entry with conservative provider budgets.
+
+### Verification
+
+- `python -m ruff check src/sift/plugins/base.py src/sift/plugins/manager.py src/sift/plugins/registry.py src/sift/plugins/builtin/search_provider_noop.py src/sift/api/routes/search.py src/sift/api/router.py src/sift/config.py src/sift/core/runtime.py src/sift/domain/schemas.py tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py tests/test_search_api.py`
+- `python -m mypy src/sift/plugins src/sift/api/routes/search.py src/sift/config.py src/sift/core/runtime.py src/sift/domain/schemas.py --no-incremental`
+- `python -m pytest tests/test_plugin_runtime_manager.py tests/test_plugin_registry.py tests/test_plugins_api.py tests/test_search_api.py`
+
 ## 2026-03-01 (Reprioritization: Search Provider First, Stream Ranking Deferred)
 
 ### Implemented This Session

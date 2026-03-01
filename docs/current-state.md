@@ -30,6 +30,12 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - diagnostics endpoint,
   - workspace plugin-area host,
   - dashboard shell host baseline.
+- Search provider platform v1 slice 1 implemented:
+  - plugin capability contract (`search_provider` / `search_feeds`) wired in runtime manager,
+  - registry validation for `settings.search_provider` provider chain/budgets and allowlisted providers,
+  - authenticated baseline APIs:
+    - `GET /api/v1/search/providers`
+    - `POST /api/v1/search/feeds`
 
 ## Active Priorities
 

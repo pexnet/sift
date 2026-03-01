@@ -474,3 +474,40 @@ class DashboardCardAvailabilityOut(BaseModel):
 class DashboardSummaryOut(BaseModel):
     cards: list[DashboardCardAvailabilityOut]
     last_updated_at: datetime
+
+
+class SearchProviderBudgetOut(BaseModel):
+    max_requests_per_run: int
+    max_requests_per_day: int
+    min_interval_ms: int
+    max_query_variants_per_stream: int
+    max_results_per_query: int
+
+
+class SearchProvidersOut(BaseModel):
+    plugin_id: str
+    provider_chain: list[str]
+    provider_budgets: dict[str, SearchProviderBudgetOut]
+    timeout_ms: int
+    loaded: bool
+
+
+class SearchFeedsRequestIn(BaseModel):
+    query: str = Field(min_length=1, max_length=500)
+    max_results: int = Field(default=10, ge=1, le=50)
+
+
+class SearchFeedCandidateOut(BaseModel):
+    title: str
+    url: str
+    site_url: str | None
+    description: str | None
+    provider: str
+
+
+class SearchFeedsOut(BaseModel):
+    query: str
+    provider: str | None
+    provider_chain: list[str]
+    candidates: list[SearchFeedCandidateOut]
+    warnings: list[str] = Field(default_factory=list)

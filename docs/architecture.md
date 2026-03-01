@@ -159,8 +159,8 @@ more hooks:
 
 - `on_article_ingested(article)` for ingest-time enrichment/transformation.
 - `classify_stream(article, stream)` for stream relevance decisions with confidence.
+- `search_feeds(request)` for provider-chain-backed feed/blog discovery search.
 - Planned hooks:
-  - `search_feeds(request)` for provider-chain-backed blog/feed search (shared infrastructure)
   - `discover_feeds(seed_query, options)` for discovery-stream feed candidate lookup
   - `summarize_article(article, options)` for on-demand reader summary generation
   - scoring
@@ -218,7 +218,8 @@ Implemented slices are tracked at capability level here; detailed completion chr
    - feed lifecycle/health APIs and archive behavior.
 6. Plugin platform:
    - centralized registry/runtime cutover,
-   - capability-gated dispatch, timeout/fault isolation, diagnostics, and plugin telemetry metrics.
+   - capability-gated dispatch, timeout/fault isolation, diagnostics, and plugin telemetry metrics,
+   - search-provider capability baseline (`search_feeds`) with validated provider-chain config.
 7. Frontend integration baselines:
    - workspace plugin areas and route host (`/app/plugins/$areaId`),
    - dashboard shell/card host baseline (`/app/dashboard`),
@@ -226,6 +227,10 @@ Implemented slices are tracked at capability level here; detailed completion chr
 8. Observability and operator surfaces:
    - request correlation + structured events,
    - API/scheduler/worker metrics surfaces and runbook-backed operations.
+9. Search provider API baseline:
+   - authenticated search endpoints for configured providers and ephemeral feed candidate results:
+     - `GET /api/v1/search/providers`
+     - `POST /api/v1/search/feeds`
 
 ## Frontend Delivery Standard
 
