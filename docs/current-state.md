@@ -93,6 +93,7 @@ For architecture details, use [docs/architecture.md](architecture.md).
 ## Active Priorities
 
 1. Monitoring feed search management v2 follow-ups.
+2. Discovery search-provider verification pass for SearXNG instance compatibility and test endpoint selection.
 
 Deferred for now:
 

@@ -18,6 +18,10 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
    - expand monitoring definition management capabilities,
    - add optional create/update-triggered historical matching pass,
    - continue explainability refinements for plugin/query evidence surfaces.
+2. Discovery provider verification pass (SearXNG) for next session:
+   - validate SearXNG instance compatibility with runtime adapter contract (`/search` + `format=json`),
+   - test candidate public instances for auth/rate-limit/API compatibility and shortlist usable test endpoints,
+   - document/update discovery search-provider test configuration guidance for local/session testing.
 
 ### Next UI Slice
 

@@ -3,6 +3,29 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Planning Review: Add SearXNG Discovery Verification Backlog Item)
+
+### Implemented This Session
+
+- Reviewed planning sources for consistency:
+  - `AGENTS.md`
+  - `docs/backlog.md`
+  - `docs/backlog-history.md`
+  - `docs/current-state.md`
+  - `docs/architecture.md`
+  - `docs/session-notes.md`
+- Added explicit next-session backlog item for discovery provider verification:
+  - SearXNG instance compatibility check against runtime API contract,
+  - candidate public-instance validation and usable endpoint shortlist,
+  - config guidance update for discovery/session testing.
+- Updated `docs/current-state.md` active priorities to include the SearXNG verification pass.
+- Maintained rolling-window policy by archiving the oldest entry in this file to `docs/session-notes/archive/2026-03.md`.
+
+### Verification
+
+- `rg -n "Discovery provider verification pass \\(SearXNG\\)|SearXNG instance compatibility" docs/backlog.md docs/current-state.md`
+- `rg -n "^## 2026-03-01" docs/session-notes.md`
+
 ## 2026-03-01 (Discover Feeds v1 Final Closeout: Spec Archive + Backlog Handoff)
 
 ### Implemented This Session
@@ -97,27 +120,6 @@ Historical notes are archived by month under `docs/session-notes/archive/`.
 - `rg -n "Implemented slices|Remaining scope|tracks remaining closeout scope" docs/specs/done/feed-recommendations-v1.md`
 - `rg -n "State: In progress|Baseline implementation is complete" docs/specs/plugin-ui-organization-v1.md`
 - `rg -n "^## " docs/session-notes.md`
-
-## 2026-03-01 (Discover Feeds v1 Slice 4: Frontend Coverage for Discovery Route + Workbench)
-
-### Implemented This Session
-
-- Added dedicated discovery frontend tests:
-  - `DiscoveryWorkbench` interaction coverage for:
-    - stream creation payload mapping,
-    - stream edit/update + generation action,
-    - recommendation decision actions (`accept`/`deny`) and `reset`,
-    - recommendation filter propagation (`q`, status) into hook query filters.
-  - `DiscoveryStreamsPage` route/page coverage to assert:
-    - settings page scaffold renders expected title/description,
-    - workbench mounts in `settings` mode.
-- Preserved existing workspace/plugin discovery tests and kept new coverage isolated with discovery-hook mocks.
-
-### Verification
-
-- `npm --prefix frontend run typecheck`
-- `npm --prefix frontend run lint`
-- `npm --prefix frontend run test -- src/features/discovery/components/DiscoveryWorkbench.test.tsx src/features/discovery/routes/DiscoveryStreamsPage.test.tsx`
 
 ## Rolling Window Policy
 
