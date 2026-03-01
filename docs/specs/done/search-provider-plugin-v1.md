@@ -122,7 +122,7 @@ Enforcement requirements:
 
 ## Integration with Discover Feeds
 
-1. Discover-feeds workflow (`docs/specs/feed-recommendations-v1.md`) consumes `search_provider`.
+1. Discover-feeds workflow (`docs/specs/done/feed-recommendations-v1.md`) consumes `search_provider`.
 2. Discovery stream generation compiles query/options and delegates provider execution to this capability.
 3. Recommendation status lifecycle remains in discover-feeds spec and is out of scope here.
 
@@ -155,4 +155,4 @@ Enforcement requirements:
 ## Backlog References
 
 - Product backlog: [docs/backlog.md](../backlog.md)
-- Dependent workflow spec: [docs/specs/feed-recommendations-v1.md](feed-recommendations-v1.md)
+- Dependent workflow spec: [docs/specs/done/feed-recommendations-v1.md](feed-recommendations-v1.md)

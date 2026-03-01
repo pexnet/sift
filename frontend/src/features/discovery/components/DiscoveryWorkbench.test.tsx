@@ -5,12 +5,16 @@ import type { RecommendationFilters } from "../../../shared/api/discoveryApi";
 import type {
   DiscoveryGenerateResult,
   DiscoveryStream,
+  DiscoveryStreamCopyFromMonitoringRequest,
   DiscoveryStreamCreateRequest,
   DiscoveryStreamUpdateRequest,
   FeedRecommendation,
+  FeedRecommendationSource,
   FeedRecommendationDecisionRequest,
 } from "../../../shared/types/contracts";
+import { useStreamsQuery as useMonitoringStreamsQuery } from "../../monitoring/api/monitoringHooks";
 import {
+  useCopyDiscoveryStreamFromMonitoringMutation,
   useCreateDiscoveryStreamMutation,
   useDecideFeedRecommendationMutation,
   useDeleteDiscoveryStreamMutation,
@@ -23,7 +27,12 @@ import {
 } from "../api/discoveryHooks";
 import { DiscoveryWorkbench } from "./DiscoveryWorkbench";
 
+vi.mock("../../monitoring/api/monitoringHooks", () => ({
+  useStreamsQuery: vi.fn(),
+}));
+
 vi.mock("../api/discoveryHooks", () => ({
+  useCopyDiscoveryStreamFromMonitoringMutation: vi.fn(),
   useDiscoveryStreamsQuery: vi.fn(),
   useFeedRecommendationSummaryQuery: vi.fn(),
   useCreateDiscoveryStreamMutation: vi.fn(),
@@ -36,7 +45,9 @@ vi.mock("../api/discoveryHooks", () => ({
 }));
 
 const useDiscoveryStreamsQueryMock = vi.mocked(useDiscoveryStreamsQuery);
+const useMonitoringStreamsQueryMock = vi.mocked(useMonitoringStreamsQuery);
 const useFeedRecommendationSummaryQueryMock = vi.mocked(useFeedRecommendationSummaryQuery);
+const useCopyDiscoveryStreamFromMonitoringMutationMock = vi.mocked(useCopyDiscoveryStreamFromMonitoringMutation);
 const useCreateDiscoveryStreamMutationMock = vi.mocked(useCreateDiscoveryStreamMutation);
 const useUpdateDiscoveryStreamMutationMock = vi.mocked(useUpdateDiscoveryStreamMutation);
 const useDeleteDiscoveryStreamMutationMock = vi.mocked(useDeleteDiscoveryStreamMutation);
@@ -84,7 +95,23 @@ function makeRecommendation(overrides: Partial<FeedRecommendation> = {}): FeedRe
   };
 }
 
+function makeRecommendationSource(overrides: Partial<FeedRecommendationSource> = {}): FeedRecommendationSource {
+  return {
+    id: "source-1",
+    recommendation_id: "rec-1",
+    discovery_stream_id: "stream-1",
+    discovery_stream_name: "Threat watch",
+    provider_confidence: null,
+    evidence: null,
+    created_at: "2026-03-01T12:00:00Z",
+    ...overrides,
+  };
+}
+
 describe("DiscoveryWorkbench", () => {
+  const copyFromMonitoringMutateAsync = vi.fn<
+    (payload: DiscoveryStreamCopyFromMonitoringRequest) => Promise<DiscoveryStream>
+  >();
   const createMutateAsync = vi.fn<(payload: DiscoveryStreamCreateRequest) => Promise<DiscoveryStream>>();
   const updateMutateAsync = vi.fn<
     (args: { streamId: string; payload: DiscoveryStreamUpdateRequest }) => Promise<DiscoveryStream>
@@ -99,6 +126,7 @@ describe("DiscoveryWorkbench", () => {
   const resetMutateAsync = vi.fn<(recommendationId: string) => Promise<FeedRecommendation>>();
 
   let streamsData: DiscoveryStream[];
+  let monitoringStreamsData: Array<{ id: string; name: string }>;
   let recommendationsData: FeedRecommendation[];
   let latestRecommendationFilters: RecommendationFilters | null;
 
@@ -106,9 +134,20 @@ describe("DiscoveryWorkbench", () => {
     vi.clearAllMocks();
 
     streamsData = [makeStream()];
+    monitoringStreamsData = [{ id: "monitor-1", name: "Threat watch" }];
     recommendationsData = [makeRecommendation()];
     latestRecommendationFilters = null;
 
+    copyFromMonitoringMutateAsync.mockImplementation((payload) => {
+      const created = makeStream({
+        id: "copied-stream",
+        name: payload.name ?? "Threat watch (discovery)",
+        match_query: "threat AND intel",
+        include_keywords: ["threat", "intel"],
+      });
+      streamsData = [...streamsData, created];
+      return Promise.resolve(created);
+    });
     createMutateAsync.mockResolvedValue(makeStream({ id: "stream-created", name: "Created stream" }));
     updateMutateAsync.mockResolvedValue(makeStream({ name: "Updated stream" }));
     deleteMutateAsync.mockResolvedValue(undefined);
@@ -135,6 +174,13 @@ describe("DiscoveryWorkbench", () => {
           isError: false,
         }) as unknown as ReturnType<typeof useDiscoveryStreamsQuery>
     );
+    useMonitoringStreamsQueryMock.mockImplementation(
+      () =>
+        ({
+          data: monitoringStreamsData,
+          isError: false,
+        }) as unknown as ReturnType<typeof useMonitoringStreamsQuery>
+    );
     useFeedRecommendationSummaryQueryMock.mockImplementation(
       () =>
         ({
@@ -147,6 +193,13 @@ describe("DiscoveryWorkbench", () => {
           },
           isError: false,
         }) as unknown as ReturnType<typeof useFeedRecommendationSummaryQuery>
+    );
+    useCopyDiscoveryStreamFromMonitoringMutationMock.mockImplementation(
+      () =>
+        ({
+          mutateAsync: copyFromMonitoringMutateAsync,
+          isPending: false,
+        }) as unknown as ReturnType<typeof useCopyDiscoveryStreamFromMonitoringMutation>
     );
     useCreateDiscoveryStreamMutationMock.mockImplementation(
       () =>
@@ -208,7 +261,7 @@ describe("DiscoveryWorkbench", () => {
 
   it("creates a discovery stream from form input", async () => {
     streamsData = [];
-    createMutateAsync.mockImplementation(async (payload) => {
+    createMutateAsync.mockImplementation((payload) => {
       const created = makeStream({
         id: "stream-created",
         name: payload.name,
@@ -217,11 +270,11 @@ describe("DiscoveryWorkbench", () => {
         exclude_keywords: payload.exclude_keywords ?? [],
       });
       streamsData = [created];
-      return created;
+      return Promise.resolve(created);
     });
     render(<DiscoveryWorkbench mode="settings" />);
 
-    fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), { target: { value: "My stream" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /^Name$/i }), { target: { value: "My stream" } });
     fireEvent.change(screen.getByRole("textbox", { name: /Include keywords/i }), {
       target: { value: "Alpha, alpha, Beta" },
     });
@@ -239,11 +292,30 @@ describe("DiscoveryWorkbench", () => {
     expect(screen.getByText("Discovery stream created.")).toBeVisible();
   });
 
+  it("copies a monitoring feed into discovery stream", async () => {
+    render(<DiscoveryWorkbench mode="settings" />);
+
+    fireEvent.mouseDown(screen.getByLabelText("Monitoring feed"));
+    fireEvent.click(screen.getByRole("option", { name: "Threat watch" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Discovery name (optional)" }), {
+      target: { value: "Threat discovery" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    await waitFor(() => {
+      expect(copyFromMonitoringMutateAsync).toHaveBeenCalledWith({
+        monitoring_stream_id: "monitor-1",
+        name: "Threat discovery",
+      });
+    });
+    expect(screen.getByText("Monitoring feed copied into discovery stream.")).toBeVisible();
+  });
+
   it("edits selected stream and runs generation", async () => {
     render(<DiscoveryWorkbench mode="settings" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Threat intel" }));
-    fireEvent.change(screen.getByRole("textbox", { name: /Name/i }), { target: { value: "Threat intel updated" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /^Name$/i }), { target: { value: "Threat intel updated" } });
     fireEvent.change(screen.getByRole("textbox", { name: /Core query/i }), {
       target: { value: "threat AND intel" },
     });
@@ -296,6 +368,45 @@ describe("DiscoveryWorkbench", () => {
     await waitFor(() => {
       expect(resetMutateAsync).toHaveBeenCalledWith("rec-denied");
     });
+  });
+
+  it("renders source chips and evidence details for recommendations", () => {
+    recommendationsData = [
+      makeRecommendation({
+        id: "rec-evidence",
+        feed_title: "Evidence feed",
+        evidence: {
+          description: "Likely RSS endpoint discovered from provider result.",
+          query_variants: ["threat intel", "malware feed"],
+        },
+        sources: [
+          makeRecommendationSource({
+            id: "source-a",
+            recommendation_id: "rec-evidence",
+            discovery_stream_id: "stream-a",
+            discovery_stream_name: "Threat watch",
+            provider_confidence: 0.82,
+            evidence: { query_variants: ["threat intel"] },
+          }),
+          makeRecommendationSource({
+            id: "source-b",
+            recommendation_id: "rec-evidence",
+            discovery_stream_id: "stream-b",
+            discovery_stream_name: "Vendors",
+            provider_confidence: null,
+            evidence: { query_variants: ["malware feed"] },
+          }),
+        ],
+      }),
+    ];
+
+    render(<DiscoveryWorkbench mode="workspace" />);
+
+    expect(screen.getByText("Source: Threat watch (0.82)")).toBeVisible();
+    expect(screen.getByText("Source: Vendors")).toBeVisible();
+    expect(screen.getByText("Likely RSS endpoint discovered from provider result.")).toBeVisible();
+    expect(screen.getByText("Query: threat intel")).toBeVisible();
+    expect(screen.getByText("Query: malware feed")).toBeVisible();
   });
 
   it("forwards status and query filters to recommendation query hook", async () => {

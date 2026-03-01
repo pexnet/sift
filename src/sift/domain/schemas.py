@@ -423,6 +423,11 @@ class DiscoveryStreamUpdate(BaseModel):
     exclude_keywords: list[str] | None = None
 
 
+class DiscoveryStreamCopyFromMonitoringIn(BaseModel):
+    monitoring_stream_id: UUID
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+
+
 class DiscoveryStreamOut(BaseModel):
     id: UUID
     user_id: UUID

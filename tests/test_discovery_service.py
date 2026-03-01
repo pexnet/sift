@@ -4,12 +4,13 @@ import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
-from sift.db.models import Feed, FeedRecommendation, User
+from sift.db.models import Feed, FeedRecommendation, KeywordStream, User
 from sift.domain.schemas import DiscoveryStreamCreate
 from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest, SearchFeedsResult
 from sift.plugins.manager import PluginStatusSnapshot
 from sift.plugins.registry import PluginBackendConfig, PluginRegistryEntry
 from sift.services.discovery_service import (
+    DiscoveryMonitoringStreamNotFoundError,
     DiscoveryRecommendationValidationError,
     DiscoveryStreamValidationError,
     discovery_service,
@@ -318,5 +319,121 @@ async def test_discovery_recommendation_transition_rules_and_list_sorting() -> N
         assert total == 1
         assert len(rows) == 1
         assert rows[0].feed_title == "Zeta Feed"
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_copy_discovery_stream_from_monitoring() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="discovery-copy@example.com")
+        session.add(user)
+        await session.flush()
+        monitoring_stream = KeywordStream(
+            user_id=user.id,
+            name="Threat watch",
+            description="monitoring description",
+            is_active=True,
+            priority=120,
+            match_query="threat AND intel",
+            include_keywords_json='["threat", "intel"]',
+            exclude_keywords_json='["jobs"]',
+            include_regex_json="[]",
+            exclude_regex_json="[]",
+            source_contains=None,
+            language_equals=None,
+            classifier_mode="rules_only",
+            classifier_plugin=None,
+            classifier_config_json="{}",
+            classifier_min_confidence=0.7,
+        )
+        session.add(monitoring_stream)
+        await session.commit()
+
+        copied = await discovery_service.copy_stream_from_monitoring(
+            session=session,
+            user_id=user.id,
+            monitoring_stream_id=monitoring_stream.id,
+            name=None,
+        )
+
+        assert copied.name == "Threat watch (discovery)"
+        assert copied.description == "monitoring description"
+        assert copied.match_query == "threat AND intel"
+        assert copied.priority == 120
+        assert copied.is_active is True
+        assert copied.include_keywords_json == '["threat", "intel"]'
+        assert copied.exclude_keywords_json == '["jobs"]'
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_copy_discovery_stream_from_monitoring_not_found() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="discovery-copy-missing@example.com")
+        session.add(user)
+        await session.commit()
+
+        with pytest.raises(DiscoveryMonitoringStreamNotFoundError):
+            await discovery_service.copy_stream_from_monitoring(
+                session=session,
+                user_id=user.id,
+                monitoring_stream_id=user.id,
+                name=None,
+            )
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_copy_discovery_stream_from_monitoring_rejects_non_copyable_criteria() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="discovery-copy-invalid@example.com")
+        session.add(user)
+        await session.flush()
+        monitoring_stream = KeywordStream(
+            user_id=user.id,
+            name="Regex only",
+            description=None,
+            is_active=True,
+            priority=100,
+            match_query=None,
+            include_keywords_json="[]",
+            exclude_keywords_json="[]",
+            include_regex_json='["threat.*"]',
+            exclude_regex_json="[]",
+            source_contains=None,
+            language_equals=None,
+            classifier_mode="rules_only",
+            classifier_plugin=None,
+            classifier_config_json="{}",
+            classifier_min_confidence=0.7,
+        )
+        session.add(monitoring_stream)
+        await session.commit()
+
+        with pytest.raises(DiscoveryStreamValidationError):
+            await discovery_service.copy_stream_from_monitoring(
+                session=session,
+                user_id=user.id,
+                monitoring_stream_id=monitoring_stream.id,
+                name=None,
+            )
 
     await engine.dispose()

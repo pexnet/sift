@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 import type {
   DiscoveryGenerateResult,
   DiscoveryStream,
+  DiscoveryStreamCopyFromMonitoringRequest,
   DiscoveryStreamCreateRequest,
   DiscoveryStreamUpdateRequest,
   FeedRecommendation,
@@ -51,6 +52,15 @@ export async function getDiscoveryStreams(): Promise<DiscoveryStream[]> {
 
 export async function createDiscoveryStream(payload: DiscoveryStreamCreateRequest): Promise<DiscoveryStream> {
   return apiClient.post<DiscoveryStreamCreateRequest, DiscoveryStream>(`${DISCOVERY_ENDPOINT}/streams`, payload);
+}
+
+export async function copyDiscoveryStreamFromMonitoring(
+  payload: DiscoveryStreamCopyFromMonitoringRequest
+): Promise<DiscoveryStream> {
+  return apiClient.post<DiscoveryStreamCopyFromMonitoringRequest, DiscoveryStream>(
+    `${DISCOVERY_ENDPOINT}/streams/copy-from-monitoring`,
+    payload
+  );
 }
 
 export async function updateDiscoveryStream(

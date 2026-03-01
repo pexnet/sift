@@ -14,8 +14,10 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 
 ### Core Platform Priorities
 
-1. Discover feeds v1 (discovery streams + generation + recommendation decisions; spec:
-   [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)).
+1. Monitoring feed search management v2 follow-ups:
+   - expand monitoring definition management capabilities,
+   - add optional create/update-triggered historical matching pass,
+   - continue explainability refinements for plugin/query evidence surfaces.
 
 ### Next UI Slice
 
@@ -24,7 +26,6 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 
 ### Linked Specifications
 
-- Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
@@ -39,24 +40,20 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 - Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
   enforce free-tier-safe per-provider request budgets/rate limits by default.
 - Planning decision (2026-02-22): Search provider infrastructure is split into
-  `docs/specs/done/search-provider-plugin-v1.md`; discover-feeds spec now focuses on stream/recommendation workflow.
+  `docs/specs/done/search-provider-plugin-v1.md`; discover-feeds workflow is archived at
+  `docs/specs/done/feed-recommendations-v1.md`.
+- Completed spec archive:
+  - Discover feeds v1: [docs/specs/done/feed-recommendations-v1.md](specs/done/feed-recommendations-v1.md)
 
 ## Deferred (Not Prioritized Yet)
 
 ### 1) Stream-Level Ranking/Prioritization Controls
 
-- Defer stream-ranking implementation while discover-feeds closeout and monitoring follow-up slices are prioritized.
+- Defer stream-ranking implementation while monitoring and dashboard dependency slices are prioritized.
 - Spec reference:
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
 
-### 2) Monitoring Feed Search Management v2 Follow-Ups
-
-- Add expanded management capabilities for monitoring feed definitions.
-- Support additional matcher composition capabilities beyond current baseline semantics.
-- Add optional create/update-triggered historical matching pass.
-- Continue article-view explainability refinements for plugin findings and richer query evidence rendering.
-
-### 3) Dashboard as Daily Command Center (Full Card/Data Rollout)
+### 2) Dashboard as Daily Command Center (Full Card/Data Rollout)
 
 - Complete the command-center experience at `/app/dashboard` while keeping existing left workspace chrome:
   - rail + navigation tree remain visible
@@ -80,11 +77,11 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
   - [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
   - [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
   - [docs/specs/done/search-provider-plugin-v1.md](specs/done/search-provider-plugin-v1.md)
-  - [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
+  - [docs/specs/done/feed-recommendations-v1.md](specs/done/feed-recommendations-v1.md)
 - Rule:
   - dashboard implementation starts only after all checklist dependency specs are drafted and linked.
 
-### 4) Duplicate Detection Visibility (Iteration 1)
+### 3) Duplicate Detection Visibility (Iteration 1)
 
 - Provide an initial duplicate-candidate screen accessible from Settings.
 - Keep first iteration read-focused:
@@ -92,7 +89,7 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
   - show confidence/source metadata
   - link out to canonical article + variants
 
-### 5) Plugin Backlog Ideas
+### 4) Plugin Backlog Ideas
 
 - LLM summarization plugin:
   - generate concise article summaries
@@ -102,7 +99,7 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
   - supports related-content surfacing and future semantic monitoring workflows
 - Spec reference: [docs/specs/article-llm-summary-on-demand-v1.md](specs/article-llm-summary-on-demand-v1.md)
 
-### 6) Trends Detection for Selected Feed Folders
+### 5) Trends Detection for Selected Feed Folders
 
 - Add a deferred trends feature that detects emerging topics across selected feed folders.
 - Intended use cases:
@@ -117,7 +114,7 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
   - supporting article count and source spread
   - links into matching article lists for drill-down
 
-### 7) Advanced Search Query Acceleration
+### 6) Advanced Search Query Acceleration
 
 - Keep v1 search semantics stable, but defer DB-side acceleration work.
 - Candidate acceleration paths:
@@ -128,7 +125,7 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
   - avoid full in-memory scan for advanced expressions on large article sets
   - preserve current query-language behavior and error model
 
-### 8) Silent Feeds for Monitoring-Only Population
+### 7) Silent Feeds for Monitoring-Only Population
 
 - Add feed-level `silent` mode for high-noise feeds that should populate monitoring streams without creating unread
   backlog.
@@ -139,7 +136,7 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 - When a feed is switched to silent, existing unread for that feed should be bulk-marked read.
 - Spec reference: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 
-### 9) OIDC Provider Integration
+### 8) OIDC Provider Integration
 
 - Add external identity provider support on top of existing `auth_identities` foundation.
 - Delivery order:
@@ -147,14 +144,14 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
   - then Azure/Apple
 - Keep current local auth provider behavior unchanged as fallback.
 
-### 10) Vector Database Integration Infrastructure
+### 9) Vector Database Integration Infrastructure
 
 - Move vector-database integration out of immediate `Next` and keep it as a later deferred capability.
 - Add plugin-boundary vector infrastructure for embeddings and semantic matching workflows.
 - Keep vector storage optional and provider-pluggable (for example `pgvector`, Qdrant, Weaviate).
 - Preserve core-ingestion independence so vector infrastructure remains non-blocking for baseline feeds/streams.
 
-### 11) Mobile UX Planning (Dedicated Session)
+### 10) Mobile UX Planning (Dedicated Session)
 
 - Keep current mobile runtime in read-focused mode.
 - Run a separate mobile planning/design session later to define:
@@ -165,13 +162,12 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 
 ### Suggested Deferred Delivery Sequence
 
-1. Monitoring feed management v2 follow-ups.
-2. Dashboard v1 (priority inbox and command-center widgets; start only after dashboard spec-gate checklist is complete).
-3. Stream-level ranking/prioritization controls.
-4. Duplicate-candidate settings view.
-5. Trends detection for selected feed folders (dashboard-oriented).
-6. Advanced search query acceleration (PostgreSQL-oriented).
-7. Vector-database integration infrastructure (plugin-boundary embeddings support).
-8. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
-9. Silent feeds for monitoring-only population.
-10. OIDC provider integration (Google, then Azure/Apple).
+1. Dashboard v1 (priority inbox and command-center widgets; start only after dashboard spec-gate checklist is complete).
+2. Stream-level ranking/prioritization controls.
+3. Duplicate-candidate settings view.
+4. Trends detection for selected feed folders (dashboard-oriented).
+5. Advanced search query acceleration (PostgreSQL-oriented).
+6. Vector-database integration infrastructure (plugin-boundary embeddings support).
+7. Plugin implementations (LLM summary, vector similarity) behind existing plugin contracts.
+8. Silent feeds for monitoring-only population.
+9. OIDC provider integration (Google, then Azure/Apple).

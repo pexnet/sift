@@ -8,6 +8,7 @@ from sift.api.deps.auth import get_current_user
 from sift.db.models import User
 from sift.db.session import get_db_session
 from sift.domain.schemas import (
+    DiscoveryStreamCopyFromMonitoringIn,
     DiscoveryStreamCreate,
     DiscoveryStreamGenerateOut,
     DiscoveryStreamGenerateRequestIn,
@@ -22,6 +23,7 @@ from sift.domain.schemas import (
 )
 from sift.services.discovery_service import (
     DiscoveryGenerationUnavailableError,
+    DiscoveryMonitoringStreamNotFoundError,
     DiscoveryRecommendationNotFoundError,
     DiscoveryRecommendationValidationError,
     DiscoveryStreamConflictError,
@@ -50,6 +52,28 @@ async def create_discovery_stream(
 ) -> DiscoveryStreamOut:
     try:
         stream = await discovery_service.create_stream(session=session, user_id=current_user.id, payload=payload)
+    except DiscoveryStreamConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except DiscoveryStreamValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return discovery_service.to_out(stream)
+
+
+@router.post("/streams/copy-from-monitoring", response_model=DiscoveryStreamOut, status_code=status.HTTP_201_CREATED)
+async def copy_discovery_stream_from_monitoring(
+    payload: DiscoveryStreamCopyFromMonitoringIn,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> DiscoveryStreamOut:
+    try:
+        stream = await discovery_service.copy_stream_from_monitoring(
+            session=session,
+            user_id=current_user.id,
+            monitoring_stream_id=payload.monitoring_stream_id,
+            name=payload.name,
+        )
+    except DiscoveryMonitoringStreamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except DiscoveryStreamConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except DiscoveryStreamValidationError as exc:

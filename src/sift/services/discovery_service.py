@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.config import get_settings
 from sift.core.runtime import get_plugin_manager
-from sift.db.models import DiscoveryStream, Feed, FeedRecommendation, FeedRecommendationSource
+from sift.db.models import DiscoveryStream, Feed, FeedRecommendation, FeedRecommendationSource, KeywordStream
 from sift.domain.schemas import (
     DiscoveryStreamCreate,
     DiscoveryStreamOut,
@@ -46,6 +46,10 @@ class DiscoveryStreamValidationError(Exception):
 
 
 class DiscoveryStreamNotFoundError(Exception):
+    pass
+
+
+class DiscoveryMonitoringStreamNotFoundError(Exception):
     pass
 
 
@@ -352,6 +356,42 @@ class DiscoveryService:
         query = select(DiscoveryStream).where(DiscoveryStream.id == stream_id, DiscoveryStream.user_id == user_id)
         result = await session.execute(query)
         return result.scalar_one_or_none()
+
+    async def copy_stream_from_monitoring(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        monitoring_stream_id: UUID,
+        name: str | None,
+    ) -> DiscoveryStream:
+        query = select(KeywordStream).where(KeywordStream.id == monitoring_stream_id, KeywordStream.user_id == user_id)
+        result = await session.execute(query)
+        monitoring_stream = result.scalar_one_or_none()
+        if monitoring_stream is None:
+            raise DiscoveryMonitoringStreamNotFoundError(f"Monitoring stream {monitoring_stream_id} not found")
+
+        copied_match_query = _normalize_optional_text(monitoring_stream.match_query)
+        copied_include_keywords = _keywords_from_json(monitoring_stream.include_keywords_json)
+        if copied_match_query is None and not copied_include_keywords:
+            raise DiscoveryStreamValidationError(
+                "Monitoring stream has no copyable discovery criteria (query/include keywords)"
+            )
+
+        copied_name = _normalize_optional_text(name)
+        if copied_name is None:
+            copied_name = f"{monitoring_stream.name} (discovery)"
+
+        payload = DiscoveryStreamCreate(
+            name=copied_name,
+            description=_normalize_optional_text(monitoring_stream.description),
+            is_active=monitoring_stream.is_active,
+            priority=monitoring_stream.priority,
+            match_query=copied_match_query,
+            include_keywords=copied_include_keywords,
+            exclude_keywords=_keywords_from_json(monitoring_stream.exclude_keywords_json),
+        )
+        return await self.create_stream(session=session, user_id=user_id, payload=payload)
 
     async def create_stream(self, session: AsyncSession, user_id: UUID, payload: DiscoveryStreamCreate) -> DiscoveryStream:
         match_query = _normalize_optional_text(payload.match_query)

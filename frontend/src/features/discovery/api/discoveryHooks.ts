@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  copyDiscoveryStreamFromMonitoring,
   createDiscoveryStream,
   decideFeedRecommendation,
   deleteDiscoveryStream,
@@ -14,6 +15,7 @@ import {
 } from "../../../shared/api/discoveryApi";
 import { queryKeys } from "../../../shared/api/queryKeys";
 import type {
+  DiscoveryStreamCopyFromMonitoringRequest,
   DiscoveryStreamCreateRequest,
   DiscoveryStreamUpdateRequest,
   FeedRecommendationDecisionRequest,
@@ -50,6 +52,14 @@ export function useCreateDiscoveryStreamMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: DiscoveryStreamCreateRequest) => createDiscoveryStream(payload),
+    onSuccess: async () => invalidateDiscoveryQueries(queryClient),
+  });
+}
+
+export function useCopyDiscoveryStreamFromMonitoringMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: DiscoveryStreamCopyFromMonitoringRequest) => copyDiscoveryStreamFromMonitoring(payload),
     onSuccess: async () => invalidateDiscoveryQueries(queryClient),
   });
 }

@@ -164,12 +164,17 @@ vi.mock("../../discovery/api/discoveryHooks", () => ({
     isError: false,
   }),
   useCreateDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCopyDiscoveryStreamFromMonitoringMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useGenerateDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useFeedRecommendationsQuery: () => ({ data: { items: [], total: 0, limit: 100, offset: 0 }, isLoading: false, isError: false }),
   useDecideFeedRecommendationMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useResetFeedRecommendationMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock("../../monitoring/api/monitoringHooks", () => ({
+  useStreamsQuery: () => ({ data: [], isLoading: false, isError: false }),
 }));
 
 function WorkspaceHarness() {

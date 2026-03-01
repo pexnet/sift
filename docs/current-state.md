@@ -50,7 +50,7 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - provider adapter hardening with warning-coded timeout/network/http/json/payload handling,
   - runtime candidate URL normalization and de-duplication,
   - archived spec: `docs/specs/done/search-provider-plugin-v1.md`.
-- Discover feeds v1 slices 1-4 implemented:
+- Discover feeds v1 completed and archived:
   - discovery stream persistence (`discovery_streams`) with authenticated CRUD API:
     - `GET /api/v1/discovery/streams`
     - `POST /api/v1/discovery/streams`
@@ -76,7 +76,15 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - discovery frontend coverage:
     - workbench interaction tests (create/edit/generate/accept/deny/reset/filter propagation),
     - discovery settings route scaffold test.
+  - copy-from-monitoring convenience action:
+    - backend endpoint `POST /api/v1/discovery/streams/copy-from-monitoring`,
+    - discovery workbench settings action to copy monitoring stream criteria into discovery streams,
+    - backend/frontend test coverage for copy workflow.
+  - recommendation source/evidence UI surfacing:
+    - discovery candidate cards render source-stream chips (with optional confidence labels),
+    - recommendation evidence description and query-variant chips are surfaced in discovery workbench.
   - existing user feed URLs are auto-resolved as `resolved_existing` during generation and excluded from pending work.
+  - archived spec: `docs/specs/done/feed-recommendations-v1.md`.
 - Plugin architecture hardening implemented:
   - shared plugin capability metadata contract (`src/sift/plugins/capabilities.py`),
   - runtime-loaded plugin registry snapshot exposed by plugin manager,
@@ -84,7 +92,7 @@ For architecture details, use [docs/architecture.md](architecture.md).
 
 ## Active Priorities
 
-1. Discover feeds v1 (discovery streams + recommendation decisions) on top of completed search-provider infrastructure.
+1. Monitoring feed search management v2 follow-ups.
 
 Deferred for now:
 

@@ -6,6 +6,21 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Discover Feeds v1 (Completed on 2026-03-01)
+
+1. Completed discovery stream workflow foundation:
+   - discovery stream CRUD + manual generation endpoint
+   - generation delegated to shared search-provider runtime
+2. Completed recommendation persistence and lifecycle:
+   - `feed_recommendations` + `feed_recommendation_sources`
+   - recommendation list/decision/reset/summary APIs
+   - strict transition rules with `resolved_existing` auto-resolution for already-subscribed feeds
+3. Completed discover-feeds UX closeout:
+   - discovery settings/workspace flows including copy-from-monitoring convenience action
+   - recommendation source/evidence rendering in discovery candidate cards
+4. Spec archived:
+   - `docs/specs/done/feed-recommendations-v1.md`
+
 ### Search Provider Plugin v1 (Completed on 2026-03-01)
 
 1. Completed search-provider plugin platform baseline:

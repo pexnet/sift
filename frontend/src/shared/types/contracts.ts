@@ -91,6 +91,11 @@ export type DiscoveryStreamCreateRequest = {
 
 export type DiscoveryStreamUpdateRequest = Partial<DiscoveryStreamCreateRequest>;
 
+export type DiscoveryStreamCopyFromMonitoringRequest = {
+  monitoring_stream_id: string;
+  name?: string | null;
+};
+
 export type SearchFeedCandidate = {
   title: string;
   url: string;

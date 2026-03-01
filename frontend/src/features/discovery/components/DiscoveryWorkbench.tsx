@@ -23,7 +23,9 @@ import { useMemo, useState, type FormEvent } from "react";
 
 import type { RecommendationFilters } from "../../../shared/api/discoveryApi";
 import type { DiscoveryStream, FeedRecommendation } from "../../../shared/types/contracts";
+import { useStreamsQuery as useMonitoringStreamsQuery } from "../../monitoring/api/monitoringHooks";
 import {
+  useCopyDiscoveryStreamFromMonitoringMutation,
   useCreateDiscoveryStreamMutation,
   useDecideFeedRecommendationMutation,
   useDeleteDiscoveryStreamMutation,
@@ -61,6 +63,8 @@ const DEFAULT_FORM_STATE: DiscoveryFormState = {
   excludeKeywords: "",
   isActive: true,
 };
+const MAX_SOURCE_CHIPS = 4;
+const MAX_QUERY_VARIANT_CHIPS = 3;
 
 function parseKeywordsInput(value: string): string[] {
   const tokens = value
@@ -105,9 +109,77 @@ function recommendationSubtitle(item: FeedRecommendation): string {
   return bits.join(" • ");
 }
 
+function recommendationSourceLabels(item: FeedRecommendation): string[] {
+  const labels: string[] = [];
+  const seen = new Set<string>();
+  for (const source of item.sources) {
+    const base = (source.discovery_stream_name ?? source.discovery_stream_id).trim();
+    if (base.length === 0) {
+      continue;
+    }
+    const confidenceLabel =
+      typeof source.provider_confidence === "number" && Number.isFinite(source.provider_confidence)
+        ? ` (${source.provider_confidence.toFixed(2)})`
+        : "";
+    const label = `${base}${confidenceLabel}`;
+    if (seen.has(label)) {
+      continue;
+    }
+    seen.add(label);
+    labels.push(label);
+  }
+  return labels;
+}
+
+function appendQueryVariantsFromEvidence(target: string[], seen: Set<string>, evidence: Record<string, unknown> | null): void {
+  const raw = evidence?.query_variants;
+  if (!Array.isArray(raw)) {
+    return;
+  }
+  for (const item of raw) {
+    if (typeof item !== "string") {
+      continue;
+    }
+    const normalized = item.trim();
+    if (normalized.length === 0) {
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    target.push(normalized);
+  }
+}
+
+function recommendationQueryVariants(item: FeedRecommendation): string[] {
+  const variants: string[] = [];
+  const seen = new Set<string>();
+  appendQueryVariantsFromEvidence(variants, seen, item.evidence);
+  for (const source of item.sources) {
+    appendQueryVariantsFromEvidence(variants, seen, source.evidence);
+  }
+  return variants;
+}
+
+function recommendationEvidenceDescription(item: FeedRecommendation): string | null {
+  const raw = item.evidence?.description;
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const normalized = raw.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+  return normalized;
+}
+
 export function DiscoveryWorkbench({ mode }: DiscoveryWorkbenchProps) {
   const streamsQuery = useDiscoveryStreamsQuery();
+  const monitoringStreamsQuery = useMonitoringStreamsQuery();
   const summaryQuery = useFeedRecommendationSummaryQuery();
+  const copyFromMonitoringMutation = useCopyDiscoveryStreamFromMonitoringMutation();
   const createStreamMutation = useCreateDiscoveryStreamMutation();
   const updateStreamMutation = useUpdateDiscoveryStreamMutation();
   const deleteStreamMutation = useDeleteDiscoveryStreamMutation();
@@ -120,8 +192,11 @@ export function DiscoveryWorkbench({ mode }: DiscoveryWorkbenchProps) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [statusFilter, setStatusFilter] = useState<RecommendationStatusFilter>("pending");
   const [q, setQ] = useState("");
+  const [monitoringSourceId, setMonitoringSourceId] = useState("");
+  const [copiedName, setCopiedName] = useState("");
 
   const streams = useMemo(() => streamsQuery.data ?? [], [streamsQuery.data]);
+  const monitoringStreams = useMemo(() => monitoringStreamsQuery.data ?? [], [monitoringStreamsQuery.data]);
   const selectedStream = useMemo(
     () => streams.find((item) => item.id === selectedStreamId) ?? null,
     [selectedStreamId, streams]
@@ -268,6 +343,26 @@ export function DiscoveryWorkbench({ mode }: DiscoveryWorkbenchProps) {
     }
   };
 
+  const copyFromMonitoring = async () => {
+    if (monitoringSourceId.length === 0) {
+      setFeedback({ severity: "info", message: "Select a monitoring feed to copy from." });
+      return;
+    }
+    try {
+      const created = await copyFromMonitoringMutation.mutateAsync(
+        copiedName.trim().length > 0
+          ? { monitoring_stream_id: monitoringSourceId, name: copiedName.trim() }
+          : { monitoring_stream_id: monitoringSourceId }
+      );
+      startEdit(created);
+      setCopiedName("");
+      setFeedback({ severity: "success", message: "Monitoring feed copied into discovery stream." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to copy monitoring feed.";
+      setFeedback({ severity: "error", message });
+    }
+  };
+
   return (
     <Stack spacing={1.4}>
       {feedback ? <Alert severity={feedback.severity}>{feedback.message}</Alert> : null}
@@ -329,6 +424,47 @@ export function DiscoveryWorkbench({ mode }: DiscoveryWorkbenchProps) {
                 </Tooltip>
               ) : null}
             </Stack>
+            {mode === "settings" ? (
+              <Stack spacing={0.8} sx={{ pt: 0.6 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Copy from monitoring feed
+                </Typography>
+                <FormControl size="small">
+                  <InputLabel id="monitoring-copy-select-label">Monitoring feed</InputLabel>
+                  <Select
+                    labelId="monitoring-copy-select-label"
+                    label="Monitoring feed"
+                    value={monitoringSourceId}
+                    onChange={(event) => setMonitoringSourceId(event.target.value)}
+                  >
+                    <MenuItem value="">Select monitoring feed</MenuItem>
+                    {monitoringStreams.map((stream) => (
+                      <MenuItem key={stream.id} value={stream.id}>
+                        {stream.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Discovery name (optional)"
+                  size="small"
+                  value={copiedName}
+                  onChange={(event) => setCopiedName(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => void copyFromMonitoring()}
+                  disabled={copyFromMonitoringMutation.isPending || monitoringStreams.length === 0}
+                >
+                  Copy
+                </Button>
+                {monitoringStreamsQuery.isError ? (
+                  <Alert severity="error">Failed to load monitoring feeds for copy action.</Alert>
+                ) : null}
+              </Stack>
+            ) : null}
             {streamsQuery.isError ? <Alert severity="error">Failed to load discovery streams.</Alert> : null}
             {streams.length > 0 ? (
               <Stack spacing={0.5} sx={{ pt: 0.6 }}>
@@ -425,58 +561,106 @@ export function DiscoveryWorkbench({ mode }: DiscoveryWorkbenchProps) {
               </Typography>
             ) : (
               <Stack spacing={0.8}>
-                {recommendations.map((recommendation) => (
-                  <Paper key={recommendation.id} variant="outlined" sx={{ p: 1 }}>
-                    <Stack spacing={0.7}>
-                      <Stack direction="row" justifyContent="space-between" spacing={1}>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography variant="subtitle2" noWrap>
-                            {recommendation.feed_title || recommendation.feed_url}
+                {recommendations.map((recommendation) => {
+                  const sourceLabels = recommendationSourceLabels(recommendation);
+                  const evidenceDescription = recommendationEvidenceDescription(recommendation);
+                  const queryVariants = recommendationQueryVariants(recommendation);
+                  return (
+                    <Paper key={recommendation.id} variant="outlined" sx={{ p: 1 }}>
+                      <Stack spacing={0.7}>
+                        <Stack direction="row" justifyContent="space-between" spacing={1}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {recommendation.feed_title || recommendation.feed_url}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                              {recommendation.feed_url}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                              {recommendationSubtitle(recommendation)}
+                            </Typography>
+                          </Box>
+                          <Chip size="small" label={recommendation.status.replace("_", " ")} />
+                        </Stack>
+                        {sourceLabels.length > 0 ? (
+                          <Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+                            {sourceLabels.slice(0, MAX_SOURCE_CHIPS).map((label, index) => (
+                              <Chip
+                                key={`${recommendation.id}-source-${index}`}
+                                size="small"
+                                variant="outlined"
+                                label={`Source: ${label}`}
+                              />
+                            ))}
+                            {sourceLabels.length > MAX_SOURCE_CHIPS ? (
+                              <Chip
+                                size="small"
+                                variant="outlined"
+                                label={`+${sourceLabels.length - MAX_SOURCE_CHIPS} more`}
+                              />
+                            ) : null}
+                          </Stack>
+                        ) : null}
+                        {evidenceDescription ? (
+                          <Typography variant="body2" color="text.secondary">
+                            {evidenceDescription}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap>
-                            {recommendation.feed_url}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                            {recommendationSubtitle(recommendation)}
-                          </Typography>
-                        </Box>
-                        <Chip size="small" label={recommendation.status.replace("_", " ")} />
-                      </Stack>
-                      <Stack direction="row" spacing={0.8}>
-                        {recommendation.status === "pending" ? (
-                          <>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              onClick={() => void acceptRecommendation(recommendation.id)}
-                              disabled={decideMutation.isPending}
-                            >
-                              Accept
-                            </Button>
+                        ) : null}
+                        {queryVariants.length > 0 ? (
+                          <Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+                            {queryVariants.slice(0, MAX_QUERY_VARIANT_CHIPS).map((variant, index) => (
+                              <Chip
+                                key={`${recommendation.id}-query-variant-${index}`}
+                                size="small"
+                                variant="outlined"
+                                label={`Query: ${variant}`}
+                              />
+                            ))}
+                            {queryVariants.length > MAX_QUERY_VARIANT_CHIPS ? (
+                              <Chip
+                                size="small"
+                                variant="outlined"
+                                label={`+${queryVariants.length - MAX_QUERY_VARIANT_CHIPS} more queries`}
+                              />
+                            ) : null}
+                          </Stack>
+                        ) : null}
+                        <Stack direction="row" spacing={0.8}>
+                          {recommendation.status === "pending" ? (
+                            <>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={() => void acceptRecommendation(recommendation.id)}
+                                disabled={decideMutation.isPending}
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => void denyRecommendation(recommendation.id)}
+                                disabled={decideMutation.isPending}
+                              >
+                                Deny
+                              </Button>
+                            </>
+                          ) : null}
+                          {recommendation.status === "denied" ? (
                             <Button
                               size="small"
                               variant="outlined"
-                              onClick={() => void denyRecommendation(recommendation.id)}
-                              disabled={decideMutation.isPending}
+                              onClick={() => void resetRecommendation(recommendation.id)}
+                              disabled={resetRecommendationMutation.isPending}
                             >
-                              Deny
+                              Reset
                             </Button>
-                          </>
-                        ) : null}
-                        {recommendation.status === "denied" ? (
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => void resetRecommendation(recommendation.id)}
-                            disabled={resetRecommendationMutation.isPending}
-                          >
-                            Reset
-                          </Button>
-                        ) : null}
+                          ) : null}
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  </Paper>
-                ))}
+                    </Paper>
+                  );
+                })}
               </Stack>
             )}
           </Stack>

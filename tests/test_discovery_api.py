@@ -1,6 +1,8 @@
+import asyncio
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from sift.api.deps.auth import get_current_user
 from sift.db.base import Base
-from sift.db.models import User
+from sift.db.models import KeywordStream, User
 from sift.db.session import get_db_session
 from sift.main import app
 from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest, SearchFeedsResult
@@ -164,6 +166,43 @@ def test_discovery_streams_crud_and_generate(monkeypatch: pytest.MonkeyPatch, tm
             assert list_response.status_code == 200
             assert len(list_response.json()) == 1
 
+            async def create_monitoring_stream() -> str:
+                async with session_maker() as session:
+                    stream = KeywordStream(
+                        user_id=user.id,
+                        name="Monitoring source",
+                        description="copied description",
+                        is_active=True,
+                        priority=130,
+                        match_query="threat AND intel",
+                        include_keywords_json='["threat", "intel"]',
+                        exclude_keywords_json='["jobs"]',
+                        include_regex_json="[]",
+                        exclude_regex_json="[]",
+                        source_contains=None,
+                        language_equals=None,
+                        classifier_mode="rules_only",
+                        classifier_plugin=None,
+                        classifier_config_json="{}",
+                        classifier_min_confidence=0.7,
+                    )
+                    session.add(stream)
+                    await session.commit()
+                    await session.refresh(stream)
+                    return str(stream.id)
+
+            monitoring_stream_id = asyncio.run(create_monitoring_stream())
+            copy_response = client.post(
+                "/api/v1/discovery/streams/copy-from-monitoring",
+                json={"monitoring_stream_id": monitoring_stream_id},
+            )
+            assert copy_response.status_code == 201
+            copied_stream = copy_response.json()
+            assert copied_stream["name"] == "Monitoring source (discovery)"
+            assert copied_stream["include_keywords"] == ["threat", "intel"]
+            assert copied_stream["exclude_keywords"] == ["jobs"]
+            assert copied_stream["match_query"] == "threat AND intel"
+
             generate_response = client.post(f"/api/v1/discovery/streams/{stream_id}/generate", json={})
             assert generate_response.status_code == 200
             generated = generate_response.json()
@@ -243,10 +282,8 @@ def test_discovery_streams_crud_and_generate(monkeypatch: pytest.MonkeyPatch, tm
 
             list_after_delete = client.get("/api/v1/discovery/streams")
             assert list_after_delete.status_code == 200
-            assert list_after_delete.json() == []
+            assert len(list_after_delete.json()) == 1
     finally:
-        import asyncio
-
         app.dependency_overrides.clear()
         asyncio.run(engine.dispose())
         if db_path.exists():
@@ -296,6 +333,12 @@ def test_discovery_generate_returns_503_when_plugin_unavailable(
             )
             assert create_response.status_code == 201
             stream_id = create_response.json()["id"]
+
+            copy_missing_response = client.post(
+                "/api/v1/discovery/streams/copy-from-monitoring",
+                json={"monitoring_stream_id": str(uuid4())},
+            )
+            assert copy_missing_response.status_code == 404
 
             generate_response = client.post(f"/api/v1/discovery/streams/{stream_id}/generate", json={})
             assert generate_response.status_code == 503
