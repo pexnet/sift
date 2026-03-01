@@ -7,6 +7,7 @@ This runbook documents the current backend observability contract for Sift API, 
 - Structured JSON logs with request/job correlation metadata.
 - Prometheus-compatible metric names under `sift_*`.
 - VMUI-first operational workflow with VictoriaMetrics and VictoriaLogs compatibility.
+- Local stack bootstrap files are available under `ops/observability/`.
 
 ## Runtime Configuration
 
@@ -183,6 +184,8 @@ scrape_configs:
 ```
 
 Load this into your metrics scraper (Prometheus or `vmagent`) and point it at Sift API.
+For a ready-to-run local stack (VictoriaMetrics + VictoriaLogs + vmagent + Vector), see
+`ops/observability/README.md`.
 
 Recommended initial VMUI panels:
 
