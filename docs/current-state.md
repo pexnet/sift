@@ -50,7 +50,7 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - provider adapter hardening with warning-coded timeout/network/http/json/payload handling,
   - runtime candidate URL normalization and de-duplication,
   - archived spec: `docs/specs/done/search-provider-plugin-v1.md`.
-- Discover feeds v1 slices 1-2 implemented:
+- Discover feeds v1 slices 1-4 implemented:
   - discovery stream persistence (`discovery_streams`) with authenticated CRUD API:
     - `GET /api/v1/discovery/streams`
     - `POST /api/v1/discovery/streams`
@@ -65,6 +65,17 @@ For architecture details, use [docs/architecture.md](architecture.md).
     - `PATCH /api/v1/discovery/recommendations/{recommendation_id}` (`accept` / `deny`)
     - `POST /api/v1/discovery/recommendations/{recommendation_id}/reset`
     - `GET /api/v1/discovery/recommendations/summary`
+  - recommendation workflow hardening:
+    - stricter decision transitions (`accept`/`deny` only from `pending`, reset from `denied`),
+    - recommendation listing `q` filtering and `sort_by`/`sort_direction` controls,
+    - candidate feed-endpoint validation (fallback paths + HTML autodiscovery + feed parse checks).
+  - discovery frontend wiring:
+    - account route `/account/discovery` with discovery stream management and recommendation decision surface,
+    - workspace plugin area rendering for discover-feeds flow,
+    - pending recommendation badge wiring in plugin navigation.
+  - discovery frontend coverage:
+    - workbench interaction tests (create/edit/generate/accept/deny/reset/filter propagation),
+    - discovery settings route scaffold test.
   - existing user feed URLs are auto-resolved as `resolved_existing` during generation and excluded from pending work.
 - Plugin architecture hardening implemented:
   - shared plugin capability metadata contract (`src/sift/plugins/capabilities.py`),

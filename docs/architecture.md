@@ -27,8 +27,8 @@ This keeps deployment simple while preserving clean seams for future service ext
 **Current**
 
 - Frontend is a standalone React + TypeScript SPA in `frontend/` (Vite + MUI + TanStack Router/Query).
-- Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/feed-health`,
-  `/help`) and is deployed independently from FastAPI.
+- Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/discovery`,
+  `/account/feed-health`, `/help`) and is deployed independently from FastAPI.
 - Backend no longer serves UI pages/static frontend bundles from `src/sift`.
 - Integration with backend is API-only via `/api/v1/*`.
 

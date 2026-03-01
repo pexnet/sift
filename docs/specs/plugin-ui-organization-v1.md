@@ -2,8 +2,9 @@
 
 ## Status
 
-- State: Planned
-- Scope: Specification only (no implementation in this checkpoint)
+- State: In progress
+- Scope: Baseline implementation is complete (`Plugins` nav section + workspace area host + discover-feeds area).
+  Remaining scope is standardization follow-up for additional plugin areas and contracts.
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -25,7 +26,7 @@ without mixing them into unrelated core areas.
 
 1. No plugin marketplace/distribution system.
 2. No full plugin permission model redesign.
-3. No implementation of specific plugin business logic in this spec.
+3. No implementation commitment for specific plugin business logic beyond UI-host organization.
 
 ## Proposed UI Information Architecture
 

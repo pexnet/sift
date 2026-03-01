@@ -16,8 +16,6 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 
 1. Discover feeds v1 (discovery streams + generation + recommendation decisions; spec:
    [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)).
-2. Search provider plugin v1 is completed and archived:
-   [docs/specs/done/search-provider-plugin-v1.md](specs/done/search-provider-plugin-v1.md).
 
 ### Next UI Slice
 
@@ -27,7 +25,6 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 ### Linked Specifications
 
 - Discover feeds v1: [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
-- Search provider plugin v1 (completed): [docs/specs/done/search-provider-plugin-v1.md](specs/done/search-provider-plugin-v1.md)
 - Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
 - Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
@@ -48,7 +45,7 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 
 ### 1) Stream-Level Ranking/Prioritization Controls
 
-- Defer stream-ranking implementation for now while search-provider infrastructure is prioritized.
+- Defer stream-ranking implementation while discover-feeds closeout and monitoring follow-up slices are prioritized.
 - Spec reference:
   - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
 

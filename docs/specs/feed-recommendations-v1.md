@@ -6,7 +6,10 @@
 - Implemented slices:
   - Slice 1: discovery streams CRUD + manual generation API baseline
   - Slice 2: recommendation persistence + decision/reset/summary APIs
-- Remaining scope: recommendation workflow hardening and UI integration slices
+  - Slice 3: recommendation workflow hardening + endpoint validation + frontend wiring baseline
+  - Slice 4: discovery frontend test coverage (settings route + workbench interactions)
+- Remaining scope: final discover-feeds v1 closeout slices (copy-from-monitoring convenience + richer source/evidence UI
+  surfacing + spec/archive closeout)
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context
@@ -18,7 +21,8 @@ articles in v1.
 Provider execution strategy is intentionally split into a dedicated planning artifact:
 `docs/specs/done/search-provider-plugin-v1.md`.
 
-This document is a planning artifact and does not change backend/frontend behavior yet.
+This document now tracks remaining closeout scope for discover-feeds v1; baseline backend/frontend behavior is already
+implemented through slices 1-4.
 
 ## Goal
 
