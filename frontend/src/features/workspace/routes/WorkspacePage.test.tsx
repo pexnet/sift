@@ -156,6 +156,22 @@ vi.mock("../hooks/useWorkspaceShortcuts", () => ({
   useWorkspaceShortcuts: () => {},
 }));
 
+vi.mock("../../discovery/api/discoveryHooks", () => ({
+  useDiscoveryStreamsQuery: () => ({ data: [], isLoading: false, isError: false }),
+  useFeedRecommendationSummaryQuery: () => ({
+    data: { pending_count: 0, denied_count: 0, accepted_count: 0, resolved_existing_count: 0, total_count: 0 },
+    isLoading: false,
+    isError: false,
+  }),
+  useCreateDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useGenerateDiscoveryStreamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useFeedRecommendationsQuery: () => ({ data: { items: [], total: 0, limit: 100, offset: 0 }, isLoading: false, isError: false }),
+  useDecideFeedRecommendationMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useResetFeedRecommendationMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
 function WorkspaceHarness() {
   const [search, setSearch] = useState<WorkspaceSearch>({
     scope_type: "system",
@@ -266,7 +282,7 @@ describe("WorkspacePage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Discover feeds" })).toBeVisible();
-    expect(screen.getByText("Discovery controls coming next")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Generate" })).toBeVisible();
     expect(screen.queryByRole("separator", { name: "Resize reader pane" })).toBeNull();
   });
 

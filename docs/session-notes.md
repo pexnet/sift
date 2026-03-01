@@ -3,6 +3,60 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Discover Feeds v1 Slice 4: Frontend Coverage for Discovery Route + Workbench)
+
+### Implemented This Session
+
+- Added dedicated discovery frontend tests:
+  - `DiscoveryWorkbench` interaction coverage for:
+    - stream creation payload mapping,
+    - stream edit/update + generation action,
+    - recommendation decision actions (`accept`/`deny`) and `reset`,
+    - recommendation filter propagation (`q`, status) into hook query filters.
+  - `DiscoveryStreamsPage` route/page coverage to assert:
+    - settings page scaffold renders expected title/description,
+    - workbench mounts in `settings` mode.
+- Preserved existing workspace/plugin discovery tests and kept new coverage isolated with discovery-hook mocks.
+
+### Verification
+
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run test -- src/features/discovery/components/DiscoveryWorkbench.test.tsx src/features/discovery/routes/DiscoveryStreamsPage.test.tsx`
+
+## 2026-03-01 (Discover Feeds v1 Slice 3: Recommendation Listing Hardening + Endpoint Validation + Frontend Wiring)
+
+### Implemented This Session
+
+- Hardened recommendation listing/query behavior:
+  - added `q` text filtering over recommendation title/url fields,
+  - added `sort_by`/`sort_direction` controls on recommendations API,
+  - added stricter decision transition rules (`accept`/`deny` only from `pending`, reset from `denied`).
+- Added feed-endpoint validation before recommendation persistence:
+  - candidate endpoint expansion (`/feed`, `/rss`, `/atom.xml`, `/feed.xml`),
+  - HTML autodiscovery (`<link rel="alternate" ...>`),
+  - feed payload parse validation and warning propagation for invalid/unresolvable candidates.
+- Completed initial frontend discovery wiring:
+  - new discovery API client + React Query hooks,
+  - `DiscoveryWorkbench` UI for stream CRUD, generation, filtering, and recommendation decisions/reset,
+  - new settings route `/account/discovery`,
+  - plugin area host integration so discovery can render from plugin workspace area,
+  - workspace plugin-nav pending badge wiring from recommendation summary (`discover_feeds` pending count).
+- Updated tests:
+  - backend discovery service/API coverage for transitions and recommendation list filtering/sorting,
+  - workspace test updates for plugin-area host wiring/mocks.
+
+### Verification
+
+- `python -m ruff check src/sift/services/discovery_service.py src/sift/api/routes/discovery.py tests/test_discovery_service.py tests/test_discovery_api.py`
+- `python -m mypy src/sift/services/discovery_service.py src/sift/api/routes/discovery.py tests/test_discovery_service.py tests/test_discovery_api.py --no-incremental`
+- `python -m pytest tests/test_discovery_service.py tests/test_discovery_api.py`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run test`
+- `npm --prefix frontend run build`
+- `npm --prefix frontend run test -- src/features/workspace/components/NavigationPane.test.tsx src/features/workspace/routes/WorkspacePage.test.tsx`
+
 ## 2026-03-01 (Discover Feeds v1 Slice 2: Recommendation Persistence + Decisions API)
 
 ### Implemented This Session

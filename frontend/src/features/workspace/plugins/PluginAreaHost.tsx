@@ -1,8 +1,9 @@
-import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import type { PluginArea } from "../../../shared/types/contracts";
+import { DiscoveryWorkbench } from "../../discovery/components/DiscoveryWorkbench";
 import { createPluginAreaRegistry, type PluginAreaRegistration } from "./registry";
 
 type PluginAreaHostProps = {
@@ -24,11 +25,9 @@ function DiscoverFeedsAreaView({ area }: PluginAreaViewProps) {
         </Typography>
       </Stack>
       <Typography variant="body2" color="text.secondary" className="workspace-plugin-area__description">
-        Plugin host baseline is active. Discovery stream workflows can now mount into this workspace area.
+        Generate candidates, review recommendations, and accept or deny feeds directly from workspace.
       </Typography>
-      <Button variant="outlined" size="small">
-        Discovery controls coming next
-      </Button>
+      <DiscoveryWorkbench mode="workspace" />
     </Box>
   );
 }

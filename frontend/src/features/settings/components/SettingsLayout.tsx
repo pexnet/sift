@@ -1,7 +1,7 @@
 import { Box, Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 
-type SettingsSectionId = "general" | "feed-health" | "monitoring" | "help";
+type SettingsSectionId = "general" | "feed-health" | "monitoring" | "discovery" | "help";
 
 type SettingsLayoutProps = {
   activeSection: SettingsSectionId;

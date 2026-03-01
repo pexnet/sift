@@ -1,12 +1,15 @@
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from typing import Any, Literal, cast
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urljoin, urlparse, urlunparse
 from uuid import UUID
 
+import feedparser
+import httpx
 from pydantic import ValidationError
-from sqlalchemy import func, select
+from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +33,8 @@ from sift.services.search_service import SearchProviderBudget, SearchWarning, se
 
 _SUPPORTED_SCHEMES = frozenset({"http", "https"})
 _RECOMMENDATION_STATUS_VALUES = frozenset({"pending", "accepted", "denied", "resolved_existing"})
+_CANDIDATE_FEED_FALLBACK_PATHS = ("/feed", "/rss", "/atom.xml", "/feed.xml")
+_MAX_VALIDATION_CANDIDATES = 40
 
 
 class DiscoveryStreamConflictError(Exception):
@@ -292,6 +297,47 @@ def _fallback_feed_title(feed_url: str) -> str:
     return "Discovered feed"
 
 
+def _candidate_validation_urls(*, feed_url: str, site_url: str | None) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
+
+    def push(raw_value: str | None) -> None:
+        normalized = _normalize_candidate_url(raw_value)
+        if normalized is None or normalized in seen:
+            return
+        seen.add(normalized)
+        urls.append(normalized)
+
+    push(feed_url)
+    base = _normalize_candidate_url(site_url)
+    if base is not None:
+        push(base)
+        for path in _CANDIDATE_FEED_FALLBACK_PATHS:
+            push(urljoin(base, path))
+    return urls
+
+
+class _FeedAutodiscoveryParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.links: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "link":
+            return
+        attrs_map = {key.lower(): value for key, value in attrs}
+        rel_value = (attrs_map.get("rel") or "").lower()
+        type_value = (attrs_map.get("type") or "").lower()
+        href_value = attrs_map.get("href")
+        if "alternate" not in rel_value:
+            return
+        if "rss" not in type_value and "atom" not in type_value and "xml" not in type_value:
+            return
+        if not href_value:
+            return
+        self.links.append(href_value.strip())
+
+
 class DiscoveryService:
     async def list_streams(self, session: AsyncSession, user_id: UUID) -> list[DiscoveryStream]:
         query = (
@@ -445,18 +491,32 @@ class DiscoveryService:
             aggregated_candidates.extend(result.candidates)
 
         candidates = _dedupe_candidates(aggregated_candidates, max_candidates)
+        validated_candidates, validation_warnings, validation_warning_details = await self._validate_candidates(
+            candidates=candidates,
+            max_candidates=max_candidates,
+        )
+        for warning in validation_warnings:
+            if warning not in warnings:
+                warnings.append(warning)
+        for warning_detail in validation_warning_details:
+            warning_key = (warning_detail.code, warning_detail.provider, warning_detail.message)
+            if warning_key in warning_detail_keys:
+                continue
+            warning_detail_keys.add(warning_key)
+            warning_details.append(warning_detail)
+
         persisted_count, pending_count, resolved_existing_count = await self._persist_generated_recommendations(
             session=session,
             user_id=user_id,
             stream=stream,
-            candidates=candidates,
+            candidates=validated_candidates,
             query_variants=query_variants,
         )
         return DiscoveryGenerationResult(
             stream_id=stream.id,
             provider_chain=runtime_config.provider_chain,
             query_variants=query_variants,
-            candidates=candidates,
+            candidates=validated_candidates,
             warnings=warnings,
             warning_details=warning_details,
             persisted_count=persisted_count,
@@ -470,20 +530,49 @@ class DiscoveryService:
         session: AsyncSession,
         user_id: UUID,
         status_filter: Literal["pending", "accepted", "denied", "resolved_existing"] | None,
+        q: str | None,
+        sort_by: Literal["created_at", "updated_at", "last_seen_at", "decided_at", "confidence", "feed_title", "status"],
+        sort_direction: Literal["asc", "desc"],
         limit: int,
         offset: int,
     ) -> tuple[list[FeedRecommendation], int, dict[UUID, list[FeedRecommendationSourceOut]]]:
         where_clauses = [FeedRecommendation.user_id == user_id]
         if status_filter is not None:
             where_clauses.append(FeedRecommendation.status == status_filter)
+        normalized_q = (q or "").strip().lower()
+        if normalized_q:
+            pattern = f"%{normalized_q}%"
+            where_clauses.append(
+                or_(
+                    func.lower(FeedRecommendation.feed_title).like(pattern),
+                    func.lower(FeedRecommendation.feed_url).like(pattern),
+                    func.lower(FeedRecommendation.site_url).like(pattern),
+                )
+            )
 
         total_query = select(func.count()).select_from(select(FeedRecommendation.id).where(*where_clauses).subquery())
         total = int((await session.execute(total_query)).scalar_one() or 0)
 
+        sort_columns: dict[
+            Literal["created_at", "updated_at", "last_seen_at", "decided_at", "confidence", "feed_title", "status"],
+            Any,
+        ] = {
+            "created_at": FeedRecommendation.created_at,
+            "updated_at": FeedRecommendation.updated_at,
+            "last_seen_at": FeedRecommendation.last_seen_at,
+            "decided_at": FeedRecommendation.decided_at,
+            "confidence": FeedRecommendation.confidence,
+            "feed_title": FeedRecommendation.feed_title,
+            "status": FeedRecommendation.status,
+        }
+        sort_column = sort_columns[sort_by]
+        primary_order = asc(sort_column) if sort_direction == "asc" else desc(sort_column)
+        secondary_order = desc(FeedRecommendation.created_at)
+
         rows_query = (
             select(FeedRecommendation)
             .where(*where_clauses)
-            .order_by(FeedRecommendation.updated_at.desc(), FeedRecommendation.created_at.desc())
+            .order_by(primary_order, secondary_order)
             .offset(offset)
             .limit(limit)
         )
@@ -514,7 +603,9 @@ class DiscoveryService:
 
         now = datetime.now(UTC)
         if decision == "deny":
-            if recommendation.status in {"accepted", "resolved_existing"}:
+            if recommendation.status != "pending":
+                if recommendation.status == "denied":
+                    raise DiscoveryRecommendationValidationError("Recommendation is already denied")
                 raise DiscoveryRecommendationValidationError("Only pending recommendations can be denied")
             recommendation.status = "denied"
             recommendation.decided_at = now
@@ -524,8 +615,14 @@ class DiscoveryService:
             await session.refresh(recommendation)
             return recommendation
 
-        if recommendation.status == "denied":
-            raise DiscoveryRecommendationValidationError("Denied recommendation must be reset before accepting")
+        if recommendation.status != "pending":
+            if recommendation.status == "denied":
+                raise DiscoveryRecommendationValidationError("Denied recommendation must be reset before accepting")
+            if recommendation.status == "accepted":
+                raise DiscoveryRecommendationValidationError("Recommendation is already accepted")
+            if recommendation.status == "resolved_existing":
+                raise DiscoveryRecommendationValidationError("Recommendation already resolved to an existing feed")
+            raise DiscoveryRecommendationValidationError("Only pending recommendations can be accepted")
 
         existing_feed = await self._find_existing_user_feed_for_recommendation(
             session=session,
@@ -821,6 +918,129 @@ class DiscoveryService:
             )
             by_recommendation_id.setdefault(source.recommendation_id, []).append(item)
         return by_recommendation_id
+
+    async def _validate_candidates(
+        self,
+        *,
+        candidates: list[SearchFeedCandidate],
+        max_candidates: int,
+    ) -> tuple[list[SearchFeedCandidate], list[str], list[SearchWarning]]:
+        if not candidates:
+            return [], [], []
+
+        warnings: list[str] = []
+        warning_details: list[SearchWarning] = []
+        validated: list[SearchFeedCandidate] = []
+        seen_urls: set[str] = set()
+        validation_limit = min(max_candidates, _MAX_VALIDATION_CANDIDATES)
+        targets = candidates[:validation_limit]
+
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+            for candidate in targets:
+                resolved_feed_url = await self._resolve_feed_endpoint_for_candidate(client=client, candidate=candidate)
+                if resolved_feed_url is None:
+                    message = f"no valid feed endpoint found for {candidate.url}"
+                    warnings.append(message)
+                    warning_details.append(
+                        SearchWarning(
+                            code="invalid_candidate_feed_endpoint",
+                            provider=candidate.provider,
+                            message=message,
+                        )
+                    )
+                    continue
+
+                normalized_url = _normalize_candidate_url(resolved_feed_url)
+                if normalized_url is None or normalized_url in seen_urls:
+                    continue
+                seen_urls.add(normalized_url)
+                validated.append(
+                    SearchFeedCandidate(
+                        title=candidate.title,
+                        url=normalized_url,
+                        site_url=_normalize_candidate_url(candidate.site_url),
+                        description=candidate.description,
+                        provider=candidate.provider,
+                    )
+                )
+
+        skipped_count = max(0, len(candidates) - len(targets))
+        if skipped_count > 0:
+            message = f"candidate validation skipped for {skipped_count} candidates due to validation cap"
+            warnings.append(message)
+            warning_details.append(
+                SearchWarning(
+                    code="candidate_validation_skipped",
+                    provider=None,
+                    message=message,
+                )
+            )
+
+        return validated, warnings, warning_details
+
+    async def _resolve_feed_endpoint_for_candidate(
+        self,
+        *,
+        client: httpx.AsyncClient,
+        candidate: SearchFeedCandidate,
+    ) -> str | None:
+        urls = _candidate_validation_urls(feed_url=candidate.url, site_url=candidate.site_url)
+        for url in urls:
+            if await self._is_valid_feed_endpoint(client=client, url=url):
+                return url
+
+            discovered_urls = await self._discover_feed_links_from_html(client=client, url=url)
+            for discovered_url in discovered_urls:
+                if await self._is_valid_feed_endpoint(client=client, url=discovered_url):
+                    return discovered_url
+        return None
+
+    async def _is_valid_feed_endpoint(self, *, client: httpx.AsyncClient, url: str) -> bool:
+        try:
+            response = await client.get(url)
+        except httpx.HTTPError:
+            return False
+        if response.status_code != 200:
+            return False
+        parsed = feedparser.parse(response.content)
+        entries = getattr(parsed, "entries", [])
+        if isinstance(entries, list) and len(entries) > 0:
+            return True
+        feed_meta = getattr(parsed, "feed", None)
+        if isinstance(feed_meta, dict):
+            title = str(feed_meta.get("title", "")).strip()
+            if title and getattr(parsed, "version", ""):
+                return True
+        return False
+
+    async def _discover_feed_links_from_html(self, *, client: httpx.AsyncClient, url: str) -> list[str]:
+        try:
+            response = await client.get(url)
+        except httpx.HTTPError:
+            return []
+        if response.status_code != 200:
+            return []
+
+        content_type = (response.headers.get("content-type") or "").lower()
+        is_html_like = "html" in content_type or response.text.lstrip().lower().startswith("<!doctype html")
+        if not is_html_like:
+            return []
+
+        parser = _FeedAutodiscoveryParser()
+        try:
+            parser.feed(response.text)
+        except Exception:  # noqa: BLE001
+            return []
+
+        links: list[str] = []
+        seen: set[str] = set()
+        for href in parser.links:
+            normalized = _normalize_candidate_url(urljoin(url, href))
+            if normalized is None or normalized in seen:
+                continue
+            seen.add(normalized)
+            links.append(normalized)
+        return links
 
     def to_out(self, stream: DiscoveryStream) -> DiscoveryStreamOut:
         return DiscoveryStreamOut(

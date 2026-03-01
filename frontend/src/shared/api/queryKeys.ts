@@ -26,6 +26,26 @@ export const queryKeys = {
     ] as const,
   navigation: () => ["navigation"] as const,
   streams: () => ["streams"] as const,
+  discoveryStreams: () => ["discovery", "streams"] as const,
+  discoveryRecommendations: (filters: {
+    status: "pending" | "accepted" | "denied" | "resolved_existing" | "all";
+    q: string;
+    sort_by: string;
+    sort_direction: "asc" | "desc";
+    limit: number;
+    offset: number;
+  }) =>
+    [
+      "discovery",
+      "recommendations",
+      filters.status,
+      filters.q,
+      filters.sort_by,
+      filters.sort_direction,
+      filters.limit,
+      filters.offset,
+    ] as const,
+  discoverySummary: () => ["discovery", "summary"] as const,
   pluginAreas: () => ["plugin-areas"] as const,
   dashboardSummary: () => ["dashboard-summary"] as const,
   folders: () => ["folders"] as const,

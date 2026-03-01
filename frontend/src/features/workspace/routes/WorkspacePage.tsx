@@ -13,6 +13,7 @@ import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { findArticleById, getSelectedArticleId } from "../../../entities/article/model";
 import { getScopeLabel, toNavigationHierarchy } from "../../../entities/navigation/model";
 import type { WorkspaceSearch } from "../../../shared/types/contracts";
+import { useFeedRecommendationSummaryQuery } from "../../discovery/api/discoveryHooks";
 import { DashboardHost } from "../../dashboard/components/DashboardHost";
 import { PluginAreaHost } from "../plugins/PluginAreaHost";
 import { ArticlesPane } from "../components/ArticlesPane";
@@ -88,9 +89,19 @@ export function WorkspacePage({
   const foldersQuery = useFoldersQuery();
   const feedsQuery = useFeedsQuery();
   const pluginAreas = pluginAreasQuery.data ?? [];
+  const hasDiscoverFeedsArea = pluginAreas.some((pluginArea) => pluginArea.id === "discover_feeds");
+  const discoverySummaryQuery = useFeedRecommendationSummaryQuery(hasDiscoverFeedsArea);
   const isDashboardView = activeDashboard;
   const isPluginAreaView = activePluginAreaRouteKey !== null && activePluginAreaRouteKey.length > 0;
   const activePluginArea = pluginAreas.find((pluginArea) => pluginArea.route_key === activePluginAreaRouteKey) ?? null;
+  const pluginAreaBadgeById = useMemo<Record<string, number>>(() => {
+    if (!hasDiscoverFeedsArea) {
+      return {};
+    }
+    return {
+      discover_feeds: discoverySummaryQuery.data?.pending_count ?? 0,
+    };
+  }, [discoverySummaryQuery.data?.pending_count, hasDiscoverFeedsArea]);
   const hierarchy = useMemo(
     () => (navigationQuery.data ? toNavigationHierarchy(navigationQuery.data) : null),
     [navigationQuery.data]
@@ -275,6 +286,7 @@ export function WorkspacePage({
         setIsNavOpen(false);
       }}
       pluginAreas={pluginAreas}
+      pluginAreaBadgeById={pluginAreaBadgeById}
       selectedPluginAreaRouteKey={activePluginAreaRouteKey}
       onSelectPluginArea={(area) => {
         setIsNavOpen(false);

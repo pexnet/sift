@@ -21,7 +21,7 @@ type SettingsWorkspaceShellProps = {
   children: ReactNode;
 };
 
-type SettingsSectionId = "general" | "feed-health" | "monitoring" | "help";
+type SettingsSectionId = "general" | "feed-health" | "monitoring" | "discovery" | "help";
 
 function getActiveSection(pathname: string): SettingsSectionId {
   if (pathname === "/account/feed-health") {
@@ -29,6 +29,9 @@ function getActiveSection(pathname: string): SettingsSectionId {
   }
   if (pathname === "/account/monitoring") {
     return "monitoring";
+  }
+  if (pathname === "/account/discovery") {
+    return "discovery";
   }
   if (pathname === "/help") {
     return "help";

@@ -14,6 +14,7 @@ import { FeedHealthPage } from "../features/feed-health/routes/FeedHealthPage";
 import { HelpPage } from "../features/help/routes/HelpPage";
 import { LoginPage } from "../features/auth/routes/LoginPage";
 import { RegisterPage } from "../features/auth/routes/RegisterPage";
+import { DiscoveryStreamsPage } from "../features/discovery/routes/DiscoveryStreamsPage";
 import { MonitoringFeedsPage } from "../features/monitoring/routes/MonitoringFeedsPage";
 import { SettingsWorkspaceShell } from "../features/settings/components/SettingsWorkspaceShell";
 import { WorkspacePage } from "../features/workspace/routes/WorkspacePage";
@@ -147,6 +148,24 @@ const monitoringFeedsRoute = createRoute({
     guardMobileReadOnlyRoute();
   },
   component: MonitoringRouteComponent,
+});
+
+function DiscoveryRouteComponent() {
+  return (
+    <SettingsWorkspaceShell>
+      <DiscoveryStreamsPage />
+    </SettingsWorkspaceShell>
+  );
+}
+
+const discoveryStreamsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account/discovery",
+  beforeLoad: async ({ context }) => {
+    await requireAuth(context);
+    guardMobileReadOnlyRoute();
+  },
+  component: DiscoveryRouteComponent,
 });
 
 function FeedHealthRouteComponent() {
@@ -305,6 +324,7 @@ const routeTree = rootRoute.addChildren([
   accountRoute,
   feedHealthRoute,
   monitoringFeedsRoute,
+  discoveryStreamsRoute,
   helpRoute,
   dashboardRoute,
   pluginWorkspaceRoute,

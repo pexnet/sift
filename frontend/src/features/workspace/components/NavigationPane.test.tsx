@@ -125,6 +125,7 @@ function renderPane(overrides: Partial<ComponentProps<typeof NavigationPane>> = 
     onSelectFeed: vi.fn(),
     onSelectStream: vi.fn(),
     pluginAreas: [],
+    pluginAreaBadgeById: {},
     selectedPluginAreaRouteKey: null,
     onSelectPluginArea: vi.fn(),
     onCreateFolder: vi.fn(async () => {}),
@@ -280,6 +281,7 @@ describe("NavigationPane", () => {
         onSelectFeed={vi.fn()}
         onSelectStream={vi.fn()}
         pluginAreas={[]}
+        pluginAreaBadgeById={{}}
         selectedPluginAreaRouteKey={null}
         onSelectPluginArea={vi.fn()}
         onCreateFolder={vi.fn(async () => {})}
@@ -317,11 +319,13 @@ describe("NavigationPane", () => {
           route_key: "discover-feeds",
         },
       ],
+      pluginAreaBadgeById: { discover_feeds: 4 },
       selectedPluginAreaRouteKey: "discover-feeds",
       onSelectPluginArea,
     });
 
     expect(screen.getByText("Plugins")).toBeVisible();
+    expect(screen.getByText("4")).toBeVisible();
     const row = screen.getByRole("button", { name: /Discover feeds/i });
     expect(row).toHaveClass("Mui-selected");
     fireEvent.click(row);

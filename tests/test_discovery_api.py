@@ -134,6 +134,20 @@ def test_discovery_streams_crud_and_generate(monkeypatch: pytest.MonkeyPatch, tm
     monkeypatch.setattr("sift.services.discovery_service.get_plugin_manager", lambda: manager)
     monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: manager)
 
+    async def _resolve_feed_endpoint_stub(
+        self: object,
+        *,
+        client: object,
+        candidate: SearchFeedCandidate,
+    ) -> str:
+        del self, client
+        return candidate.url
+
+    monkeypatch.setattr(
+        "sift.services.discovery_service.DiscoveryService._resolve_feed_endpoint_for_candidate",
+        _resolve_feed_endpoint_stub,
+    )
+
     try:
         with TestClient(app) as client:
             create_response = client.post(
@@ -202,6 +216,21 @@ def test_discovery_streams_crud_and_generate(monkeypatch: pytest.MonkeyPatch, tm
             assert summary_after_accept.json()["pending_count"] == 0
             assert summary_after_accept.json()["accepted_count"] == 1
 
+            denied_after_accept = client.patch(
+                f"/api/v1/discovery/recommendations/{recommendation_id}",
+                json={"decision": "deny"},
+            )
+            assert denied_after_accept.status_code == 400
+
+            recommendations_sorted = client.get(
+                "/api/v1/discovery/recommendations",
+                params={"status": "accepted", "q": "example.com", "sort_by": "feed_title", "sort_direction": "asc"},
+            )
+            assert recommendations_sorted.status_code == 200
+            sorted_payload = recommendations_sorted.json()
+            assert sorted_payload["total"] == 1
+            assert sorted_payload["items"][0]["status"] == "accepted"
+
             update_response = client.patch(
                 f"/api/v1/discovery/streams/{stream_id}",
                 json={"match_query": "threat AND intel"},
@@ -244,6 +273,20 @@ def test_discovery_generate_returns_503_when_plugin_unavailable(
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.services.discovery_service.get_plugin_manager", lambda: manager)
     monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: manager)
+
+    async def _resolve_feed_endpoint_stub(
+        self: object,
+        *,
+        client: object,
+        candidate: SearchFeedCandidate,
+    ) -> str:
+        del self, client
+        return candidate.url
+
+    monkeypatch.setattr(
+        "sift.services.discovery_service.DiscoveryService._resolve_feed_endpoint_for_candidate",
+        _resolve_feed_endpoint_stub,
+    )
 
     try:
         with TestClient(app) as client:

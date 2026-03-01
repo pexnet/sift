@@ -1,18 +1,19 @@
 import { List, ListItemButton, ListItemText, Paper, Stack, Typography } from "@mui/material";
 
-type SettingsSectionId = "general" | "feed-health" | "monitoring" | "help";
+type SettingsSectionId = "general" | "feed-health" | "monitoring" | "discovery" | "help";
 
 type SettingsSubMenuPaneProps = {
   density: "compact" | "comfortable";
   navPreset: "tight" | "balanced" | "airy";
   activeSection: SettingsSectionId;
-  onSelect: (path: "/account" | "/account/feed-health" | "/account/monitoring" | "/help") => void;
+  onSelect: (path: "/account" | "/account/feed-health" | "/account/monitoring" | "/account/discovery" | "/help") => void;
 };
 
-const SETTINGS_SECTIONS: Array<{ id: SettingsSectionId; title: string; path: "/account" | "/account/feed-health" | "/account/monitoring" | "/help" }> = [
+const SETTINGS_SECTIONS: Array<{ id: SettingsSectionId; title: string; path: "/account" | "/account/feed-health" | "/account/monitoring" | "/account/discovery" | "/help" }> = [
   { id: "general", title: "General", path: "/account" },
   { id: "feed-health", title: "Feed health", path: "/account/feed-health" },
   { id: "monitoring", title: "Monitoring feeds", path: "/account/monitoring" },
+  { id: "discovery", title: "Discover feeds", path: "/account/discovery" },
   { id: "help", title: "Help", path: "/help" },
 ];
 

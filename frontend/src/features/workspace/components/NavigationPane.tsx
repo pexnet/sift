@@ -59,6 +59,7 @@ type NavigationPaneProps = {
   onSelectFeed: (feedId: string) => void;
   onSelectStream: (streamId: string) => void;
   pluginAreas: PluginArea[];
+  pluginAreaBadgeById: Record<string, number>;
   selectedPluginAreaRouteKey: string | null;
   onSelectPluginArea: (area: PluginArea) => void;
   onCreateFolder: (name: string) => Promise<void>;
@@ -124,6 +125,7 @@ export function NavigationPane({
   onSelectFeed,
   onSelectStream,
   pluginAreas,
+  pluginAreaBadgeById,
   selectedPluginAreaRouteKey,
   onSelectPluginArea,
   onCreateFolder,
@@ -422,6 +424,11 @@ export function NavigationPane({
                       {pluginAreaIcon(pluginArea.icon)}
                       <ListItemText primary={pluginArea.title} />
                     </Box>
+                    {(pluginAreaBadgeById[pluginArea.id] ?? 0) > 0 ? (
+                      <Typography variant="caption" color="primary" className="workspace-nav__count">
+                        {pluginAreaBadgeById[pluginArea.id]}
+                      </Typography>
+                    ) : null}
                   </ListItemButton>
                 ))}
               </List>

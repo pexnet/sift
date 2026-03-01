@@ -1,15 +1,19 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
-from sift.db.models import Feed, User
+from sift.db.models import Feed, FeedRecommendation, User
 from sift.domain.schemas import DiscoveryStreamCreate
 from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest, SearchFeedsResult
 from sift.plugins.manager import PluginStatusSnapshot
 from sift.plugins.registry import PluginBackendConfig, PluginRegistryEntry
-from sift.services.discovery_service import DiscoveryStreamValidationError, discovery_service
+from sift.services.discovery_service import (
+    DiscoveryRecommendationValidationError,
+    DiscoveryStreamValidationError,
+    discovery_service,
+)
 
 
 class _DiscoverySearchManagerStub:
@@ -109,6 +113,20 @@ async def test_discovery_stream_generate_caps_query_variants_and_dedupes_candida
     monkeypatch.setattr("sift.services.discovery_service.get_plugin_manager", lambda: manager)
     monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: manager)
 
+    async def _resolve_feed_endpoint_stub(
+        self: object,
+        *,
+        client: object,
+        candidate: SearchFeedCandidate,
+    ) -> str:
+        del self, client
+        return candidate.url
+
+    monkeypatch.setattr(
+        "sift.services.discovery_service.DiscoveryService._resolve_feed_endpoint_for_candidate",
+        _resolve_feed_endpoint_stub,
+    )
+
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -158,6 +176,20 @@ async def test_discovery_generation_marks_existing_user_feed_as_resolved_existin
     monkeypatch.setattr("sift.services.discovery_service.get_plugin_manager", lambda: manager)
     monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: manager)
 
+    async def _resolve_feed_endpoint_stub(
+        self: object,
+        *,
+        client: object,
+        candidate: SearchFeedCandidate,
+    ) -> str:
+        del self, client
+        return candidate.url
+
+    monkeypatch.setattr(
+        "sift.services.discovery_service.DiscoveryService._resolve_feed_endpoint_for_candidate",
+        _resolve_feed_endpoint_stub,
+    )
+
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -187,6 +219,9 @@ async def test_discovery_generation_marks_existing_user_feed_as_resolved_existin
             session=session,
             user_id=user.id,
             status_filter=None,
+            q=None,
+            sort_by="updated_at",
+            sort_direction="desc",
             limit=20,
             offset=0,
         )
@@ -198,3 +233,90 @@ async def test_discovery_generation_marks_existing_user_feed_as_resolved_existin
     assert result.resolved_existing_count == 1
     assert total == 1
     assert recommendations[0].status == "resolved_existing"
+
+
+@pytest.mark.asyncio
+async def test_discovery_recommendation_transition_rules_and_list_sorting() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="discovery-transitions@example.com")
+        session.add(user)
+        await session.flush()
+
+        older = FeedRecommendation(
+            user_id=user.id,
+            status="pending",
+            feed_url="https://alpha.example.com/feed.xml",
+            feed_url_normalized="https://alpha.example.com/feed.xml",
+            feed_title="Alpha Feed",
+            site_url="https://alpha.example.com",
+            provider="searxng",
+            created_at=datetime.now(UTC) - timedelta(days=2),
+            updated_at=datetime.now(UTC) - timedelta(days=2),
+            last_seen_at=datetime.now(UTC) - timedelta(days=2),
+        )
+        newer = FeedRecommendation(
+            user_id=user.id,
+            status="pending",
+            feed_url="https://zeta.example.com/feed.xml",
+            feed_url_normalized="https://zeta.example.com/feed.xml",
+            feed_title="Zeta Feed",
+            site_url="https://zeta.example.com",
+            provider="searxng",
+            created_at=datetime.now(UTC) - timedelta(days=1),
+            updated_at=datetime.now(UTC) - timedelta(days=1),
+            last_seen_at=datetime.now(UTC) - timedelta(days=1),
+        )
+        session.add_all([older, newer])
+        await session.commit()
+
+        denied = await discovery_service.decide_recommendation(
+            session=session,
+            user_id=user.id,
+            recommendation_id=older.id,
+            decision="deny",
+        )
+        assert denied.status == "denied"
+
+        with pytest.raises(DiscoveryRecommendationValidationError):
+            await discovery_service.decide_recommendation(
+                session=session,
+                user_id=user.id,
+                recommendation_id=older.id,
+                decision="deny",
+            )
+
+        with pytest.raises(DiscoveryRecommendationValidationError):
+            await discovery_service.decide_recommendation(
+                session=session,
+                user_id=user.id,
+                recommendation_id=older.id,
+                decision="accept",
+            )
+
+        reset = await discovery_service.reset_recommendation(
+            session=session,
+            user_id=user.id,
+            recommendation_id=older.id,
+        )
+        assert reset.status == "pending"
+
+        rows, total, _ = await discovery_service.list_recommendations(
+            session=session,
+            user_id=user.id,
+            status_filter="pending",
+            q="zeta",
+            sort_by="feed_title",
+            sort_direction="asc",
+            limit=20,
+            offset=0,
+        )
+        assert total == 1
+        assert len(rows) == 1
+        assert rows[0].feed_title == "Zeta Feed"
+
+    await engine.dispose()
