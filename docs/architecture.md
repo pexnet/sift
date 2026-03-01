@@ -69,164 +69,39 @@ Routing and data model:
 
 ## Frontend Plugin Surface (Minimal Extension Registry)
 
-React + MUI cutover should expose a narrow, typed plugin registry for UI customization without coupling plugin code to
-internal state layout. The host app owns routing, data-fetch orchestration, auth checks, and error boundaries.
+Frontend plugin integration is intentionally narrow and typed. The host app owns routing, API orchestration, auth
+checks, and error boundaries; plugins mount only at explicit extension points.
 
 ### Shared registration contract
 
-Every frontend extension point registers items using a common base shape plus point-specific fields:
+Every extension point registers items with a common base shape plus point-specific fields:
 
 - `id: string` (globally unique and stable; recommended namespace `plugin_name.feature_name`)
 - `title: string` (human-readable label used in UI and diagnostics)
 - `mount: React.ComponentType<Props>` (render entry component for this extension point)
 - `capabilities: { ... }` (boolean feature flags declared by plugin and validated by host)
 
-Host-side validation requirements:
+Host-side guardrails:
 
 1. Unknown capability flags are ignored and logged at debug level.
 2. Duplicate `id` registrations are rejected deterministically (first registration wins, later registrations disabled).
 3. Invalid registrations (missing required keys) are skipped and surfaced in diagnostics.
+4. All plugin mounts are wrapped in per-item error boundaries (`Plugin unavailable` fallback).
 
-Failure isolation baseline for all extension points:
+### Extension points
 
-1. Each mounted plugin runs inside a per-item error boundary.
-2. Runtime exceptions disable only the failing plugin item; the rest of the page remains interactive.
-3. The host renders a compact fallback placeholder (`Plugin unavailable`) and logs structured telemetry with `plugin_id`,
-   extension point, and error metadata.
+1. `nav_badge_provider`: augment navigation labels/counts for system/folder/feed/stream nodes.
+2. `article_row_action`: add row-level actions in article lists (`leading`/`trailing`/`overflow` placement).
+3. `reader_panel_tab`: add reader-side panels/tabs for article-specific plugin content.
+4. `dashboard_card`: define dashboard summary cards with host-managed availability/fallback states.
+5. `command_palette_action`: register contextual commands for keyboard-first workflows.
 
-### 1) `nav_badge_provider`
+Runtime rules for all extension points:
 
-Purpose: augment navigation labels/counts (for example, custom unread counters or status chips) for built-in nav nodes.
-
-Registration shape:
-
-- Base fields (`id`, `title`, `mount`, `capabilities`)
-- `targetScopes: Array<"system" | "folder" | "feed" | "stream">`
-- `capabilities` flags:
-  - `supportsCountOverride` (replace default count)
-  - `supportsLabelSuffix` (append extra label text)
-
-Data dependencies:
-
-- Primary: `GET /api/v1/navigation`
-- Optional plugin-owned fetches (if needed) must be read-only and scoped to currently visible nav entities.
-
-Permission/auth constraints:
-
-- Runs only for authenticated sessions.
-- Plugin receives only user-scoped nav entities already returned by the API; no cross-user identifiers are exposed.
-
-Failure isolation behavior:
-
-- On plugin failure, host falls back to core nav label/count rendering for affected nodes.
-
-### 2) `article_row_action`
-
-Purpose: add row-level actions in the article list (for example, send to external workflow, quick annotate, triage).
-
-Registration shape:
-
-- Base fields (`id`, `title`, `mount`, `capabilities`)
-- `placement: "leading" | "trailing" | "overflow"`
-- `capabilities` flags:
-  - `requiresSelection` (action expects multi-select context)
-  - `mutatesArticleState` (action may update read/saved/archived state)
-
-Data dependencies:
-
-- `GET /api/v1/articles`
-- `PATCH /api/v1/articles/{article_id}/state` (if `mutatesArticleState=true`)
-- `POST /api/v1/articles/state/bulk` (if `requiresSelection=true`)
-
-Permission/auth constraints:
-
-- Runs only for authenticated sessions.
-- Action visibility is gated by user access to the row article in current scope/filter context.
-
-Failure isolation behavior:
-
-- On plugin failure, host removes the failing action control for that row and keeps built-in row actions available.
-
-### 3) `reader_panel_tab`
-
-Purpose: add tabs in the right reader pane (for example, metadata, enrichment output, related links).
-
-Registration shape:
-
-- Base fields (`id`, `title`, `mount`, `capabilities`)
-- `tabOrder?: number` (optional stable sort hint; default after built-ins)
-- `capabilities` flags:
-  - `requiresArticleContent`
-  - `supportsBackgroundRefresh`
-
-Data dependencies:
-
-- `GET /api/v1/articles/{article_id}`
-- Optional: plugin may request additional read-only APIs related to selected article.
-
-Permission/auth constraints:
-
-- Runs only for authenticated sessions.
-- Plugin only receives currently selected article payload already authorized by backend.
-
-Failure isolation behavior:
-
-- On plugin failure, host replaces that tab panel with inline error fallback while keeping other tabs functional.
-
-### 4) `dashboard_card`
-
-Purpose: define dashboard v2 card registry entries for top-level summary widgets.
-
-Registration shape:
-
-- Base fields (`id`, `title`, `mount`, `capabilities`)
-- `cardSize: "sm" | "md" | "lg"`
-- `defaultLayout: { column: number; row: number; w: number; h: number }`
-- `capabilities` flags:
-  - `supportsManualRefresh`
-  - `supportsTimeRange`
-
-Data dependencies:
-
-- Core dashboard context expected from host: `GET /api/v1/navigation` and scoped `GET /api/v1/articles` summaries.
-- Card-specific fetches must remain read-only unless explicitly mediated by host mutations.
-
-Permission/auth constraints:
-
-- Runs only for authenticated sessions.
-- Cards must honor same per-user data boundaries as dashboard host; no global aggregate endpoints are exposed directly.
-
-Failure isolation behavior:
-
-- On plugin failure, host renders a standard failed-card shell with title + retry affordance and excludes only that card
-  from layout calculations until recovery.
-
-### 5) `command_palette_action`
-
-Purpose: register extra commands in command palette for power-user flows and integrations.
-
-Registration shape:
-
-- Base fields (`id`, `title`, `mount`, `capabilities`)
-- `keywords: string[]` (search aliases)
-- `capabilities` flags:
-  - `requiresArticleContext`
-  - `opensExternalUrl`
-
-Data dependencies:
-
-- Baseline palette context uses current route/scope (no required API call).
-- If contextual, may consume `GET /api/v1/articles/{article_id}` for active selection.
-
-Permission/auth constraints:
-
-- Runs only for authenticated sessions when command operates on protected resources.
-- Commands that open external URLs must use allowlisted host validation to avoid untrusted redirect abuse.
-
-Failure isolation behavior:
-
-- On plugin failure during execution, host surfaces non-blocking toast error and keeps palette open/usable for other
-  commands.
+1. Plugins operate only within authenticated, user-scoped data returned by existing APIs.
+2. Read-only access is default; mutating actions must be explicitly declared and host-mediated.
+3. Failures disable only the affected plugin item and never break the surrounding workspace surface.
+4. Detailed payload/field contracts live in implementation specs under `docs/specs/` and `docs/specs/done/`.
 
 ## Developer Topology (Dev Container Standard)
 
@@ -240,6 +115,17 @@ For day-to-day development, use the Dev Container stack in `.devcontainer/`:
 6. `redis`: Redis 8
 7. `traefik`: local edge router to simplify service access (`http://sift.localhost`)
 8. `frontend`: Vite dev server for SPA runtime (`http://localhost:5173`)
+
+Optional local observability overlay:
+
+1. `victoriametrics`: metrics storage/query (`http://localhost:8428`)
+2. `victorialogs`: logs storage/query (`http://localhost:9428`)
+3. `vmagent`: scrape + remote-write agent (`http://localhost:8429`)
+4. `vector`: Docker log shipper for Sift runtime logs (`http://localhost:8686`)
+5. Bootstrap and config files:
+   - `ops/observability/docker-compose.observability.yml`
+   - `ops/observability/vmagent/prometheus.yml`
+   - `ops/observability/vector/vector.yaml`
 
 ## Development Seed Bootstrap
 
@@ -312,124 +198,34 @@ Design goals:
 
 ## Implemented Service Slices
 
-1. OPML import:
-   - endpoint: `POST /api/v1/imports/opml`
-   - flow: parse OPML -> normalize URLs -> per-user dedupe -> import report
-2. Ingestion service:
-   - endpoint: `POST /api/v1/feeds/{feed_id}/ingest`
-   - flow: fetch -> parse -> dedupe -> persist raw/article -> plugin hook
-3. Keyword filter preview:
-   - endpoint: `POST /api/v1/articles/filter-preview`
-   - include/exclude keyword matching over article title+content
-4. Scheduler-driven background ingestion:
-   - scheduler polls active feeds and enqueues due jobs
-   - worker executes ingest jobs via RQ
-   - queue dedupe by stable RQ-compatible job id (`ingest-<feed_id>`) with legacy `ingest:<feed_id>` lookup
-5. Authentication and account foundation:
-   - local account registration/login/logout/me endpoints
-   - provider-ready identity schema to support Google/Azure/Apple later
-   - feed/article endpoints now require authenticated user context
-6. Persisted ingest rules:
-   - endpoints: `GET/POST/PATCH/DELETE /api/v1/rules`
-   - per-user rules with priority and criteria (include/exclude keywords, source, language)
-   - rules applied during ingestion before article persistence
-7. Keyword streams:
-   - endpoints: `GET/POST/PATCH/DELETE /api/v1/streams`, `GET /api/v1/streams/{stream_id}/articles`
-   - per-user saved stream expressions (include/exclude keywords, source, language)
-   - stream memberships recorded for matching ingested articles
-8. Stream classifier foundation:
-   - stream config supports `classifier_mode` (`rules_only`, `classifier_only`, `hybrid`)
-   - stream config supports `classifier_plugin` + `classifier_min_confidence`
-   - plugin manager can dispatch classifier plugins by name
-   - built-in heuristic classifier plugin included as reference implementation
-9. Cross-feed canonical dedup foundation:
-   - normalize article URLs (tracking-parameter stripping + stable query ordering)
-   - compute content fingerprint hash over normalized title/content text
-   - assign `duplicate_of_id` and confidence when canonical duplicate candidates are found
-10. Feed folders:
-   - per-user folder table (`feed_folders`) with stable ordering metadata
-   - feed-to-folder mapping through nullable `feeds.folder_id`
-   - authenticated folder CRUD API and feed folder assignment endpoint
-11. Monitoring search language v1:
-   - query parser/evaluator supports `AND`, `OR`, `NOT`, parentheses, quoted phrases, suffix wildcard (`term*`),
-     and fuzzy tokens (`term~1`, `term~2`)
-   - stream model persists query expression as `keyword_streams.match_query`
-   - stream create/update validates query syntax and returns explicit validation errors
-   - ingest stream matching enforces query expression before include/exclude/source/language checks
-   - article listing search supports advanced query syntax with validation on malformed expressions
-12. Monitoring backfill execution baseline:
-   - endpoint: `POST /api/v1/streams/{stream_id}/backfill`
-   - recomputes stream matches across existing user articles
-   - replaces stale stream-match rows with recomputed results
-   - returns execution counts (`scanned_count`, `previous_match_count`, `matched_count`)
-13. Monitoring regex matcher baseline:
-   - stream model persists include/exclude regex patterns
-   - stream create/update validates regex syntax and returns explicit validation errors
-   - ingest and backfill matching enforce include/exclude regex rules
-14. Monitoring explainability baseline:
-   - stream/article matches persist `match_reason` evidence
-   - match reasons are generated for query/keyword/regex/source/language/classifier decisions
-   - article list/detail API payloads include per-stream reason mappings
-15. Monitoring plugin matcher config baseline:
-   - stream model persists classifier config JSON payloads
-   - stream create/update validates classifier config shape and size
-   - classifier execution context includes per-stream plugin config
-   - monitoring UI supports editing classifier config JSON with pre-submit JSON validation
-16. Classifier run persistence and model/version tracking baseline:
-   - classifier execution now persists run records in `stream_classifier_runs`
-   - persisted fields include plugin/provider/model/version, confidence/threshold, match result, and run status
-   - ingest and stream backfill flows both record classifier runs
-   - stream API provides classifier run diagnostics endpoint (`GET /api/v1/streams/{stream_id}/classifier-runs`)
-17. Feed health + lifecycle management baseline:
-   - endpoints:
-     - `GET /api/v1/feeds/health`
-     - `PATCH /api/v1/feeds/{feed_id}/settings`
-     - `PATCH /api/v1/feeds/{feed_id}/lifecycle`
-   - archived feeds are excluded from scheduler candidate selection and navigation feed-tree rendering
-   - archive lifecycle action bulk-marks existing unread articles from that feed as read
-   - settings UI route `/account/feed-health` supports feed-level lifecycle and interval controls
-18. Workspace/settings management touchups v1 backend contracts:
-   - `keyword_streams` now support optional folder assignment (`folder_id`)
-   - stream create/update/out contracts now include `folder_id`
-   - navigation stream payload now includes `folder_id` so monitoring streams can be grouped by folders in UI
-   - `GET /api/v1/feeds/health` now supports `all=true` for full filtered list retrieval
-   - `POST /api/v1/feeds` now supports optional `folder_id` for one-step feed create + folder assignment
-19. Plugin registry/runtime cutover baseline:
-   - plugin activation/config now loads from `config/plugins.yaml` (`SIFT_PLUGIN_REGISTRY_PATH`)
-   - runtime registry validation enforces plugin id uniqueness and allowed capability declarations
-   - legacy `plugin_paths` runtime behavior is removed from the active plugin manager initialization path
-   - plugin manager now dispatches capability-gated ingest/classifier hooks using registry plugin ids
-20. Plugin runtime hardening and diagnostics baseline:
-   - plugin invocation is timeout-guarded for ingest/classifier capabilities with failure isolation
-   - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error` metadata
-   - diagnostics endpoint is available at `GET /api/v1/plugins/status` (auth-protected, admin-only)
-   - plugin dispatch emits structured logging events for start/complete/error/timeout and registry validation errors
-   - plugin telemetry metrics contract is wired in runtime export surfaces (`sift_plugin_invocations_total`,
-     `sift_plugin_invocation_duration_seconds`, `sift_plugin_timeouts_total`, `sift_plugin_dispatch_failures_total`)
-21. Frontend plugin host/workspace areas baseline:
-   - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
-   - workspace navigation now renders a `Plugins` section from enabled/loaded plugin area metadata
-   - frontend route `/app/plugins/$areaId` mounts plugin area views inside existing workspace shell
-   - plugin area mounts run inside error-boundary isolation with `Plugin unavailable` fallback behavior
-22. Dashboard shell/plugin host baseline:
-   - frontend route `/app/dashboard` is implemented with workspace rail + navigation preserved
-   - dashboard rail action now routes to `/app/dashboard` instead of resetting workspace scope
-   - dashboard host renders card availability states (`ready`, `unavailable`, `degraded`) with per-card isolation
-   - summary availability API is available at `GET /api/v1/dashboard/summary`
-23. Full article fetch on-demand v1:
-   - endpoint `POST /api/v1/articles/{article_id}/fulltext/fetch` performs user-triggered fulltext fetch/extraction
-   - article detail response now includes fulltext status/content fields and `content_source`
-   - extracted fulltext is persisted in `article_fulltexts` and rendered in reader when available
-24. Scheduler/API/ingestion observability baseline:
-   - request correlation middleware adds/propagates `X-Request-Id` on API responses
-   - API request lifecycle emits structured events (`api.request.start|complete|error`)
-   - process-level Prometheus metrics endpoint is exposed at configurable `SIFT_METRICS_PATH` (`/metrics` default)
-   - scheduler and worker now expose dedicated scrape endpoints via configurable metrics host/ports
-     (`SIFT_METRICS_BIND_HOST`, `SIFT_METRICS_SCHEDULER_PORT`, `SIFT_METRICS_WORKER_PORT`)
-   - scheduler loop/enqueue outcomes, queue depth/oldest age, worker job outcomes, and ingestion run counters/duration
-     are emitted under `sift_*` observability metric names
-   - scheduler/worker runtimes now emit structured operational events instead of `print` diagnostics
-   - operator runbook: `docs/observability-runbook.md`
+Implemented slices are tracked at capability level here; detailed completion chronology is maintained in
+`docs/current-state.md`, `docs/backlog-history.md`, and `docs/session-notes/archive/`.
+
+1. Core ingestion and content pipeline:
+   - OPML import, feed ingest, normalization, and dedupe foundations.
+   - background scheduler/worker ingestion with stable job-id dedupe.
+2. Auth and ownership model:
+   - local auth/session foundation with user-scoped feed/article access.
+3. Rules, streams, and monitoring:
+   - persisted rules and keyword streams,
+   - query language (`AND`/`OR`/`NOT`, phrases, wildcard, fuzzy),
+   - backfill execution, regex support, match explainability, and classifier config payloads.
+4. Classification and dedup intelligence:
+   - classifier plugin execution modes and run persistence/diagnostics,
+   - cross-feed canonical dedup metadata and duplicate linking.
+5. Feed/folder operations:
+   - folder CRUD and feed assignment,
+   - feed lifecycle/health APIs and archive behavior.
+6. Plugin platform:
+   - centralized registry/runtime cutover,
+   - capability-gated dispatch, timeout/fault isolation, diagnostics, and plugin telemetry metrics.
+7. Frontend integration baselines:
+   - workspace plugin areas and route host (`/app/plugins/$areaId`),
+   - dashboard shell/card host baseline (`/app/dashboard`),
+   - full article fetch-on-demand reader workflow.
+8. Observability and operator surfaces:
+   - request correlation + structured events,
+   - API/scheduler/worker metrics surfaces and runbook-backed operations.
 
 ## Frontend Delivery Standard
 
@@ -466,45 +262,11 @@ Current delivery automation is GitHub Actions + GHCR based:
 | Allowed improvements | Layout refinements, improved loading/error handling UX, and accessibility hardening are encouraged as long as they preserve fixed API contracts. |
 | Deferred / non-goals | Advanced stream ranking/prioritization controls are explicitly out of scope for this cutover slice. |
 
-## Planned Next Moves (Current Core Priority Plan)
+## Planning Sources
 
-1. Stream-level ranking/prioritization controls.
-2. Search provider plugin platform v1 (ordered provider chain + strict provider budgets/timeouts).
-3. Completed and archived on 2026-02-23:
-   - `docs/specs/done/scheduler-ingestion-observability-v1.md`
-4. Completed and archived on 2026-02-22:
-   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
-   - `docs/specs/done/plugin-platform-foundation-v1.md`
-   - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
-   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
-   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
-   - plugin-configuration follow-up checkpoint: `docs/specs/plugin-configuration-registry-v1.md`
-
-## Next UI Slice (Prioritized)
-
-1. No additional UI-only polish slice is active; core platform priorities are now primary.
-2. Most recently completed: desktop reader/workspace polish v2 on 2026-02-22:
-   - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
-   - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
-     `/account/monitoring`, and `/help`
-   - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
-     `npm --prefix frontend run test`, `npm --prefix frontend run build`
-3. Previously completed: workspace + settings management UI touchups v1 on 2026-02-21:
-   - workspace navigation now uses icon-first folder creation and chevron-first section/folder controls
-   - monitoring streams now support folder assignment and are grouped by folder in navigation
-   - settings routes now share a side-menu shell (`/account`, `/account/monitoring`, `/account/feed-health`, `/help`)
-   - monitoring feed management list is now condensed to one-row-per-stream with iconized actions
-   - feed health is now condensed to one-row-per-feed with iconized actions and add-feed dialog
-4. Previously completed: feed health + edit surface v1 on 2026-02-19:
-   - `/account/feed-health` route is implemented for lifecycle/freshness management
-   - feed health APIs are implemented (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
-     `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
-   - archive action bulk-marks existing unread feed articles as read
-
-## Deferred
-
-1. Add first OIDC provider integration (Google) on top of `auth_identities`, then Azure/Apple.
-2. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
+- Active roadmap and prioritization source of truth: `docs/backlog.md`.
+- Current implementation snapshot for session startup: `docs/current-state.md`.
+- Completed/historical planning items: `docs/backlog-history.md`.
 
 ## Frontend Settings and Theme Architecture (Current)
 
@@ -544,205 +306,6 @@ Current delivery automation is GitHub Actions + GHCR based:
 
 ### UI Extension Status
 
-1. Preset consistency, contrast/interaction tuning, and settings accessibility/responsiveness polish are completed.
-2. Monitoring feed management v1 is completed:
-   - `/account/monitoring` stream-backed monitoring CRUD
-   - backfill execution endpoint integration with success feedback
-   - list/reader explainability labels for matched monitoring streams
-3. Monitoring feed management v2 baseline + visual explainability v1 are completed:
-   - completed: historical backfill execution baseline
-   - completed: regex matcher expansion baseline
-   - completed: match-reason explainability baseline
-   - completed: plugin matcher config baseline
-   - completed: query-hit evidence persistence (`query_hits`) and title/content span-level rendering
-   - completed: compact `Matched terms` summaries in list/reader
-   - remaining follow-ups are deferred in backlog (matcher composition expansion, optional trigger backfill, richer
-     plugin/query explainability refinements)
+1. Preset consistency, contrast/interaction tuning, and settings accessibility/responsiveness polish are implemented.
+2. Monitoring management/explainability baselines are implemented; remaining sequencing is tracked in `docs/backlog.md`.
 
-## Long-Term Product Backlog (Captured, Explicitly Deferred)
-
-These items are intentionally documented for future implementation and are **not** part of the current priority stack.
-
-### 1) Feed Health + Feed Lifecycle Management
-
-Status:
-
-- v1 feed health/edit surface is now implemented:
-  - new settings route: `/account/feed-health`
-  - feed health API: `GET /api/v1/feeds/health`
-  - feed settings API: `PATCH /api/v1/feeds/{feed_id}/settings`
-  - feed lifecycle API: `PATCH /api/v1/feeds/{feed_id}/lifecycle`
-  - archive action now marks existing unread for that feed as read
-  - feed lifecycle/fetch metadata now includes `is_archived`, `archived_at`, `last_fetch_success_at`,
-    `last_fetch_error_at`
-
-Deferred follow-up capability:
-
-- dashboard feed-health card aggregation endpoint and richer historical telemetry views.
-
-### 2) Monitoring Feed Definition Management (Keyword/Regex/Plugin)
-
-Status:
-
-- v1 implementation is complete (CRUD route + baseline explainability).
-- query language v1 for stream matching is complete (`AND`/`OR`/`NOT`, phrases/grouping, wildcard, fuzzy).
-- historical backfill execution baseline is complete (`POST /api/v1/streams/{stream_id}/backfill`).
-- regex matcher baseline is complete (stream include/exclude regex rules + validation + matching).
-- textual explainability baseline is complete (persisted match reasons surfaced in article list/reader).
-- plugin matcher config baseline is complete (stream-level classifier config persistence + context wiring).
-- this section now captures remaining v2 expansion scope.
-
-Planned capability:
-
-- A management UI/API for monitoring feed definitions and rule evolution.
-- Matching primitives:
-  - keyword matcher
-  - regex matcher (baseline include/exclude regex support implemented)
-  - plugin-provided matcher hooks for advanced discovery logic (config baseline implemented)
-- Baseline manual backfill execution is implemented; optional create/update-triggered backfill remains deferred.
-- Explainability in monitoring article lists/reader:
-  - baseline textual `Why matched` summaries are implemented
-  - span-level visual explainability baseline is implemented (`query_hits`, title/content highlights, compact
-    matched-term summaries)
-  - remaining: richer plugin/query evidence rendering refinements and deeper matcher composition capabilities
-
-Architecture implications:
-
-- Introduce a matcher abstraction for monitoring definitions with versioned configuration payloads.
-- Consider asynchronous job orchestration for historical backfill at larger scale.
-- Persist match evidence payloads to enable frontend explainability rendering.
-- Optional acceleration follow-up is deferred:
-  - advanced query evaluation currently prioritizes correctness and is app-layer evaluated for complex expressions
-  - PostgreSQL acceleration (`tsvector`/`tsquery`, `pg_trgm`, or hybrid pre-filter) should be added in a later slice
-
-### 3) Discover Feeds (Discovery Streams)
-
-Planned capability:
-
-- Add a dedicated discovery-stream domain for feed discovery generation and decisions.
-- Keep discovery streams separate from monitoring `keyword_streams`; allow optional copy convenience from monitoring
-  criteria into discovery stream criteria.
-- Provide per-stream manual generation flow only in v1 (`POST /api/v1/discovery/streams/{stream_id}/generate`).
-- Provide candidate decision workflow under discovery endpoints (`/api/v1/discovery/recommendations/*`).
-- Support multi-source dedupe by normalized feed URL while preserving source-stream attribution.
-
-Architecture implications:
-
-- Add `discovery_streams` model and APIs separate from monitoring stream execution/storage.
-- Add `feed_recommendations` model with decision status including `resolved_existing`.
-- Add `feed_recommendation_sources` attribution table so one candidate can map to many discovery streams.
-- Keep denied candidate suppression state and manual reset semantics in recommendation state transitions.
-- Discovery provider execution depends on shared `search_provider` plugin infrastructure spec:
-  [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
-- Consume provider-scoped budget/rate-limit/timeout enforcement from shared search-provider runtime.
-- Add staged feed resolution pipeline (direct feed parse -> HTML autodiscovery -> constrained heuristic feed-path probes).
-
-### 4) Dashboard as Command Center
-
-Planned capability:
-
-- A dedicated command-center route at `/app/dashboard` optimized for daily triage.
-- Keep existing left workspace chrome (rail + navigation tree) and render dashboard in the main content area.
-- User-configurable prioritization across sources (feeds, monitoring feeds, and future scoped sources).
-- Candidate cards:
-  - prioritized unread queue
-  - high-value monitoring feed signals
-  - feed health ops summary (stale/error/freshness/queue lag)
-  - saved/follow-up queue
-  - trends (unavailable state until dependency is implemented)
-  - discovery candidates (feed recommendations + monitoring-first candidate articles)
-- Optional future cards:
-  - alerts
-  - follow-up detail tab
-
-Architecture implications:
-
-- Extend existing `dashboard_card` plugin slot with source-priority context.
-- Provide summary-focused dashboard query endpoints/view-models without replacing detailed workspace APIs.
-- Dashboard dependency spec gate before implementation:
-  - [docs/specs/done/dashboard-shell-plugin-host-v1.md](specs/done/dashboard-shell-plugin-host-v1.md)
-  - [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
-  - [docs/specs/stream-ranking-prioritization-controls-v1.md](specs/stream-ranking-prioritization-controls-v1.md)
-  - [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
-  - [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
-  - [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
-  - [docs/specs/search-provider-plugin-v1.md](specs/search-provider-plugin-v1.md)
-  - [docs/specs/feed-recommendations-v1.md](specs/feed-recommendations-v1.md)
-
-### 5) Duplicate Candidate Review (Iteration 1)
-
-Planned capability:
-
-- Settings-accessible duplicate candidate view as initial UX for canonical dedup transparency.
-- First version is read-centric:
-  - grouped duplicate candidates
-  - confidence and origin metadata
-  - navigation to canonical + variant articles
-
-Architecture implications:
-
-- Add read API for duplicate groups leveraging existing canonical dedup fields.
-- Preserve merge/resolve workflows for a later iteration.
-
-### 6) Plugin Roadmap Ideas
-
-Planned plugins:
-
-- Search provider plugin (shared provider chain + strict budgets/timeouts for feed/blog lookup).
-- Discover feeds plugin (stream-driven recommendation workflow consuming shared search provider infrastructure).
-- LLM summarization plugin (initial provider target: Ollama Cloud).
-  - spec reference: [docs/specs/article-llm-summary-on-demand-v1.md](specs/article-llm-summary-on-demand-v1.md)
-- Vector similarity plugin for article/topic relatedness and future semantic monitoring workflows.
-
-Architecture implications:
-
-- Ensure plugin execution contracts can persist model/provider/version metadata and outputs.
-- Keep vector/embedding storage optional and plugin-boundary isolated from core ingest requirements.
-
-
-### 7) Trends Detection Across Selected Feed Folders
-
-Planned capability:
-
-- Add a deferred trends subsystem that identifies rising topics in user-selected feed folders.
-- Primary consumption surface: dashboard cards and daily briefing widgets.
-- Trend outputs should include:
-  - topic/keyphrase label
-  - momentum signal (short-window lift vs baseline)
-  - evidence bundle (article count, source diversity, and article links)
-
-Architecture implications:
-
-- Add a trend-analysis pipeline (batch or periodic) over scoped article sets.
-- Persist trend snapshots so dashboard reads are fast and historically comparable.
-- Provide read APIs/view models for dashboard and future analytics surfaces.
-
-### 8) Silent Feeds for Monitoring-Only Population
-
-Planned capability:
-
-- Add feed-level `silent` mode for feeds used primarily to populate monitoring streams.
-- Silent feeds continue normal ingest and stream matching behavior.
-- Articles ingested from silent feeds are auto-marked read for the feed owner.
-- Switching a feed to silent bulk-marks existing unread for that feed as read.
-
-Architecture implications:
-
-- Extend `feeds` model/API with `is_silent` boolean state.
-- Add feed-setting mutation endpoint for silent toggle behavior.
-- Ensure ingest pipeline applies silent auto-read without changing matcher execution/evidence persistence.
-- Ensure unread/navigation counters remain coherent after silent toggle and ingest updates.
-
-### Deferred Delivery Sequence (Post Current Core Priorities)
-
-1. Monitoring management v2 (keyword/regex/plugin + historical backfill + explainability).
-2. Dashboard v1 command center card/data rollout (only after dashboard dependency spec gate checklist is complete).
-3. Search provider plugin v1 (ordered provider chain + strict provider budgets/timeouts).
-4. Discover feeds v1 (discovery streams + recommendation decisions).
-5. Duplicate candidate review screen.
-6. Trends detection for selected feed folders (dashboard-oriented).
-7. Advanced search query acceleration (PostgreSQL-oriented).
-8. Vector-database integration infrastructure (plugin-boundary embeddings support).
-9. Plugin implementations (LLM summary, vector similarity).
-10. Silent feeds for monitoring-only population.
-11. OIDC provider integration (Google, then Azure/Apple).

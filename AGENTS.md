@@ -1,330 +1,83 @@
 # Project Agent Notes
 
-This file stores persistent project context for future Codex sessions.
+This file stores stable project context for future Codex sessions.
 
 ## Product Intent
 
 - Build a self-hosted RSS/content aggregation portal.
 - Prioritize backend quality and extension points.
-- Build a modern, responsive, sleek frontend using React and MUI (Material UI).
+- Build a modern, responsive frontend using React and MUI.
 
-## Technical Direction (Current)
+## Technical Direction (Stable)
 
 - Python backend using FastAPI.
 - Database-backed ingestion pipeline with SQLAlchemy.
-- Plugin-ready core for enrichment/transformation/integration use cases.
-- Backend is API-only FastAPI service (`/api/v1/*`), with no server-rendered web routes.
+- Plugin-ready core for enrichment/transformation/integration workflows.
+- Backend is API-only under `/api/v1/*` (no server-rendered web routes).
 - UI is a standalone React + MUI frontend in `frontend/` (Vite + TypeScript).
 - Tooling standards: uv + Ruff + Pytest + Mypy.
 - Ruff width: 120 chars.
 - Alembic is the source of truth for schema changes.
-- Preferred dev environment is Dev Container-based full stack (`.devcontainer/`).
+- Preferred dev environment is the Dev Container full stack (`.devcontainer/`).
 
 ## Working Agreements
 
 - Prefer modular monolith architecture for MVP.
 - Avoid premature microservices; isolate via interfaces first.
 - Branching workflow:
-  - `main` is the protected production branch.
-  - `develop` is the default integration branch for active feature development.
-  - Create feature branches from `develop` and merge completed features back into `develop`.
-  - Merge `develop` into `main` only when features are validated and release-ready.
+  - `main` is protected production.
+  - `develop` is default integration branch.
+  - create feature branches from `develop`, merge back to `develop`.
+  - merge `develop` into `main` only when release-ready.
   - PRs into `main` must include exactly one release label: `release:major`, `release:minor`, or `release:patch`.
-  - Releases are automated from `main` merges with SemVer tags and GHCR image publish (`sift-backend`, `sift-frontend`).
+  - releases are automated from `main` merges with SemVer tags and GHCR image publish (`sift-backend`,
+    `sift-frontend`).
 - Prefer migration-first database evolution:
-  - Create migration.
-  - Apply migration.
-  - Keep `auto_create_tables` disabled outside local throwaway environments.
-- All major changes should update:
-  - `docs/architecture.md` for architecture-impacting decisions.
-  - `docs/session-notes.md` for decision log + next steps.
+  - create migration,
+  - apply migration,
+  - keep `auto_create_tables` disabled outside local throwaway environments.
 - Default development flow:
-  - Open in Dev Container (`.devcontainer/devcontainer.json`).
-  - Use `.devcontainer/docker-compose.yml` stack for `app`, `frontend`, `worker`, `scheduler`, `db`, `redis`, and `traefik`.
+  - open in Dev Container (`.devcontainer/devcontainer.json`),
+  - run stack via `.devcontainer/docker-compose.yml` (`app`, `frontend`, `worker`, `scheduler`, `db`, `redis`,
+    `traefik`).
 - Local IDE personalization:
-  - Keep personal VS Code config in `.vscode/extensions.local.json` and `.vscode/settings.local.json` (gitignored).
-  - Use `.vscode/*.example.json` as templates.
+  - keep personal VS Code config in `.vscode/extensions.local.json` and `.vscode/settings.local.json` (gitignored),
+  - use `.vscode/*.example.json` as templates.
 
-## Current API Surface (MVP Core)
+## Context Window Policy
 
-- `GET /api/v1/health`
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/logout`
-- `GET /api/v1/auth/me`
-- `GET /api/v1/rules`
-- `POST /api/v1/rules`
-- `PATCH /api/v1/rules/{rule_id}`
-- `DELETE /api/v1/rules/{rule_id}`
-- `GET /api/v1/streams`
-- `POST /api/v1/streams`
-- `PATCH /api/v1/streams/{stream_id}`
-- `DELETE /api/v1/streams/{stream_id}`
-- `GET /api/v1/streams/{stream_id}/articles`
-- `GET /api/v1/streams/{stream_id}/classifier-runs`
-- `GET /api/v1/feeds`
-- `POST /api/v1/feeds`
-- `POST /api/v1/feeds/{feed_id}/ingest`
-- `PATCH /api/v1/feeds/{feed_id}/folder`
-- `GET /api/v1/feeds/health`
-- `PATCH /api/v1/feeds/{feed_id}/settings`
-- `PATCH /api/v1/feeds/{feed_id}/lifecycle`
-- `GET /api/v1/folders`
-- `POST /api/v1/folders`
-- `PATCH /api/v1/folders/{folder_id}`
-- `DELETE /api/v1/folders/{folder_id}`
-- `POST /api/v1/articles/filter-preview`
-- `GET /api/v1/articles`
-- `GET /api/v1/articles/{article_id}`
-- `POST /api/v1/articles/{article_id}/fulltext/fetch`
-- `PATCH /api/v1/articles/{article_id}/state`
-- `POST /api/v1/articles/state/bulk`
-- `GET /api/v1/navigation`
-- `GET /api/v1/dashboard/summary`
-- `POST /api/v1/imports/opml`
-- `GET /api/v1/plugins/areas`
-- `GET /api/v1/plugins/status`
+- Keep `AGENTS.md` stable and concise; do not duplicate volatile backlog/history here.
+- Active roadmap source of truth is `docs/backlog.md` only.
+- Current implementation snapshot lives in `docs/current-state.md`.
+- Session log is intentionally compact in `docs/session-notes.md` (rolling recent window).
+- Older session history belongs in `docs/session-notes/archive/` (monthly archive files).
 
-## Queue/Scheduler Status
+## Feature Direction Notes (Stable)
 
-- Implemented:
-  - Redis/RQ queue wiring (`src/sift/tasks/queueing.py`)
-  - Ingest job wrapper (`src/sift/tasks/jobs.py`)
-  - Scheduler loop that enqueues due feeds by `fetch_interval_minutes`
-  - Worker process consuming ingest queue
-  - Scheduler and worker dedicated scrape endpoints for runtime metrics
-- Config controls:
-  - `SIFT_INGEST_QUEUE_NAME`
-  - `SIFT_SCHEDULER_POLL_INTERVAL_SECONDS`
-  - `SIFT_SCHEDULER_BATCH_SIZE`
-  - `SIFT_METRICS_BIND_HOST`
-  - `SIFT_METRICS_SCHEDULER_PORT`
-  - `SIFT_METRICS_WORKER_PORT`
-- Dedupe guard:
-  - Scheduler uses RQ-compatible stable job IDs (`ingest-<feed_id>`) for dedupe.
-  - Legacy `ingest:<feed_id>` IDs are still checked for upgrade-safe dedupe behavior.
-
-## Current Implementation Status
-
-- Authentication:
-  - local provider implemented (`auth_identities.provider = "local"`)
-  - Argon2 password hashing
-  - cookie sessions backed by `user_sessions`
-  - schema ready for external providers (Google/Azure/Apple/OIDC)
-  - OIDC provider implementation is intentionally deferred; keep schema/provider abstractions ready.
-- Feed and article APIs now require authenticated sessions.
-- Feed ownership is tracked via `feeds.owner_id`.
-- Current limitation: feed URL is globally unique until shared-feed/subscription model is revisited.
-- Feed ingestion pipeline exists:
-  - fetch RSS/Atom
-  - parse entries
-  - store raw entry payload
-  - create normalized article
-  - run plugin ingest hook
-- Initial dedupe exists at feed+source-id level.
-- Keyword include/exclude preview exists via API.
-- OPML import endpoint exists with per-user dedupe/import report (`POST /api/v1/imports/opml`).
-- Persisted ingest rules are implemented and enforced during ingestion.
-- Keyword streams are implemented with persisted definitions and matched article views.
-- Stream classifier foundation is implemented (rules/classifier/hybrid modes + plugin confidence threshold).
-- Classifier run persistence/model tracking baseline is implemented:
-  - classifier execution persists `stream_classifier_runs` rows during ingest and stream backfill
-  - run records capture plugin/provider/model/version, confidence/threshold, run status, and duration
-  - stream diagnostics endpoint is available (`GET /api/v1/streams/{stream_id}/classifier-runs`)
-- Cross-feed canonical dedup foundation is implemented (normalized URL + content fingerprint + duplicate linking/confidence).
-- Scheduler and worker orchestration are now implemented for recurring ingestion.
-- Feed folders are implemented (per-user folders + feed-to-folder assignment endpoint).
-- Reader-first frontend workspace is implemented:
-  - `/app` authenticated React + MUI 3-pane shell (tree/list/reader)
-  - frontend source: `frontend/` (Vite + TypeScript + TanStack Router/Query)
-  - build output: `frontend/dist`
-  - Light/dark theme toggle with local persistence
-  - Compact/comfortable density toggle (compact default)
-  - Core keyboard shortcuts: `j/k`, `o`, `m`, `s`, `/`
-  - Frontend owns routes (`/app`, `/login`, `/register`, `/account`, `/account/monitoring`, `/account/feed-health`,
-    `/help`) and talks to backend through REST APIs only.
-- Settings hub + unified UI preferences are implemented:
-  - `/account` now hosts appearance and reading/layout controls plus account summary
-  - unified browser-local preferences model for `themeMode`, `themePreset`, `density`, and `navPreset`
-  - workspace navigation preset now reads from app-level settings state
-  - duplicate inline nav preset controls were removed from workspace navigation
-  - settings toggle groups support keyboard arrow/home/end selection and explicit focus-visible states
-  - settings include reset-to-defaults for UI preferences
-  - preset-aware interaction tokens are tuned across rail/nav/list/reader surfaces
-  - preset-aware base surfaces and MUI palette tokens are aligned per preset (light + dark)
-  - targeted `/account` route tests cover interaction, accessibility labels, and preference persistence
-- Monitoring feed management v1 is implemented:
-  - `/account/monitoring` route for stream-backed monitoring definition CRUD
-  - settings entry point (`Manage monitoring feeds`) from `/account`
-  - backfill action executes historical stream match recalculation (`POST /api/v1/streams/{stream_id}/backfill`)
-  - backfill response includes scanned/matched counts and UI success feedback
-  - stream matcher config supports include/exclude regex rules with backend validation
-  - stream classifier config supports persisted JSON config passed into plugin classifier context
-  - workspace explainability labels for matched monitoring streams in article list and reader
-  - match reason evidence is persisted and surfaced in article list/reader (`Why matched`)
-- Monitoring search language v1 is implemented:
-  - backend parser/evaluator for `AND`/`OR`/`NOT`, parentheses, quoted phrases, suffix wildcard, and fuzzy tokens
-  - stream expression persistence via `keyword_streams.match_query`
-  - ingest-time stream matching evaluates saved expression query
-  - article listing search supports advanced query syntax with validation errors for invalid expressions
-  - monitoring feed editor supports creating/updating `match_query`
-- Monitoring match visual explainability v1 is implemented:
-  - query-hit evidence persistence (`query_hits`) for match-query-driven stream matches
-  - compact `Matched terms` summaries in article list and reader metadata
-  - reader title/content span-level highlighting and query-hit evidence rows
-- Workspace action iconification v1 is implemented:
-  - article-list scope read action is icon-first with tooltip semantics and explicit accessibility label
-  - reader actions (read/save/open/prev/next/highlight toggle) are icon-first with explicit accessibility labels
-  - keyboard shortcuts remain unchanged (`j/k`, `o`, `m`, `s`)
-- Feed health + edit surface v1 is implemented:
-  - `/account/feed-health` route provides feed lifecycle/health management
-  - health APIs are available (`GET /api/v1/feeds/health`, `PATCH /api/v1/feeds/{feed_id}/settings`,
-    `PATCH /api/v1/feeds/{feed_id}/lifecycle`)
-  - feeds now support lifecycle metadata (`is_archived`, `archived_at`, `last_fetch_success_at`, `last_fetch_error_at`)
-  - archiving a feed bulk-marks existing unread articles from that feed as read
-- Workspace + settings management UI touchups v1 are implemented:
-  - navigation add-folder action is icon-only (`folder-plus`) and section expand/collapse controls are chevron-first
-  - monitoring streams now support folder assignment (`keyword_streams.folder_id`) and are grouped by folder in workspace
-    navigation
-  - settings routes now use a shared side-menu shell across `/account`, `/account/monitoring`, `/account/feed-health`,
-    and `/help`
-  - monitoring feed management list is condensed to one-row-per-stream with icon actions and edit-to-left-form behavior
-  - feed health is condensed to one-row-per-feed with icon actions, `all=true` full-list loading, and add-feed dialog
-  - feed create now accepts optional folder assignment at creation time (`folder_id`)
-- Plugin registry/runtime cutover baseline is implemented:
-  - plugin activation/config now loads from centralized registry (`config/plugins.yaml`) via
-    `SIFT_PLUGIN_REGISTRY_PATH`
-  - runtime validation enforces plugin id uniqueness and strict capability declarations
-  - active runtime path no longer uses legacy `plugin_paths`
-  - plugin manager dispatch is capability-gated for ingest and stream classifier hooks
-- Plugin runtime hardening and diagnostics baseline is implemented:
-  - ingest/classifier plugin dispatch is timeout-guarded and fault-isolated
-  - runtime manager tracks per-plugin capability counters (success/failure/timeouts) and `last_error`
-  - admin diagnostics endpoint is available at `GET /api/v1/plugins/status`
-  - diagnostics endpoint is gated by `SIFT_PLUGIN_DIAGNOSTICS_ENABLED`
-  - plugin telemetry metrics contract is wired (`sift_plugin_invocations_total`,
-    `sift_plugin_invocation_duration_seconds`, `sift_plugin_timeouts_total`, `sift_plugin_dispatch_failures_total`)
-- Frontend plugin host/workspace areas baseline is implemented:
-  - plugin areas metadata endpoint is available at `GET /api/v1/plugins/areas`
-  - workspace navigation renders a dedicated `Plugins` section from enabled plugin area metadata
-  - `/app/plugins/$areaId` route mounts plugin area content inside workspace shell
-  - plugin area mounts are isolated by error boundaries (`Plugin unavailable` fallback)
-- Dashboard shell/plugin host baseline is implemented:
-  - `/app/dashboard` route is implemented and keeps workspace rail + navigation visible
-  - desktop rail `Dashboard` action now routes to `/app/dashboard`
-  - dashboard host renders deterministic card states (`ready`, `unavailable`, `degraded`)
-  - summary metadata endpoint is available at `GET /api/v1/dashboard/summary`
-- Full article fetch on-demand v1 is implemented:
-  - reader now supports user-triggered `Fetch full article` / `Refetch full article`
-  - backend endpoint is available at `POST /api/v1/articles/{article_id}/fulltext/fetch`
-  - article detail now includes fulltext status/content fields and `content_source`
-  - extracted fulltext is persisted separately from feed excerpt content
-- Scheduler/ingestion observability v1 is implemented:
-  - API request correlation (`X-Request-Id`) and structured API lifecycle events
-  - Prometheus-compatible metrics contracts for API/scheduler/worker/ingest/plugin runtime
-  - dedicated scheduler/worker scrape endpoints with configurable host/ports
-  - operator runbook is available at `docs/observability-runbook.md`
-- Development seed bootstrap is implemented:
-  - creates default local user when enabled
-  - imports OPML feed folders/feeds
-  - maps Inoreader monitoring feeds to keyword streams
-  - personal OPML should live in `dev-data/local-seed.opml` (gitignored)
-  - keep only sanitized seed sample committed (`dev-data/public-sample.opml`)
-
-## Next Delivery Sequence
-
-1. Stream-level ranking/prioritization controls.
-2. Search provider plugin platform v1 (ordered provider chain + strict budgets/timeouts).
-3. Recently completed and archived:
-   - `docs/specs/done/scheduler-ingestion-observability-v1.md`
-4. Previously completed and archived:
-   - `docs/specs/done/full-article-fetch-on-demand-v1.md`
-5. Completed and archived:
-   - `docs/specs/done/plugin-platform-foundation-v1.md`
-   - `docs/specs/done/plugin-runtime-hardening-diagnostics-v1.md`
-   - `docs/specs/done/frontend-plugin-host-workspace-areas-v1.md`
-   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
-   - plugin-configuration follow-up checkpoint: `docs/specs/plugin-configuration-registry-v1.md`
-
-## Next UI Slice (Prioritized)
-
-1. No additional UI-only polish slice is active; core platform priorities are now primary.
-2. Most recently completed:
-   - full article fetch on-demand v1 (completed on 2026-02-22; spec archived at
-     `docs/specs/done/full-article-fetch-on-demand-v1.md`)
-   - desktop reader/workspace polish v2 (closed on 2026-02-22):
-     - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
-     - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
-       `/account/monitoring`, and `/help`
-     - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
-       `npm --prefix frontend run test`, `npm --prefix frontend run build`
-   - workspace + settings management UI touchups v1 (2026-02-21; spec archived at
-     `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
-   - feed health + edit surface v1 (2026-02-19; spec archived at
-   `docs/specs/done/feed-health-edit-surface-v1.md`).
-
-## Deferred
-
-1. Add OIDC providers (Google first, then Azure/Apple) after core stream/rule/UI features stabilize.
-2. Add on-demand article LLM summary feature (later priority; spec:
-   `docs/specs/article-llm-summary-on-demand-v1.md`).
-3. Complete dashboard command center v1 card/data rollout on top of `/app/dashboard` after spec-gate dependencies:
-   - `docs/specs/done/dashboard-shell-plugin-host-v1.md`
-   - `docs/specs/dashboard-command-center-v1.md`
-   - `docs/specs/stream-ranking-prioritization-controls-v1.md`
-   - `docs/specs/feed-health-ops-panel-v1.md`
-   - `docs/specs/monitoring-signal-scoring-v1.md`
-   - `docs/specs/trends-detection-dashboard-v1.md`
-   - `docs/specs/search-provider-plugin-v1.md`
-   - `docs/specs/feed-recommendations-v1.md`
-4. Add vector-database integration as plugin infrastructure for embedding/matching workflows (later priority).
-5. Run a dedicated mobile UX planning session later; keep current runtime mobile behavior read-focused until then.
-
-## Feature Notes
-
-- Keyword streams:
-  - many streams per user should be supported
-  - stream definitions should be saved and queryable like feeds
-  - stream membership should eventually support both deterministic rules and classifier outputs
-  - matcher baseline includes boolean query language (`AND`/`OR`/`NOT`) with phrases/grouping, suffix wildcard, and fuzzy tokens
-- Classifier plugin direction:
-  - implement as plugin hooks, not hard-coded core logic
-  - support provider/model versioning, score/confidence, and failure isolation
-- Search provider plugin direction:
-  - keep provider execution in a shared `search_provider` capability (`search_feeds(request)`)
-  - enforce ordered provider fallback plus strict per-provider budgets/timeouts in shared runtime
-- Discover feeds workflow direction:
-  - keep discovery streams/recommendation lifecycle separate from provider adapter internals
-  - consume shared search-provider infrastructure instead of duplicating provider logic in discovery workflow
-- LLM plugin direction:
-  - use a shared LLM capability plugin contract with operation-specific hooks
-  - summary is the first planned LLM operation in that shared contract
-- Feed folders direction:
-  - add folder object per user
-  - support OPML folder mapping on import
-  - allow unfiled feeds as a default state
-- Vector database direction:
-  - keep vector storage behind plugin boundaries
-  - start with pluggable providers (e.g., pgvector, Qdrant, Weaviate)
-  - use for semantic matching/classification plugins, not as a hard dependency of core ingestion
-- Dashboard direction:
-  - route should be `/app/dashboard` and preserve workspace rail + navigation tree
-  - v1 cards should include priority queue, feed health, saved follow-up, monitoring signal, trends, and discovery
-    candidates (feed + article candidates)
-  - dashboard build should start only after dependency specs are drafted and linked in backlog
+- Keyword streams should support many streams per user and evolve from deterministic rules to classifier-assisted
+  matching.
+- Classifier logic should remain plugin-driven with provider/model/version metadata and fault isolation.
+- Search providers should be implemented via shared `search_provider` capability (`search_feeds(request)`), with
+  ordered fallback and strict budgets/timeouts.
+- Discover-feeds workflow should remain separate from provider adapter internals and consume shared provider
+  infrastructure.
+- LLM operations should use a shared plugin capability contract; on-demand summary is the first planned operation.
+- Vector storage should stay plugin-boundary and optional (for example `pgvector`, Qdrant, Weaviate), not core-ingest
+  mandatory.
 
 ## Planning Workflow For Future Sessions
 
-1. Read `AGENTS.md`, `docs/backlog.md`, `docs/backlog-history.md`, and `docs/session-notes.md`.
-2. Confirm or update the next 3-5 priority steps.
-3. Review newly captured long-horizon ideas and record/normalize them in `docs/backlog.md`.
-4. Implement one vertical slice fully (code + tests + docs update).
-5. End each session by updating:
-   - `docs/session-notes.md` with verification results and next priorities.
-   - `docs/architecture.md` if architecture changed.
-   - `docs/backlog.md` for active priority/deferred changes.
-   - `docs/backlog-history.md` when completed items are moved out of active backlog.
-   - `docs/specs/` and `docs/specs/done/` so completed feature specs are archived out of active specs.
+1. Read `AGENTS.md`, `docs/current-state.md`, and `docs/backlog.md` first.
+2. Read only the active spec(s) needed for the selected slice from `docs/specs/`.
+3. Read `docs/session-notes.md` for recent context (latest 1-3 entries) only when needed.
+4. Open `docs/session-notes/archive/*.md` only for deep historical investigation.
+5. Implement one vertical slice fully (code + tests + docs updates).
+6. End each session by updating:
+   - `docs/session-notes.md` (rolling recent log + verification),
+   - `docs/architecture.md` if architecture changed,
+   - `docs/backlog.md` for active priority/deferred changes,
+   - `docs/backlog-history.md` when completed items leave active backlog,
+   - `docs/specs/` and `docs/specs/done/` when spec lifecycle changes.
 
 ## Backlog Governance
 
@@ -332,14 +85,16 @@ This file stores persistent project context for future Codex sessions.
 - `docs/backlog.md` must contain only active remaining work (`Next`, `Deferred`).
 - Completed or historical backlog entries must be moved to `docs/backlog-history.md`.
 - `docs/specs/` must contain only active/planned specs.
-- When a spec-defined feature is implemented, move that spec to `docs/specs/done/` and update doc links.
-- Avoid keeping durable backlog items only in `docs/session-notes.md`; session notes are log/history, backlog is planning source of truth.
+- Completed feature specs must move to `docs/specs/done/` and linked references must be updated.
+- Do not keep durable backlog items only in `docs/session-notes.md`; session notes are a rolling execution log.
 
 ## Where to Store Future Knowledge
 
-- Stable constraints/instructions: `AGENTS.md`.
-- Design/architecture decisions and tradeoffs: `docs/architecture.md`.
-- Iteration log (what changed, why, what is next): `docs/session-notes.md`.
+- Stable project constraints/instructions: `AGENTS.md`.
+- Architecture decisions and tradeoffs: `docs/architecture.md`.
+- Current implementation snapshot and known constraints: `docs/current-state.md`.
+- Rolling recent iteration log: `docs/session-notes.md`.
+- Archived session history: `docs/session-notes/archive/`.
 - Active backlog source of truth (`Next`, `Deferred`): `docs/backlog.md`.
 - Backlog completion/history archive: `docs/backlog-history.md`.
 - Active/planned feature specs: `docs/specs/`.

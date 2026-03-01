@@ -3,6 +3,7 @@
 This is the source of truth for active product backlog status and remaining roadmap items.
 
 Historical/completed backlog items are archived in [docs/backlog-history.md](backlog-history.md).
+Current implementation snapshot is maintained in [docs/current-state.md](current-state.md).
 
 ## Status Model
 
@@ -20,19 +21,7 @@ Historical/completed backlog items are archived in [docs/backlog-history.md](bac
 ### Next UI Slice
 
 1. No additional UI-only polish slice is active; core platform priorities are now primary.
-2. Most recently completed:
-  - full article fetch on-demand v1 (completed on 2026-02-22; spec archived in
-    `docs/specs/done/full-article-fetch-on-demand-v1.md`)
-  - desktop reader/workspace polish v2 (closed on 2026-02-22):
-    - desktop screenshot QA evidence: `artifacts/desktop-review-2026-02-21T23-27-06-123Z`
-    - captured at `1920x1080` and `1366x768` across `/app`, `/account`, `/account/feed-health`,
-      `/account/monitoring`, and `/help`
-    - close verification rerun: `npm --prefix frontend run lint`, `npm --prefix frontend run typecheck`,
-      `npm --prefix frontend run test`, `npm --prefix frontend run build`
-  - workspace + settings management UI touchups v1 (completed on 2026-02-21; spec archived in
-    `docs/specs/done/workspace-settings-management-ui-touchups-v1.md`)
-  - feed health + edit surface v1 (completed on 2026-02-19; archived in `docs/backlog-history.md`; spec archived in
-    `docs/specs/done/feed-health-edit-surface-v1.md`).
+2. Completed UI milestones are tracked in `docs/backlog-history.md` and `docs/specs/done/`.
 
 ### Linked Specifications
 
