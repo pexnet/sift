@@ -1,0 +1,84 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  docker_sift:
+    type: docker_logs
+
+transforms:
+  only_sift_services:
+    type: filter
+    inputs:
+      - docker_sift
+    condition: '.label."com.docker.compose.service" == "app" || .label."com.docker.compose.service" == "worker" || .label."com.docker.compose.service" == "scheduler"'
+
+  normalize_sift_logs:
+    type: remap
+    inputs:
+      - only_sift_services
+    source: |
+      compose_service = to_string(.label."com.docker.compose.service") ?? "unknown"
+      .compose_service = compose_service
+
+      parsed, parse_err = parse_json(.message)
+      if parse_err == null && is_object(parsed) {
+        if exists(parsed.ts) { .ts = parsed.ts }
+        if exists(parsed.level) { .level = parsed.level }
+        if exists(parsed.service) { .service = parsed.service }
+        if exists(parsed.env) { .env = parsed.env }
+        if exists(parsed.event) { .event = parsed.event }
+        if exists(parsed.message) { .message = parsed.message }
+        if exists(parsed.request_id) { .request_id = parsed.request_id }
+        if exists(parsed.route) { .route = parsed.route }
+        if exists(parsed.method) { .method = parsed.method }
+        if exists(parsed.status_code) { .status_code = parsed.status_code }
+        if exists(parsed.duration_ms) { .duration_ms = parsed.duration_ms }
+        if exists(parsed.feed_id) { .feed_id = parsed.feed_id }
+        if exists(parsed.job_id) { .job_id = parsed.job_id }
+        if exists(parsed.queue_name) { .queue_name = parsed.queue_name }
+        if exists(parsed.error_type) { .error_type = parsed.error_type }
+        if exists(parsed.error_message) { .error_message = parsed.error_message }
+      }
+
+      if !exists(.message) || is_null(.message) {
+        .message = ""
+      } else if !is_string(.message) {
+        .message = encode_json(.message)
+      }
+
+      if !exists(.ts) || is_null(.ts) {
+        .ts = format_timestamp!(now(), "%+")
+      } else if !is_string(.ts) {
+        .ts = to_string(.ts) ?? format_timestamp!(now(), "%+")
+      }
+
+      if !exists(.level) || is_null(.level) {
+        .level = "info"
+      } else if !is_string(.level) {
+        .level = to_string(.level) ?? "info"
+      }
+
+      if !exists(.service) || is_null(.service) {
+        .service = "sift-" + compose_service
+      } else if !is_string(.service) {
+        .service = "sift-" + compose_service
+      }
+
+      .stream = compose_service
+
+sinks:
+  victorialogs:
+    type: http
+    inputs:
+      - normalize_sift_logs
+    uri: http://victorialogs:9428/insert/jsonline?_stream_fields=stream,service,compose_service,level&_time_field=ts&_msg_field=message
+    method: post
+    request:
+      headers:
+        Content-Type: application/stream+json
+    framing:
+      method: newline_delimited
+    encoding:
+      codec: json
+    compression: none

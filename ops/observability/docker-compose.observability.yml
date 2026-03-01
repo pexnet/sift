@@ -1,0 +1,57 @@
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    command:
+      - --storageDataPath=/storage
+      - --httpListenAddr=:8428
+    ports:
+      - "8428:8428"
+    volumes:
+      - observability_vm_data:/storage
+    restart: unless-stopped
+
+  victorialogs:
+    image: victoriametrics/victoria-logs:latest
+    command:
+      - --storageDataPath=/storage
+      - --httpListenAddr=:9428
+    ports:
+      - "9428:9428"
+    volumes:
+      - observability_vlogs_data:/storage
+    restart: unless-stopped
+
+  vmagent:
+    image: victoriametrics/vmagent:latest
+    command:
+      - -promscrape.config=/etc/vmagent/prometheus.yml
+      - -remoteWrite.url=http://victoriametrics:8428/api/v1/write
+      - -httpListenAddr=:8429
+    ports:
+      - "8429:8429"
+    volumes:
+      - ./ops/observability/vmagent/prometheus.yml:/etc/vmagent/prometheus.yml:ro
+    depends_on:
+      - victoriametrics
+      - app
+      - scheduler
+      - worker
+    restart: unless-stopped
+
+  vector:
+    image: timberio/vector:0.47.0-alpine
+    command:
+      - --config
+      - /etc/vector/vector.yaml
+    ports:
+      - "8686:8686"
+    volumes:
+      - ./ops/observability/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - victorialogs
+    restart: unless-stopped
+
+volumes:
+  observability_vm_data:
+  observability_vlogs_data:
