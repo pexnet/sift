@@ -298,6 +298,40 @@ plugins:
     assert search_settings["provider_chain"] == ["searxng", "brave_search"]
 
 
+def test_load_plugin_registry_rejects_search_provider_missing_chain_budget(tmp_path: Path) -> None:
+    registry_path = _write_registry(
+        tmp_path / "plugins.yaml",
+        """
+version: 1
+plugins:
+  - id: search_provider
+    enabled: true
+    backend:
+      class_path: sift.plugins.builtin.search_provider_runtime:SearchProviderRuntimePlugin
+    capabilities:
+      - search_provider
+    settings:
+      search_provider:
+        provider_chain:
+          - searxng
+          - brave_search
+        provider_budgets:
+          searxng:
+            max_requests_per_run: 10
+            max_requests_per_day: 100
+            min_interval_ms: 250
+            max_query_variants_per_stream: 5
+            max_results_per_query: 25
+""".strip(),
+    )
+
+    with pytest.raises(PluginRegistryError) as exc_info:
+        load_plugin_registry(str(registry_path))
+    assert "settings.search_provider.provider_budgets: missing budget config for provider 'brave_search'" in str(
+        exc_info.value
+    )
+
+
 @pytest.mark.asyncio
 async def test_plugin_manager_dispatches_by_registry_capability(tmp_path: Path) -> None:
     registry_path = _write_registry(

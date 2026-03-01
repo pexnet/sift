@@ -3,8 +3,9 @@
 ## Status
 
 - State: In Progress
-- Scope: runtime capability contract, registry validation, and authenticated API baseline implemented; provider adapters,
-  fallback execution policy, and strict runtime budget accounting remain pending
+- Scope: runtime capability contract, registry validation, authenticated API baseline, ordered fallback, in-process
+  budget/rate enforcement, and `searxng`/`brave_search` adapter baselines implemented; persistent daily budget storage,
+  provider hardening, and discover-flow integration remain pending
 - Backlog reference: [docs/backlog.md](../backlog.md)
 
 ## Context

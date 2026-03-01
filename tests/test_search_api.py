@@ -9,6 +9,7 @@ from sift.db.models import User
 from sift.main import app
 from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest, SearchFeedsResult
 from sift.plugins.manager import PluginStatusSnapshot
+from sift.services.search_service import search_provider_service
 
 
 class _SearchPluginManagerStub:
@@ -91,6 +92,7 @@ def test_search_providers_returns_configured_chain(monkeypatch, tmp_path: Path) 
 
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.search.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
+    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
     monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(registry_path))
     monkeypatch.setenv("SIFT_PLUGIN_TIMEOUT_SEARCH_PROVIDER_MS", "7000")
     get_settings.cache_clear()
@@ -98,6 +100,7 @@ def test_search_providers_returns_configured_chain(monkeypatch, tmp_path: Path) 
     from sift.core.runtime import get_plugin_manager
 
     get_plugin_manager.cache_clear()
+    search_provider_service.reset_budget_state()
     try:
         with TestClient(app) as client:
             response = client.get("/api/v1/search/providers")
@@ -109,6 +112,7 @@ def test_search_providers_returns_configured_chain(monkeypatch, tmp_path: Path) 
             assert payload["timeout_ms"] == 7000
             assert payload["loaded"] is True
     finally:
+        search_provider_service.reset_budget_state()
         app.dependency_overrides.clear()
         get_settings.cache_clear()
         get_plugin_manager.cache_clear()
@@ -123,12 +127,14 @@ def test_search_feeds_returns_ephemeral_candidates(monkeypatch, tmp_path: Path) 
 
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.search.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
+    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
     monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(registry_path))
     get_settings.cache_clear()
 
     from sift.core.runtime import get_plugin_manager
 
     get_plugin_manager.cache_clear()
+    search_provider_service.reset_budget_state()
     try:
         with TestClient(app) as client:
             response = client.post("/api/v1/search/feeds", json={"query": "ai research", "max_results": 10})
@@ -140,6 +146,7 @@ def test_search_feeds_returns_ephemeral_candidates(monkeypatch, tmp_path: Path) 
             assert len(payload["candidates"]) == 1
             assert payload["candidates"][0]["url"] == "https://example.com/feed.xml"
     finally:
+        search_provider_service.reset_budget_state()
         app.dependency_overrides.clear()
         get_settings.cache_clear()
         get_plugin_manager.cache_clear()
@@ -154,18 +161,21 @@ def test_search_providers_returns_503_when_plugin_unavailable(monkeypatch, tmp_p
 
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.search.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=False))
+    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=False))
     monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(registry_path))
     get_settings.cache_clear()
 
     from sift.core.runtime import get_plugin_manager
 
     get_plugin_manager.cache_clear()
+    search_provider_service.reset_budget_state()
     try:
         with TestClient(app) as client:
             response = client.get("/api/v1/search/providers")
             assert response.status_code == 503
             assert response.json()["detail"] == "Search provider plugin unavailable"
     finally:
+        search_provider_service.reset_budget_state()
         app.dependency_overrides.clear()
         get_settings.cache_clear()
         get_plugin_manager.cache_clear()

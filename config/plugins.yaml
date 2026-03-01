@@ -17,7 +17,7 @@ plugins:
   - id: search_provider
     enabled: true
     backend:
-      class_path: sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin
+      class_path: sift.plugins.builtin.search_provider_runtime:SearchProviderRuntimePlugin
     capabilities:
       - search_provider
     settings:
@@ -38,6 +38,12 @@ plugins:
             min_interval_ms: 400
             max_query_variants_per_stream: 4
             max_results_per_query: 10
+        providers:
+          searxng:
+            base_url: http://localhost:8080/search
+          brave_search:
+            endpoint: https://api.search.brave.com/res/v1/web/search
+            api_key: ${SIFT_BRAVE_SEARCH_API_KEY}
   - id: discover_feeds
     enabled: true
     backend:

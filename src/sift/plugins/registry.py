@@ -214,6 +214,11 @@ def _collect_provider_settings_errors(
         errors.append(f"{budgets_path}: must be a non-empty mapping")
         return errors
 
+    if provider_chain_values:
+        for provider in provider_chain_values:
+            if provider not in provider_budgets:
+                errors.append(f"{budgets_path}: missing budget config for provider '{provider}'")
+
     for provider, budget in provider_budgets.items():
         provider_path = f"{budgets_path}.{provider}"
         if not isinstance(provider, str) or not provider.strip():

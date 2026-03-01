@@ -3,6 +3,38 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Search Provider Plugin v1 Slice 2: Ordered Fallback + Budget Enforcement + Adapter Baseline)
+
+### Implemented This Session
+
+- Added search-provider orchestration service:
+  - ordered provider fallback over configured `provider_chain`,
+  - strict in-process provider budget/rate enforcement:
+    - `max_requests_per_run`
+    - `max_requests_per_day`
+    - `min_interval_ms`
+- Added runtime provider adapter baseline plugin:
+  - `sift.plugins.builtin.search_provider_runtime:SearchProviderRuntimePlugin`
+  - provider adapters:
+    - `searxng`
+    - `brave_search`
+  - provider-specific settings wiring via registry `settings.search_provider.providers`.
+- Updated default search-provider plugin registry config:
+  - switched runtime class path to `SearchProviderRuntimePlugin`
+  - added provider adapter settings block (`searxng.base_url`, `brave_search.endpoint`, `brave_search.api_key`)
+- Hardened registry validation:
+  - requires budget entries for every provider listed in provider chain.
+- Added tests for:
+  - fallback behavior,
+  - min-interval and per-run budget enforcement,
+  - missing provider-budget validation.
+
+### Verification
+
+- `python -m ruff check src/sift/plugins/builtin/search_provider_runtime.py src/sift/services/search_service.py src/sift/api/routes/search.py tests/test_search_service.py tests/test_search_api.py tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py`
+- `python -m mypy src/sift/plugins src/sift/services/search_service.py src/sift/api/routes/search.py --no-incremental`
+- `python -m pytest tests/test_search_service.py tests/test_search_api.py tests/test_plugin_registry.py tests/test_plugin_runtime_manager.py`
+
 ## 2026-03-01 (Search Provider Plugin v1 Slice 1: Runtime Contract + Registry Validation + API Baseline)
 
 ### Implemented This Session

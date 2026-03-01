@@ -190,6 +190,7 @@ async def test_search_provider_dispatch_records_success(monkeypatch: pytest.Monk
             query="ai",
             provider_chain=["searxng", "brave_search"],
             max_results=10,
+            provider_settings={},
             metadata={},
         ),
     )

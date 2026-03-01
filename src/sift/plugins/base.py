@@ -57,6 +57,7 @@ class SearchFeedsRequest:
     query: str
     provider_chain: list[str]
     max_results: int
+    provider_settings: Mapping[str, Any]
     metadata: Mapping[str, str]
 
 

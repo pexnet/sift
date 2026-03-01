@@ -231,6 +231,7 @@ Implemented slices are tracked at capability level here; detailed completion chr
    - authenticated search endpoints for configured providers and ephemeral feed candidate results:
      - `GET /api/v1/search/providers`
      - `POST /api/v1/search/feeds`
+   - ordered provider fallback and in-process provider budget/rate enforcement.
 
 ## Frontend Delivery Standard
 

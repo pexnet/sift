@@ -13,8 +13,8 @@ from sift.domain.schemas import (
     SearchProviderBudgetOut,
     SearchProvidersOut,
 )
-from sift.plugins.base import SearchFeedsRequest
 from sift.plugins.registry import PluginRegistryEntry, load_plugin_registry
+from sift.services.search_service import search_provider_service
 
 router = APIRouter()
 
@@ -81,17 +81,28 @@ async def search_feeds(
 ) -> SearchFeedsOut:
     entry, search_settings = _resolve_search_provider_entry()
     _require_loaded_search_provider(entry.id)
-    provider_chain = [str(item) for item in search_settings.get("provider_chain", [])]
+    provider_chain = [str(item).strip() for item in search_settings.get("provider_chain", []) if str(item).strip()]
+    raw_budgets = search_settings.get("provider_budgets")
+    raw_providers = search_settings.get("providers")
+    provider_budgets = (
+        search_provider_service.parse_provider_budgets(raw_budgets)
+        if isinstance(raw_budgets, dict)
+        else {}
+    )
+    provider_settings: dict[str, dict[str, Any]] = {}
+    if isinstance(raw_providers, dict):
+        for provider, provider_cfg in raw_providers.items():
+            if isinstance(provider, str) and isinstance(provider_cfg, dict):
+                provider_settings[provider] = provider_cfg
 
-    manager = get_plugin_manager()
-    result = await manager.search_feeds(
+    result = await search_provider_service.search_with_fallback(
         plugin_name=entry.id,
-        request=SearchFeedsRequest(
-            query=payload.query.strip(),
-            provider_chain=provider_chain,
-            max_results=payload.max_results,
-            metadata={"user_id": str(current_user.id)},
-        ),
+        query=payload.query.strip(),
+        max_results=payload.max_results,
+        provider_chain=provider_chain,
+        provider_budgets=provider_budgets,
+        provider_settings=provider_settings,
+        metadata={"user_id": str(current_user.id)},
     )
     if result is None:
         return SearchFeedsOut(

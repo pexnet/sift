@@ -36,6 +36,12 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - authenticated baseline APIs:
     - `GET /api/v1/search/providers`
     - `POST /api/v1/search/feeds`
+- Search provider platform v1 slice 2 implemented:
+  - ordered provider fallback orchestration (`searxng` -> `brave_search` by config),
+  - strict in-process budget/rate enforcement (`max_requests_per_run`, `max_requests_per_day`, `min_interval_ms`),
+  - runtime provider adapters baseline:
+    - `searxng`
+    - `brave_search`
 
 ## Active Priorities
 
