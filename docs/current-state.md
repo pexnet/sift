@@ -46,6 +46,10 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - persistent daily provider budget ledger (`search_provider_budget_daily`),
   - DB-backed hard enforcement for `max_requests_per_day` and `min_interval_ms` across restarts/processes,
   - explicit warning metadata in search responses (`warning_details` with stable warning codes).
+- Search provider platform v1 completed and archived:
+  - provider adapter hardening with warning-coded timeout/network/http/json/payload handling,
+  - runtime candidate URL normalization and de-duplication,
+  - archived spec: `docs/specs/done/search-provider-plugin-v1.md`.
 - Plugin architecture hardening implemented:
   - shared plugin capability metadata contract (`src/sift/plugins/capabilities.py`),
   - runtime-loaded plugin registry snapshot exposed by plugin manager,
@@ -53,7 +57,7 @@ For architecture details, use [docs/architecture.md](architecture.md).
 
 ## Active Priorities
 
-1. Search provider plugin platform v1 (ordered provider fallback + strict budgets/timeouts).
+1. Discover feeds v1 (discovery streams + recommendation decisions) on top of completed search-provider infrastructure.
 
 Deferred for now:
 

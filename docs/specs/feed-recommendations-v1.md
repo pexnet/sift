@@ -13,7 +13,7 @@ manually per stream. Discovery streams are separate from monitoring streams and 
 articles in v1.
 
 Provider execution strategy is intentionally split into a dedicated planning artifact:
-`docs/specs/search-provider-plugin-v1.md`.
+`docs/specs/done/search-provider-plugin-v1.md`.
 
 This document is a planning artifact and does not change backend/frontend behavior yet.
 
@@ -185,7 +185,7 @@ Add new discovery contract in plugin layer:
 Provider execution dependency:
 
 1. Discovery generation uses shared search provider infrastructure defined in
-   `docs/specs/search-provider-plugin-v1.md`.
+   `docs/specs/done/search-provider-plugin-v1.md`.
 2. Ordered fallback, provider adapter behavior, and strict budget/timeout enforcement are specified in that dedicated
    search-provider spec.
 
@@ -208,7 +208,7 @@ Provider execution dependency:
 ## Rate Limiting and Free-Tier Budget Controls (Planned)
 
 1. Provider budgets and timeout policies are defined and enforced by the shared
-   `docs/specs/search-provider-plugin-v1.md` contract.
+   `docs/specs/done/search-provider-plugin-v1.md` contract.
 2. Discovery generation must surface explicit budget/timeout warning metadata from provider execution.
 3. Discovery workflow behavior must remain deterministic under partial-result outcomes.
 

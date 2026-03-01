@@ -6,6 +6,25 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Search Provider Plugin v1 (Completed on 2026-03-01)
+
+1. Completed search-provider plugin platform baseline:
+   - runtime capability contract (`search_provider` / `search_feeds`)
+   - strict registry validation for provider chain, allowlist, and provider budget contracts
+   - authenticated search-provider APIs:
+     - `GET /api/v1/search/providers`
+     - `POST /api/v1/search/feeds`
+2. Completed provider execution enforcement:
+   - ordered provider fallback orchestration
+   - persistent daily budget ledger (`search_provider_budget_daily`)
+   - strict `max_requests_per_run`, `max_requests_per_day`, and `min_interval_ms` enforcement
+3. Completed provider hardening:
+   - warning-coded adapter failure mapping (timeout/network/http/json/payload)
+   - normalized/de-duplicated provider candidates
+   - explicit API warning metadata (`warning_details`)
+4. Spec archived:
+   - `docs/specs/done/search-provider-plugin-v1.md`
+
 ### Scheduler/Ingestion Observability v1 (Completed on 2026-02-23)
 
 1. Structured observability baseline completed across API, scheduler, and worker runtimes:

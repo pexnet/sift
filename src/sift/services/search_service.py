@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sift.core.runtime import get_plugin_manager
 from sift.db.models import SearchProviderBudgetDaily
 from sift.plugins.base import SearchFeedCandidate, SearchFeedsRequest
+
+_PROVIDER_WARNING_PATTERN = re.compile(r"^\s*([a-z0-9_]+)\s*:\s*(.+?)\s*$")
 
 
 @dataclass(slots=True)
@@ -120,12 +123,13 @@ class SearchProviderService:
                 continue
 
             for provider_warning in result.warnings:
+                warning_code, warning_message = self._parse_provider_warning(provider_warning)
                 self._append_warning(
                     warnings=warnings,
                     warning_details=warning_details,
                     provider=provider,
-                    code="provider_warning",
-                    message=provider_warning,
+                    code=warning_code,
+                    message=warning_message,
                 )
             if result.candidates:
                 return SearchExecutionResult(
@@ -289,6 +293,15 @@ class SearchProviderService:
         prefix = f"{provider}: " if provider else ""
         warnings.append(f"{prefix}{message}")
         warning_details.append(SearchWarning(code=code, provider=provider, message=message))
+
+    @staticmethod
+    def _parse_provider_warning(raw_warning: str) -> tuple[str, str]:
+        match = _PROVIDER_WARNING_PATTERN.match(raw_warning)
+        if match is None:
+            return "provider_warning", raw_warning
+        code = match.group(1).strip()
+        message = match.group(2).strip() or raw_warning
+        return code, message
 
 
 search_provider_service = SearchProviderService()

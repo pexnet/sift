@@ -3,6 +3,31 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-03-01 (Search Provider Plugin v1 Completion: Provider Hardening Closeout + Spec Archive)
+
+### Implemented This Session
+
+- Completed search-provider runtime hardening:
+  - adapter-level warning-coded failure mapping for timeout/network/http/json/payload failures,
+  - URL normalization and candidate de-duplication in runtime adapters.
+- Preserved provider warning codes through search orchestration into API `warning_details` metadata.
+- Added runtime hardening tests:
+  - timeout handling
+  - HTTP 429 warning mapping
+  - invalid JSON handling
+  - candidate dedupe/normalization
+  - missing Brave API key behavior
+- Added service-level warning-code preservation test for fallback behavior.
+- Marked search-provider v1 complete and archived spec to:
+  - `docs/specs/done/search-provider-plugin-v1.md`
+- Updated planning docs so next active platform priority is now discover-feeds v1.
+
+### Verification
+
+- `python -m ruff check src/sift/plugins/builtin/search_provider_runtime.py src/sift/services/search_service.py tests/test_search_provider_runtime.py tests/test_search_service.py`
+- `python -m mypy src/sift/plugins/builtin/search_provider_runtime.py src/sift/services/search_service.py tests/test_search_provider_runtime.py tests/test_search_service.py --no-incremental`
+- `python -m pytest tests/test_search_provider_runtime.py tests/test_search_service.py tests/test_search_api.py`
+
 ## 2026-03-01 (Plugin Architecture Hardening + Search Provider v1 Slice 3)
 
 ### Implemented This Session

@@ -33,6 +33,35 @@ class _SearchManagerStub:
         )
 
 
+class _SearchManagerWarningsStub:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    async def search_feeds(self, *, plugin_name: str, request: SearchFeedsRequest) -> SearchFeedsResult | None:
+        del plugin_name
+        provider = request.provider_chain[0]
+        self.calls.append(provider)
+        if provider == "searxng":
+            return SearchFeedsResult(
+                provider=provider,
+                candidates=[],
+                warnings=["http_status_429: searxng returned HTTP 429"],
+            )
+        return SearchFeedsResult(
+            provider=provider,
+            candidates=[
+                SearchFeedCandidate(
+                    title="candidate",
+                    url="https://example.com/feed.xml",
+                    site_url="https://example.com",
+                    description=None,
+                    provider=provider,
+                )
+            ],
+            warnings=[],
+        )
+
+
 async def _prepare_session_maker(tmp_path: Path, filename: str) -> tuple[AsyncEngine, async_sessionmaker]:
     db_path = tmp_path / filename
     database_url = f"sqlite+aiosqlite:///{db_path}"
@@ -190,3 +219,37 @@ async def test_search_service_enforces_daily_budget_across_service_instances(
     assert second.candidates == []
     assert any("max_requests_per_day exhausted" in warning for warning in second.warnings)
     assert any(item.code == "max_requests_per_day_exhausted" for item in second.warning_details)
+
+
+@pytest.mark.asyncio
+async def test_search_service_preserves_provider_warning_codes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    manager = _SearchManagerWarningsStub()
+    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: manager)
+    service = SearchProviderService()
+    engine, session_maker = await _prepare_session_maker(tmp_path, "search_service_provider_warnings.db")
+
+    try:
+        async with session_maker() as session:
+            result = await service.search_with_fallback(
+                plugin_name="search_provider",
+                session=session,
+                query="ai",
+                max_results=10,
+                provider_chain=["searxng", "brave_search"],
+                provider_budgets={
+                    "searxng": SearchProviderBudget(10, 100, 1, 5, 25),
+                    "brave_search": SearchProviderBudget(10, 100, 1, 5, 25),
+                },
+                provider_settings={},
+                metadata={},
+            )
+    finally:
+        await engine.dispose()
+
+    assert result is not None
+    assert result.provider == "brave_search"
+    assert manager.calls == ["searxng", "brave_search"]
+    assert any(item.code == "http_status_429" for item in result.warning_details)
