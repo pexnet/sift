@@ -5,7 +5,7 @@ from sift.api.deps.auth import get_current_user
 from sift.db.models import User
 from sift.db.session import get_db_session
 from sift.domain.schemas import OpmlImportResult
-from sift.services.opml_service import OpmlParseError, opml_service
+from sift.services.opml_service import MAX_OPML_BYTES, OpmlParseError, opml_service
 
 router = APIRouter()
 
@@ -26,6 +26,11 @@ async def import_opml(
     content = await file.read()
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty")
+    if len(content) > MAX_OPML_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"OPML file too large (max {MAX_OPML_BYTES} bytes)",
+        )
 
     try:
         return await opml_service.import_from_bytes(

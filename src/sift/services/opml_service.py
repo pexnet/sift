@@ -3,12 +3,16 @@ from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID
 
 from defusedxml import ElementTree
+from defusedxml.common import DefusedXmlException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.db.models import Feed
 from sift.domain.schemas import OpmlImportEntryResult, OpmlImportResult
+
+MAX_OPML_BYTES = 5_000_000
+MAX_OPML_DEPTH = 100
 
 
 class OpmlParseError(Exception):
@@ -56,10 +60,19 @@ def _normalize_feed_url(raw_url: str) -> str | None:
     return urlunsplit(normalized)
 
 
-def _extract_entries(node: ElementTree.Element, into: list[ParsedOpmlEntry]) -> None:
+def _extract_entries(
+    node: ElementTree.Element,
+    into: list[ParsedOpmlEntry],
+    *,
+    depth: int = 0,
+    max_depth: int = MAX_OPML_DEPTH,
+) -> None:
+    if depth > max_depth:
+        raise OpmlParseError(f"OPML nesting depth exceeds maximum of {max_depth}")
+
     for child in list(node):
         if not _is_outline_tag(child.tag):
-            _extract_entries(child, into)
+            _extract_entries(child, into, depth=depth + 1, max_depth=max_depth)
             continue
 
         xml_url = _attr(child, "xmlUrl", "xmlurl", "XMLURL")
@@ -67,13 +80,16 @@ def _extract_entries(node: ElementTree.Element, into: list[ParsedOpmlEntry]) -> 
             title = (_attr(child, "title", "text", "TITLE", "TEXT") or xml_url).strip()
             into.append(ParsedOpmlEntry(url=xml_url, title=title))
 
-        _extract_entries(child, into)
+        _extract_entries(child, into, depth=depth + 1, max_depth=max_depth)
 
 
 def parse_opml(content: bytes) -> list[ParsedOpmlEntry]:
+    if len(content) > MAX_OPML_BYTES:
+        raise OpmlParseError(f"OPML file too large (max {MAX_OPML_BYTES} bytes)")
+
     try:
         root = ElementTree.fromstring(content)
-    except ElementTree.ParseError as exc:
+    except (ElementTree.ParseError, DefusedXmlException) as exc:
         raise OpmlParseError("Invalid OPML/XML content") from exc
 
     body: ElementTree.Element | None = None

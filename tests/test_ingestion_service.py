@@ -10,7 +10,12 @@ from sift.db.base import Base
 from sift.db.models import Article, Feed
 from sift.observability.metrics import MetricSample, get_observability_metrics
 from sift.services.dedup_service import build_content_fingerprint, dedup_service, normalize_canonical_url
-from sift.services.ingestion_service import _make_source_id, _parse_published_at, ingestion_service
+from sift.services.ingestion_service import (
+    MAX_FEED_RESPONSE_BYTES,
+    _make_source_id,
+    _parse_published_at,
+    ingestion_service,
+)
 
 
 def test_make_source_id_prefers_declared_id() -> None:
@@ -226,5 +231,55 @@ async def test_ingest_feed_sets_last_fetch_success_at_on_success_and_error_times
         run_totals = _sample_map(snapshot["sift_ingest_runs_total"], label_keys=("result",))
         assert run_totals[("success",)] == 1.0
         assert run_totals[("network_error",)] == 1.0
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_ingest_feed_rejects_oversized_response(monkeypatch) -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    class _OversizedClientStub:
+        def __init__(self, **_kwargs) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:  # type: ignore[no-untyped-def]
+            return None
+
+        async def get(self, _url: str, headers: dict[str, str] | None = None) -> _ResponseStub:
+            assert headers is not None
+            return _ResponseStub(
+                status_code=200,
+                content=b"tiny body",
+                headers={"Content-Length": str(MAX_FEED_RESPONSE_BYTES + 1)},
+            )
+
+    monkeypatch.setattr(httpx, "AsyncClient", _OversizedClientStub)
+    monkeypatch.setattr("sift.services.ingestion_service.validate_fetch_url", lambda url: url)
+
+    async with session_maker() as session:
+        feed = Feed(title="Large Feed", url="https://ingestion.example.com/large.xml")
+        session.add(feed)
+        await session.commit()
+
+        result = await ingestion_service.ingest_feed(
+            session=session,
+            feed_id=feed.id,
+            plugin_manager=_PluginManagerStub(),  # type: ignore[arg-type]
+        )
+        expected_error = f"Feed response exceeded size limit ({MAX_FEED_RESPONSE_BYTES} bytes)"
+        assert result.errors == [expected_error]
+
+        refreshed = await session.scalar(select(Feed).where(Feed.id == feed.id))
+        assert refreshed is not None
+        assert refreshed.last_fetch_error == expected_error
+        assert refreshed.last_fetch_error_at is not None
 
     await engine.dispose()

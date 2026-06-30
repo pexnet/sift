@@ -23,6 +23,8 @@ from sift.services.url_validation import UrlValidationError, validate_fetch_url
 
 logger = logging.getLogger(__name__)
 
+MAX_FEED_RESPONSE_BYTES = 5_000_000
+
 
 class FeedNotFoundError(Exception):
     pass
@@ -101,6 +103,17 @@ def _ingest_result_from_http_error(error: httpx.HTTPError) -> str:
     if isinstance(error, httpx.NetworkError):
         return "network_error"
     return "http_error"
+
+
+def _response_exceeds_size_limit(response: httpx.Response) -> bool:
+    raw_content_length = response.headers.get("Content-Length") or response.headers.get("content-length")
+    if raw_content_length:
+        try:
+            if int(raw_content_length) > MAX_FEED_RESPONSE_BYTES:
+                return True
+        except ValueError:
+            pass
+    return len(response.content) > MAX_FEED_RESPONSE_BYTES
 
 
 def _record_ingest_observability(
@@ -238,6 +251,21 @@ class IngestionService:
             _record_ingest_observability(
                 feed_id=feed.id,
                 result_label="http_status_error",
+                result=result,
+                started_at=started_at,
+                error=RuntimeError(message),
+            )
+            return result
+
+        if _response_exceeds_size_limit(response):
+            message = f"Feed response exceeded size limit ({MAX_FEED_RESPONSE_BYTES} bytes)"
+            feed.last_fetch_error = message
+            feed.last_fetch_error_at = fetched_at
+            await session.commit()
+            result.errors.append(message)
+            _record_ingest_observability(
+                feed_id=feed.id,
+                result_label="response_too_large",
                 result=result,
                 started_at=started_at,
                 error=RuntimeError(message),

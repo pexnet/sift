@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from sift.db.base import Base
 from sift.db.models import Feed, User
-from sift.services.opml_service import OpmlParseError, opml_service, parse_opml
+from sift.services.opml_service import MAX_OPML_BYTES, MAX_OPML_DEPTH, OpmlParseError, opml_service, parse_opml
 
 
 def test_parse_opml_extracts_nested_outlines() -> None:
@@ -26,6 +26,20 @@ def test_parse_opml_extracts_nested_outlines() -> None:
 def test_parse_opml_raises_on_invalid_xml() -> None:
     with pytest.raises(OpmlParseError):
         parse_opml(b"<opml><body><outline>")
+
+
+def test_parse_opml_rejects_oversized_file() -> None:
+    with pytest.raises(OpmlParseError, match="too large"):
+        parse_opml(b"x" * (MAX_OPML_BYTES + 1))
+
+
+def test_parse_opml_rejects_excessive_nesting_depth() -> None:
+    nested_open = "".join('<outline text="nested">' for _ in range(MAX_OPML_DEPTH + 2))
+    nested_close = "</outline>" * (MAX_OPML_DEPTH + 2)
+    content = f"<opml><body>{nested_open}{nested_close}</body></opml>".encode()
+
+    with pytest.raises(OpmlParseError, match="nesting depth"):
+        parse_opml(content)
 
 
 @pytest.mark.asyncio
