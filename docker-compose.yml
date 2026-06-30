@@ -21,7 +21,7 @@ services:
 
   frontend:
     image: node:22
-    command: /bin/sh -c "corepack enable && cd /app/frontend && pnpm install --frozen-lockfile && pnpm run dev --host 0.0.0.0 --port 5173"
+    command: /bin/sh -c "corepack enable && corepack prepare pnpm@9.15.9 --activate && cd /app/frontend && pnpm install --frozen-lockfile && pnpm run dev --host 0.0.0.0 --port 5173"
     working_dir: /app/frontend
     ports:
       - "5173:5173"
