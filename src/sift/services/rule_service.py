@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from typing import Literal, cast
 from uuid import UUID
 
 from sqlalchemy import select
@@ -236,7 +237,7 @@ class RuleService:
             exclude_keywords=_keywords_from_json(rule.exclude_keywords_json),
             source_contains=rule.source_contains,
             language_equals=rule.language_equals,
-            action="drop",
+            action=cast("Literal['drop']", rule.action) if rule.action == "drop" else "drop",
             created_at=rule.created_at,
             updated_at=rule.updated_at,
         )
