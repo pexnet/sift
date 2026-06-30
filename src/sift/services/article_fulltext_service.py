@@ -1,10 +1,7 @@
 import html
-import ipaddress
 import re
-import socket
 from datetime import UTC, datetime
 from typing import Final, Literal, cast
-from urllib.parse import urlparse
 from uuid import UUID
 
 import httpx
@@ -14,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sift.db.models import Article, ArticleFulltext, Feed
 from sift.domain.schemas import ArticleFulltextFetchOut
 from sift.services.article_service import ArticleNotFoundError
+from sift.services.url_validation import UrlValidationError, validate_fetch_url
 
-_ALLOWED_SCHEMES: Final[frozenset[str]] = frozenset({"http", "https"})
 _FETCH_TIMEOUT_SECONDS: Final[float] = 20.0
 _MAX_RESPONSE_BYTES: Final[int] = 2_000_000
 _EXTRACTOR_NAME: Final[str] = "builtin_simple_html_v1"
@@ -165,40 +162,10 @@ def _normalize_status(value: str) -> FulltextStatus:
 
 
 def _validate_fetch_url(raw_url: str) -> str:
-    parsed = urlparse(raw_url.strip())
-    scheme = parsed.scheme.lower()
-    if scheme not in _ALLOWED_SCHEMES:
-        raise ArticleFulltextValidationError("Unsupported URL scheme. Only http/https are allowed.")
-    if not parsed.hostname:
-        raise ArticleFulltextValidationError("Canonical URL is missing a hostname.")
-
-    _assert_public_host(parsed.hostname)
-    return parsed.geturl()
-
-
-def _assert_public_host(hostname: str) -> None:
-    if hostname.lower() == "localhost":
-        raise ArticleFulltextValidationError("Loopback/localhost fetch targets are not allowed.")
-
     try:
-        _assert_public_ip(ipaddress.ip_address(hostname))
-        return
-    except ValueError:
-        pass
-
-    try:
-        addresses = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
-    except socket.gaierror as exc:
-        raise ArticleFulltextValidationError(f"Failed resolving canonical URL host: {exc}") from exc
-
-    for entry in addresses:
-        ip_raw = entry[4][0]
-        _assert_public_ip(ipaddress.ip_address(ip_raw))
-
-
-def _assert_public_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> None:
-    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
-        raise ArticleFulltextValidationError("Private or non-routable fetch targets are not allowed.")
+        return validate_fetch_url(raw_url)
+    except UrlValidationError as exc:
+        raise ArticleFulltextValidationError(str(exc)) from exc
 
 
 def _extract_readable_content(payload: str) -> tuple[str, str]:
