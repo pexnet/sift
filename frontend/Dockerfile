@@ -1,10 +1,10 @@
 # Build stage
 FROM node:22-slim AS build
 WORKDIR /app
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
-RUN corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile || npm ci
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm run build || npm run build
+RUN pnpm run build
 
 # Serve stage
 FROM nginx:alpine
