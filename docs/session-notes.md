@@ -3,6 +3,39 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-06-30 (Security Review Follow-Up: Workstream A Fixes)
+
+### Implemented This Session
+
+- Completed full code review deliverables:
+  - `docs/code-review-2026-06-30.md`
+  - `.hermes/plans/2026-06-30_code-review-fixes-and-backlog-advancement.md`
+- Closed Workstream A security/CI/deploy fixes:
+  - extracted shared SSRF validation utility and refactored fulltext fetch validation to use it,
+  - applied SSRF validation to feed ingestion, feed creation, and discovery candidate validation,
+  - replaced OPML XML parsing with `defusedxml`,
+  - added 5MB feed response and OPML upload limits plus OPML nesting-depth limit,
+  - redacted Redis credentials from scheduler/worker startup logs,
+  - fixed `rule_service.to_out()` to use `rule.action` instead of hardcoding `drop`,
+  - fixed backend Ruff formatting drift and frontend ESLint assertion errors,
+  - added and verified frontend Docker/Nginx image build,
+  - raised Vitest component-test timeout to stabilize full-suite jsdom/MUI runs.
+
+### Verification
+
+- Backend:
+  - `ruff check src tests`
+  - `ruff format --check src tests`
+  - `mypy src/sift`
+  - `python -m pytest tests/ -q` → 162 passed, 1 Starlette/httpx deprecation warning
+- Frontend:
+  - `npx eslint .`
+  - `npx tsc --noEmit`
+  - `npx vitest run` → 27 files / 112 tests passed
+  - `npm run build` → pass, existing >500k chunk warning remains
+- Container:
+  - `docker build -t sift-frontend-test frontend/` → pass
+
 ## 2026-03-01 (Planning Review: Add SearXNG Discovery Verification Backlog Item)
 
 ### Implemented This Session
