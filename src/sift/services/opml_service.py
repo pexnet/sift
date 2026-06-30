@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from urllib.parse import urlsplit, urlunsplit
 from uuid import UUID
-from xml.etree import ElementTree
 
+from defusedxml import ElementTree
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
