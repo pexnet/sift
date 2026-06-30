@@ -60,7 +60,9 @@ class _PluginManagerAreasStub:
                 enabled=False,
                 backend=PluginBackendConfig(class_path="sift.plugins.builtin.noop:NoopPlugin"),
                 capabilities=["workspace_area"],
-                ui=PluginUIConfig(area=PluginUIAreaConfig(title="Hidden disabled", icon="bolt", order=20, route_key="hidden")),
+                ui=PluginUIConfig(
+                    area=PluginUIAreaConfig(title="Hidden disabled", icon="bolt", order=20, route_key="hidden")
+                ),
                 settings={},
             ),
             PluginRegistryEntry(
@@ -68,7 +70,9 @@ class _PluginManagerAreasStub:
                 enabled=True,
                 backend=PluginBackendConfig(class_path="sift.plugins.builtin.noop:NoopPlugin"),
                 capabilities=["workspace_area"],
-                ui=PluginUIConfig(area=PluginUIAreaConfig(title="Hidden unloaded", icon="alert", order=30, route_key="hidden")),
+                ui=PluginUIConfig(
+                    area=PluginUIAreaConfig(title="Hidden unloaded", icon="alert", order=30, route_key="hidden")
+                ),
                 settings={},
             ),
             PluginRegistryEntry(

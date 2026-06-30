@@ -167,9 +167,13 @@ async def generate_discovery_stream_candidates(
 
 @router.get("/recommendations", response_model=FeedRecommendationListOut)
 async def list_feed_recommendations(
-    status_filter: Literal["pending", "accepted", "denied", "resolved_existing"] | None = Query(default=None, alias="status"),
+    status_filter: Literal["pending", "accepted", "denied", "resolved_existing"] | None = Query(
+        default=None, alias="status"
+    ),
     q: str | None = Query(default=None, max_length=500),
-    sort_by: Literal["created_at", "updated_at", "last_seen_at", "decided_at", "confidence", "feed_title", "status"] = Query(default="updated_at"),
+    sort_by: Literal[
+        "created_at", "updated_at", "last_seen_at", "decided_at", "confidence", "feed_title", "status"
+    ] = Query(default="updated_at"),
     sort_direction: Literal["asc", "desc"] = Query(default="desc"),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),

@@ -97,9 +97,7 @@ async def search_feeds(
     raw_budgets = search_settings.get("provider_budgets")
     raw_providers = search_settings.get("providers")
     provider_budgets = (
-        search_provider_service.parse_provider_budgets(raw_budgets)
-        if isinstance(raw_budgets, dict)
-        else {}
+        search_provider_service.parse_provider_budgets(raw_budgets) if isinstance(raw_budgets, dict) else {}
     )
     provider_settings: dict[str, dict[str, Any]] = {}
     if isinstance(raw_providers, dict):

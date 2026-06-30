@@ -283,4 +283,3 @@ def _escape_label_value(value: str) -> str:
 @lru_cache
 def get_observability_metrics() -> ObservabilityMetrics:
     return ObservabilityMetrics()
-

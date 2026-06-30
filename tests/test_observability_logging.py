@@ -66,4 +66,3 @@ def test_json_log_formatter_redaction_is_case_insensitive() -> None:
 
     payload = json.loads(formatter.format(record))
     assert payload["Session_Token"] == "[REDACTED]"
-

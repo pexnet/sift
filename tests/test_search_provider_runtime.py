@@ -68,9 +68,7 @@ async def test_search_provider_runtime_maps_http_429_warning(monkeypatch: pytest
     _install_async_client_stub(monkeypatch, handler)
     plugin = runtime_module.SearchProviderRuntimePlugin()
 
-    result = await plugin.search_feeds(
-        _request(provider="brave_search", provider_settings={"api_key": "test-api-key"})
-    )
+    result = await plugin.search_feeds(_request(provider="brave_search", provider_settings={"api_key": "test-api-key"}))
 
     assert result is not None
     assert result.provider == "brave_search"
@@ -148,6 +146,4 @@ async def test_search_provider_runtime_requires_brave_api_key() -> None:
     assert result is not None
     assert result.provider == "brave_search"
     assert result.candidates == []
-    assert result.warnings == [
-        "missing_api_key: missing brave_search api_key (expected env-ref or plaintext setting)"
-    ]
+    assert result.warnings == ["missing_api_key: missing brave_search api_key (expected env-ref or plaintext setting)"]

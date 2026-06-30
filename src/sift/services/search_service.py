@@ -242,14 +242,18 @@ class SearchProviderService:
         dialect_name = session.get_bind().dialect.name
         if dialect_name == "sqlite":
             await session.execute(
-                sqlite_insert(SearchProviderBudgetDaily).values(**values).on_conflict_do_nothing(
+                sqlite_insert(SearchProviderBudgetDaily)
+                .values(**values)
+                .on_conflict_do_nothing(
                     index_elements=[SearchProviderBudgetDaily.provider_id, SearchProviderBudgetDaily.day_utc]
                 )
             )
             return
         if dialect_name == "postgresql":
             await session.execute(
-                postgresql_insert(SearchProviderBudgetDaily).values(**values).on_conflict_do_nothing(
+                postgresql_insert(SearchProviderBudgetDaily)
+                .values(**values)
+                .on_conflict_do_nothing(
                     index_elements=[SearchProviderBudgetDaily.provider_id, SearchProviderBudgetDaily.day_utc]
                 )
             )

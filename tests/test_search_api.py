@@ -25,7 +25,9 @@ class _SearchPluginManagerStub:
             PluginRegistryEntry(
                 id="search_provider",
                 enabled=True,
-                backend=PluginBackendConfig(class_path="sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin"),
+                backend=PluginBackendConfig(
+                    class_path="sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin"
+                ),
                 capabilities=["search_provider"],
                 settings={
                     "search_provider": {
@@ -119,7 +121,9 @@ def test_search_providers_returns_configured_chain(monkeypatch: pytest.MonkeyPat
     app.dependency_overrides[get_db_session] = override_db_session
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.search.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
-    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
+    monkeypatch.setattr(
+        "sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True)
+    )
     monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(tmp_path / "missing-registry.yaml"))
     monkeypatch.setenv("SIFT_PLUGIN_TIMEOUT_SEARCH_PROVIDER_MS", "7000")
     get_settings.cache_clear()
@@ -164,7 +168,9 @@ def test_search_feeds_returns_ephemeral_candidates(monkeypatch: pytest.MonkeyPat
     app.dependency_overrides[get_db_session] = override_db_session
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.search.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
-    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True))
+    monkeypatch.setattr(
+        "sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=True)
+    )
     monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(tmp_path / "missing-registry.yaml"))
     get_settings.cache_clear()
 
@@ -209,7 +215,9 @@ def test_search_providers_returns_503_when_plugin_unavailable(monkeypatch: pytes
     app.dependency_overrides[get_db_session] = override_db_session
     app.dependency_overrides[get_current_user] = override_current_user
     monkeypatch.setattr("sift.api.routes.search.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=False))
-    monkeypatch.setattr("sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=False))
+    monkeypatch.setattr(
+        "sift.services.search_service.get_plugin_manager", lambda: _SearchPluginManagerStub(loaded=False)
+    )
     monkeypatch.setenv("SIFT_PLUGIN_REGISTRY_PATH", str(tmp_path / "missing-registry.yaml"))
     get_settings.cache_clear()
 

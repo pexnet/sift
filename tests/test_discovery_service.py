@@ -24,7 +24,9 @@ class _DiscoverySearchManagerStub:
             PluginRegistryEntry(
                 id="search_provider",
                 enabled=True,
-                backend=PluginBackendConfig(class_path="sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin"),
+                backend=PluginBackendConfig(
+                    class_path="sift.plugins.builtin.search_provider_noop:SearchProviderNoopPlugin"
+                ),
                 capabilities=["search_provider"],
                 settings={
                     "search_provider": {

@@ -160,4 +160,3 @@ def _extract_record_extras(record: logging.LogRecord) -> dict[str, Any]:
             continue
         extras[key] = value
     return extras
-

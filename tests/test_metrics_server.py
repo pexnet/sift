@@ -25,7 +25,7 @@ def test_metrics_server_serves_prometheus_payload() -> None:
 
     assert response.status_code == 200
     body = response.text
-    assert "sift_worker_jobs_total{result=\"success\"} 1.0" in body
+    assert 'sift_worker_jobs_total{result="success"} 1.0' in body
 
 
 def test_metrics_server_returns_404_for_non_metrics_path() -> None:

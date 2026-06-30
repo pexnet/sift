@@ -169,7 +169,9 @@ def _build_runtime_config(manager: Any) -> SearchProviderRuntimeConfig:
         raise DiscoveryGenerationUnavailableError("Search provider chain is empty")
 
     raw_budgets = search_settings.get("provider_budgets")
-    provider_budgets = search_provider_service.parse_provider_budgets(raw_budgets) if isinstance(raw_budgets, dict) else {}
+    provider_budgets = (
+        search_provider_service.parse_provider_budgets(raw_budgets) if isinstance(raw_budgets, dict) else {}
+    )
     if not provider_budgets:
         raise DiscoveryGenerationUnavailableError("Search provider budgets are not configured")
 
@@ -394,7 +396,9 @@ class DiscoveryService:
         )
         return await self.create_stream(session=session, user_id=user_id, payload=payload)
 
-    async def create_stream(self, session: AsyncSession, user_id: UUID, payload: DiscoveryStreamCreate) -> DiscoveryStream:
+    async def create_stream(
+        self, session: AsyncSession, user_id: UUID, payload: DiscoveryStreamCreate
+    ) -> DiscoveryStream:
         match_query = _normalize_optional_text(payload.match_query)
         include_keywords = _normalize_keywords(payload.include_keywords)
         exclude_keywords = _normalize_keywords(payload.exclude_keywords)
@@ -572,7 +576,9 @@ class DiscoveryService:
         user_id: UUID,
         status_filter: Literal["pending", "accepted", "denied", "resolved_existing"] | None,
         q: str | None,
-        sort_by: Literal["created_at", "updated_at", "last_seen_at", "decided_at", "confidence", "feed_title", "status"],
+        sort_by: Literal[
+            "created_at", "updated_at", "last_seen_at", "decided_at", "confidence", "feed_title", "status"
+        ],
         sort_direction: Literal["asc", "desc"],
         limit: int,
         offset: int,
@@ -688,7 +694,9 @@ class DiscoveryService:
                 }
             )
         except ValidationError as exc:
-            raise DiscoveryRecommendationValidationError("Recommendation URL is invalid and cannot be accepted") from exc
+            raise DiscoveryRecommendationValidationError(
+                "Recommendation URL is invalid and cannot be accepted"
+            ) from exc
 
         try:
             created_feed = await feed_service.create_feed(session=session, data=payload, user_id=user_id)

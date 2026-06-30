@@ -22,7 +22,9 @@ class SearchProviderRuntimePlugin:
     async def search_feeds(self, request: SearchFeedsRequest) -> SearchFeedsResult | None:
         provider = request.provider_chain[0] if request.provider_chain else ""
         if not request.query.strip():
-            return SearchFeedsResult(provider=provider or "unconfigured", candidates=[], warnings=[_warn("invalid_query", "query is empty")])
+            return SearchFeedsResult(
+                provider=provider or "unconfigured", candidates=[], warnings=[_warn("invalid_query", "query is empty")]
+            )
         if provider == "searxng":
             return await self._search_searxng(request)
         if provider == "brave_search":
@@ -102,7 +104,9 @@ class SearchProviderRuntimePlugin:
             return SearchFeedsResult(
                 provider="brave_search",
                 candidates=[],
-                warnings=[_warn("missing_api_key", "missing brave_search api_key (expected env-ref or plaintext setting)")],
+                warnings=[
+                    _warn("missing_api_key", "missing brave_search api_key (expected env-ref or plaintext setting)")
+                ],
             )
 
         endpoint = str(request.provider_settings.get("endpoint") or "https://api.search.brave.com/res/v1/web/search")
@@ -194,7 +198,9 @@ class SearchProviderRuntimePlugin:
             except ValueError:
                 return None, [_warn("invalid_json", f"{provider} returned invalid JSON payload")]
             if not isinstance(payload, (dict, list)):
-                return None, [_warn("invalid_response_payload", f"{provider} response payload must be JSON object or list")]
+                return None, [
+                    _warn("invalid_response_payload", f"{provider} response payload must be JSON object or list")
+                ]
             return payload, []
         except httpx.TimeoutException:
             return None, [_warn("timeout", f"{provider} request timed out")]
