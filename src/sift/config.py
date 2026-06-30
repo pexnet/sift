@@ -1,7 +1,10 @@
+import logging
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -58,6 +61,16 @@ class Settings(BaseSettings):
         ]
     )
     request_id_header: str = "X-Request-Id"
+
+    @model_validator(mode="after")
+    def _enforce_production_cookie_security(self) -> "Settings":
+        if self.env.lower() != "development" and not self.auth_cookie_secure:
+            logger.warning(
+                "auth_cookie_secure is False in non-development env '%s' — "
+                "session cookies may be exposed over unencrypted HTTP",
+                self.env,
+            )
+        return self
 
 
 @lru_cache
