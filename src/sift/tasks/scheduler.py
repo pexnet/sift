@@ -19,6 +19,18 @@ from sift.tasks.queueing import get_ingest_queue
 if TYPE_CHECKING:
     from rq import Queue
 
+from urllib.parse import urlparse, urlunparse
+
+
+def _redact_redis_url(url: str) -> str:
+    """Redact password from a Redis URL for safe logging."""
+    parsed = urlparse(url)
+    if parsed.password:
+        netloc = parsed.netloc.replace(parsed.password, "***")
+        return urlunparse(parsed._replace(netloc=netloc))
+    return url
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -207,7 +219,7 @@ async def run_scheduler_loop() -> None:
         "scheduler.process.start",
         extra={
             "event": "scheduler.process.start",
-            "redis_url": settings.redis_url,
+            "redis_url": _redact_redis_url(settings.redis_url),
             "queue_name": settings.ingest_queue_name,
             "interval_seconds": settings.scheduler_poll_interval_seconds,
         },

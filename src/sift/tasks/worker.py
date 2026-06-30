@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urlparse, urlunparse
 
 from rq import Worker
 
@@ -6,6 +7,16 @@ from sift.config import get_settings
 from sift.observability.logging import configure_logging
 from sift.observability.metrics_server import start_metrics_http_server
 from sift.tasks.queueing import get_ingest_queue, get_redis_connection
+
+
+def _redact_redis_url(url: str) -> str:
+    """Redact password from a Redis URL for safe logging."""
+    parsed = urlparse(url)
+    if parsed.password:
+        netloc = parsed.netloc.replace(parsed.password, "***")
+        return urlunparse(parsed._replace(netloc=netloc))
+    return url
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +41,7 @@ def main() -> None:
         "worker.process.start",
         extra={
             "event": "worker.process.start",
-            "redis_url": settings.redis_url,
+            "redis_url": _redact_redis_url(settings.redis_url),
             "queue_name": settings.ingest_queue_name,
             "metrics_host": metrics_server.host if metrics_server else None,
             "metrics_port": metrics_server.port if metrics_server else None,
