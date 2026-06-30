@@ -30,6 +30,7 @@ from sift.search.query_language import SearchQuerySyntaxError, parse_search_quer
 from sift.services.dedup_service import normalize_canonical_url
 from sift.services.feed_service import FeedAlreadyExistsError, feed_service
 from sift.services.search_service import SearchProviderBudget, SearchWarning, search_provider_service
+from sift.services.url_validation import UrlValidationError, validate_fetch_url
 
 _SUPPORTED_SCHEMES = frozenset({"http", "https"})
 _RECOMMENDATION_STATUS_VALUES = frozenset({"pending", "accepted", "denied", "resolved_existing"})
@@ -1037,6 +1038,10 @@ class DiscoveryService:
 
     async def _is_valid_feed_endpoint(self, *, client: httpx.AsyncClient, url: str) -> bool:
         try:
+            validate_fetch_url(url)
+        except UrlValidationError:
+            return False
+        try:
             response = await client.get(url)
         except httpx.HTTPError:
             return False
@@ -1054,6 +1059,10 @@ class DiscoveryService:
         return False
 
     async def _discover_feed_links_from_html(self, *, client: httpx.AsyncClient, url: str) -> list[str]:
+        try:
+            validate_fetch_url(url)
+        except UrlValidationError:
+            return []
         try:
             response = await client.get(url)
         except httpx.HTTPError:

@@ -125,6 +125,7 @@ async def test_ingest_feed_sets_last_fetch_success_at_on_304(monkeypatch) -> Non
             return _ResponseStub(status_code=304)
 
     monkeypatch.setattr(httpx, "AsyncClient", _ClientStub)
+    monkeypatch.setattr("sift.services.ingestion_service.validate_fetch_url", lambda url: url)
 
     async with session_maker() as session:
         feed = Feed(title="304 Feed", url="https://ingestion.example.com/304.xml")
@@ -194,6 +195,7 @@ async def test_ingest_feed_sets_last_fetch_success_at_on_success_and_error_times
         await session.commit()
 
         monkeypatch.setattr(httpx, "AsyncClient", _SuccessClientStub)
+        monkeypatch.setattr("sift.services.ingestion_service.validate_fetch_url", lambda url: url)
         success_result = await ingestion_service.ingest_feed(
             session=session,
             feed_id=success_feed.id,
@@ -207,6 +209,7 @@ async def test_ingest_feed_sets_last_fetch_success_at_on_success_and_error_times
         assert refreshed_success_feed.last_fetch_error is None
 
         monkeypatch.setattr(httpx, "AsyncClient", _FailureClientStub)
+        monkeypatch.setattr("sift.services.ingestion_service.validate_fetch_url", lambda url: url)
         failure_result = await ingestion_service.ingest_feed(
             session=session,
             feed_id=failure_feed.id,

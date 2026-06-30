@@ -19,6 +19,7 @@ from sift.plugins.manager import PluginManager
 from sift.services.dedup_service import build_content_fingerprint, dedup_service, normalize_canonical_url
 from sift.services.rule_service import rule_service
 from sift.services.stream_service import stream_service
+from sift.services.url_validation import UrlValidationError, validate_fetch_url
 
 logger = logging.getLogger(__name__)
 
@@ -175,8 +176,26 @@ class IngestionService:
             headers["If-Modified-Since"] = feed.last_modified
 
         try:
+            validated_url = validate_fetch_url(feed.url)
+        except UrlValidationError as exc:
+            fetched_at = datetime.now(UTC)
+            feed.last_fetch_error = str(exc)
+            feed.last_fetched_at = fetched_at
+            feed.last_fetch_error_at = fetched_at
+            await session.commit()
+            result.errors.append(str(exc))
+            _record_ingest_observability(
+                feed_id=feed.id,
+                result_label="ssrf_blocked",
+                result=result,
+                started_at=started_at,
+                error=RuntimeError(str(exc)),
+            )
+            return result
+
+        try:
             async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-                response = await client.get(feed.url, headers=headers)
+                response = await client.get(validated_url, headers=headers)
         except httpx.HTTPError as exc:
             fetched_at = datetime.now(UTC)
             feed.last_fetch_error = str(exc)

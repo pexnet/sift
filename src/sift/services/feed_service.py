@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from sift.db.models import Article, ArticleState, Feed, FeedFolder
 from sift.domain.schemas import FeedCreate, FeedLifecycleUpdate, FeedSettingsUpdate
+from sift.services.url_validation import UrlValidationError, validate_fetch_url
 
 
 class FeedService:
@@ -25,6 +26,11 @@ class FeedService:
         return result.scalar_one_or_none()
 
     async def create_feed(self, session: AsyncSession, data: FeedCreate, user_id: UUID) -> Feed:
+        try:
+            validate_fetch_url(str(data.url))
+        except UrlValidationError as exc:
+            raise FeedValidationError(str(exc)) from exc
+
         if data.folder_id is not None:
             folder_query = select(FeedFolder.id).where(FeedFolder.id == data.folder_id, FeedFolder.user_id == user_id)
             folder_result = await session.execute(folder_query)
