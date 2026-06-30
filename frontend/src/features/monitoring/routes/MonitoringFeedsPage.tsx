@@ -566,7 +566,7 @@ export function MonitoringFeedsPage() {
                         onChange={(event) =>
                           setForm((previous) => ({
                             ...previous,
-                            classifierMode: event.target.value as ClassifierMode,
+                            classifierMode: event.target.value,
                           }))
                         }
                       >

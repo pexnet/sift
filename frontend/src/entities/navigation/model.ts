@@ -110,7 +110,7 @@ export type NavigationHierarchy = {
 };
 
 export function parseNavigationResponse(payload: unknown): NavigationResponse {
-  return navigationTreeSchema.parse(payload) as NavigationResponse;
+  return navigationTreeSchema.parse(payload);
 }
 
 export function toNavigationHierarchy(tree: NavigationResponse): NavigationHierarchy {

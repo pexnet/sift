@@ -13,5 +13,5 @@ const authUserSchema = z.object({
 });
 
 export function parseAuthUser(payload: unknown): AuthUser {
-  return authUserSchema.parse(payload) as AuthUser;
+  return authUserSchema.parse(payload);
 }

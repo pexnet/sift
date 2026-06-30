@@ -245,7 +245,7 @@ export function FeedHealthPage() {
                 labelId="feed-health-lifecycle-label"
                 label="Lifecycle"
                 value={lifecycle}
-                onChange={(event) => setLifecycle(event.target.value as FeedHealthLifecycleFilter)}
+                onChange={(event) => setLifecycle(event.target.value)}
               >
                 <MenuItem value="all">All</MenuItem>
                 <MenuItem value="active">Active</MenuItem>

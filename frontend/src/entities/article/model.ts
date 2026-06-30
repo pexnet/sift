@@ -111,7 +111,7 @@ const bulkPatchArticleStateSchema = z
   );
 
 export function parseWorkspaceSearch(value: unknown): WorkspaceSearch {
-  return workspaceSearchSchema.parse(value) as WorkspaceSearch;
+  return workspaceSearchSchema.parse(value);
 }
 
 export function loadPersistedWorkspaceSearch(): WorkspaceSearch {
@@ -145,7 +145,7 @@ export function savePersistedWorkspaceSearch(search: WorkspaceSearch): void {
 }
 
 export function parseArticleList(payload: unknown): ArticleListResponse {
-  return articleListSchema.parse(payload) as ArticleListResponse;
+  return articleListSchema.parse(payload);
 }
 
 export function parseArticleDetail(payload: unknown): ArticleDetail {
