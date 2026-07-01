@@ -289,6 +289,7 @@ class UserOut(BaseModel):
 class OpmlImportEntryResult(BaseModel):
     url: str
     title: str
+    folder_name: str | None = None
     status: Literal["created", "skipped_existing", "skipped_conflict", "invalid", "duplicate_in_file"]
     reason: str | None = None
 
@@ -301,6 +302,7 @@ class OpmlImportResult(BaseModel):
     skipped_conflict_count: int = 0
     invalid_count: int = 0
     duplicate_in_file_count: int = 0
+    folders_created: int = 0
     results: list[OpmlImportEntryResult] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
