@@ -49,6 +49,53 @@ app.add_middleware(
 )
 app.include_router(api_router)
 
+# --- MCP StreamableHTTP endpoint ---
+
+
+from fastapi.responses import JSONResponse  # noqa: E402
+from mcp.server.streamable_http import StreamableHTTPServerTransport  # noqa: E402
+
+from sift.api.deps.auth import get_current_user_flexible  # noqa: E402
+from sift.db.session import SessionLocal as _SessionLocal  # noqa: E402
+from sift.mcp.server import mcp_server, set_mcp_user_id  # noqa: E402
+
+
+@app.post("/mcp")
+@app.get("/mcp")
+async def mcp_endpoint(request: Request) -> Response:
+    """StreamableHTTP MCP endpoint.
+
+    Auth: cookie session OR Bearer API token (via get_current_user_flexible).
+    """
+    # Authenticate
+    async with _SessionLocal() as session:
+        try:
+            user = await get_current_user_flexible(request, session)
+        except Exception:
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+
+    set_mcp_user_id(user.id)
+
+    transport = StreamableHTTPServerTransport(mcp_session_id=None, is_json_response_enabled=True)
+
+    # Wire the MCP server to the transport so tool calls are handled
+    async with transport.connect() as (read_stream, write_stream):
+        import asyncio
+
+        server_task = asyncio.create_task(
+            mcp_server.run(
+                read_stream,
+                write_stream,
+                mcp_server.create_initialization_options(),
+                stateless=True,
+            )
+        )
+        # Let the transport process the HTTP request
+        await transport.handle_request(request.scope, request.receive, request._send)
+        server_task.cancel()
+
+    return Response()
+
 
 def _metrics_path(raw_path: str) -> str:
     path = raw_path.strip()
