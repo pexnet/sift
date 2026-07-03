@@ -3,6 +3,38 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-07-03 (Workstream B+C: Performance Fixes + SearXNG Verification + Monitoring v2)
+
+### Implemented This Session
+
+- Closed Workstream B performance fixes:
+  - B1: added `ADVANCED_SEARCH_SCAN_LIMIT` (10k) to advanced search to prevent loading all articles into memory,
+    reports truncation via new `ArticleListResponse.truncated` field,
+  - B2: batched `mark_scope_as_read` bulk_patch_state calls in chunks of `MARK_SCOPE_BATCH_SIZE` (500) to avoid
+    huge IN (...) queries.
+- Completed C1 SearXNG instance compatibility verification:
+  - tested 17+ public SearXNG instances — all rate-limit or block JSON API,
+  - started local SearXNG Docker container and verified adapter end-to-end (5 candidates, 0 warnings),
+  - documented self-hosting as the only reliable path,
+  - verification report: `docs/specs/done/searxng-verification-2026-07-03.md`,
+  - updated `config/plugins.yaml` with test config guidance comments.
+- Completed C2 monitoring feed search management v2 expansion:
+  - `POST /api/v1/streams/bulk-reorder`: update priorities for multiple streams (ownership-scoped),
+  - `GET /api/v1/streams/{id}/summary`: match count, latest match, classifier run stats,
+  - new schemas: `StreamBulkReorderIn`, `StreamBulkReorderOut`, `StreamSummaryOut`,
+  - new service methods: `bulk_reorder_streams`, `get_stream_summary`,
+  - tests for ownership isolation and summary retrieval.
+
+### Verification
+
+- Backend:
+  - `ruff check` and `ruff format --check` — clean,
+  - `mypy` — no issues,
+  - `pytest tests/test_article_service.py` — 8 passed (including 2 new B1/B2 tests),
+  - `pytest tests/test_stream_service.py` — 19 passed (including 4 new C2 tests).
+- Pre-existing flaky tests (test_stream_classifier_runs_api, test_search_api, etc.) fail intermittently due to
+  event-loop reuse across test modules — not caused by this session's changes.
+
 ## 2026-06-30 (Security Review Follow-Up: Workstream A Fixes)
 
 ### Implemented This Session

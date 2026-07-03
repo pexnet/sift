@@ -14,14 +14,14 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 
 ### Core Platform Priorities
 
-1. Monitoring feed search management v2 follow-ups:
-   - expand monitoring definition management capabilities,
-   - add optional create/update-triggered historical matching pass,
-   - continue explainability refinements for plugin/query evidence surfaces.
-2. Discovery provider verification pass (SearXNG) for next session:
-   - validate SearXNG instance compatibility with runtime adapter contract (`/search` + `format=json`),
-   - test candidate public instances for auth/rate-limit/API compatibility and shortlist usable test endpoints,
-   - document/update discovery search-provider test configuration guidance for local/session testing.
+1. Monitoring feed search management v2 continued:
+   - implement optional create/update-triggered historical matching pass,
+   - continue explainability refinements for plugin/query evidence surfaces,
+   - frontend UI for bulk reorder and stream summary.
+2. SearXNG self-hosted integration:
+   - add SearXNG to dev-container `docker-compose.yml`,
+   - enable JSON format in SearXNG settings,
+   - verify end-to-end discovery workflow against self-hosted instance.
 
 ### Next UI Slice
 
