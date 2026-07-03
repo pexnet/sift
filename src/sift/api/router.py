@@ -13,6 +13,7 @@ from sift.api.routes.plugins import router as plugins_router
 from sift.api.routes.rules import router as rules_router
 from sift.api.routes.search import router as search_router
 from sift.api.routes.streams import router as streams_router
+from sift.api.routes.tokens import router as tokens_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health_router, tags=["health"])
@@ -28,3 +29,4 @@ api_router.include_router(streams_router, prefix="/streams", tags=["streams"])
 api_router.include_router(navigation_router, prefix="/navigation", tags=["navigation"])
 api_router.include_router(plugins_router, prefix="/plugins", tags=["plugins"])
 api_router.include_router(search_router, prefix="/search", tags=["search"])
+api_router.include_router(tokens_router, prefix="/tokens", tags=["tokens"])

@@ -648,3 +648,31 @@ class SearchFeedsOut(BaseModel):
     candidates: list[SearchFeedCandidateOut]
     warnings: list[str] = Field(default_factory=list)
     warning_details: list[SearchWarningOut] = Field(default_factory=list)
+
+
+# --- API Token schemas (MCP prerequisite) ---
+
+
+class ApiTokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    scopes: list[str] = Field(default_factory=list)
+    expires_at: datetime | None = None
+
+
+class ApiTokenOut(BaseModel):
+    id: UUID
+    name: str
+    scopes: list[str]
+    expires_at: datetime | None
+    last_used_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApiTokenCreatedOut(ApiTokenOut):
+    raw_token: str
+
+
+class ApiTokenRevokeOut(BaseModel):
+    revoked: bool
