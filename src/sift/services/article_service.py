@@ -16,6 +16,9 @@ StateFilter = Literal["all", "unread", "saved", "archived", "fresh", "recent"]
 SortMode = Literal["newest", "oldest", "unread_first"]
 FulltextStatus = Literal["idle", "pending", "succeeded", "failed"]
 
+ADVANCED_SEARCH_SCAN_LIMIT = 10_000
+MARK_SCOPE_BATCH_SIZE = 500
+
 
 class ArticleNotFoundError(Exception):
     pass
@@ -188,6 +191,7 @@ class ArticleService:
                     )
                 )
 
+        truncated = False
         if parsed_query is None:
             count_query = (
                 select(func.count())
@@ -211,11 +215,15 @@ class ArticleService:
             rows = rows_result.all()
         else:
             all_rows_result = await session.execute(
-                base_query.where(*filters).order_by(*_sorting_clause(sort=sort, read_expr=context.read_expr))
+                base_query.where(*filters)
+                .order_by(*_sorting_clause(sort=sort, read_expr=context.read_expr))
+                .limit(ADVANCED_SEARCH_SCAN_LIMIT)
             )
+            fetched_rows = all_rows_result.all()
+            truncated = len(fetched_rows) >= ADVANCED_SEARCH_SCAN_LIMIT
             filtered_rows = [
                 row
-                for row in all_rows_result.all()
+                for row in fetched_rows
                 if parsed_query.matches(
                     title=row[0].title,
                     content_text=row[0].content_text,
@@ -249,7 +257,7 @@ class ArticleService:
             )
             for article, feed_title, is_read, is_starred, is_archived in rows
         ]
-        return ArticleListResponse(items=items, total=total, limit=limit, offset=offset)
+        return ArticleListResponse(items=items, total=total, limit=limit, offset=offset, truncated=truncated)
 
     async def get_article_detail(
         self,
@@ -451,14 +459,18 @@ class ArticleService:
                 )
             ]
 
-        return await self.bulk_patch_state(
-            session=session,
-            user_id=user_id,
-            article_ids=article_ids,
-            is_read=True,
-            is_starred=None,
-            is_archived=None,
-        )
+        total_updated = 0
+        for i in range(0, len(article_ids), MARK_SCOPE_BATCH_SIZE):
+            batch = article_ids[i : i + MARK_SCOPE_BATCH_SIZE]
+            total_updated += await self.bulk_patch_state(
+                session=session,
+                user_id=user_id,
+                article_ids=batch,
+                is_read=True,
+                is_starred=None,
+                is_archived=None,
+            )
+        return total_updated
 
     async def _stream_map(
         self,

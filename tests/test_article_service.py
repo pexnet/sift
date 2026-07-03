@@ -359,3 +359,93 @@ async def test_mark_scope_as_read_applies_to_current_scope_and_query() -> None:
         assert state_by_id.get(other_feed_article.id) is None
 
     await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_advanced_search_caps_scan_and_reports_truncated(monkeypatch: pytest.MonkeyPatch) -> None:
+    """B1: Advanced search must cap the DB scan and report truncation."""
+    import sift.services.article_service as mod
+
+    monkeypatch.setattr(mod, "ADVANCED_SEARCH_SCAN_LIMIT", 5)
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with session_maker() as session:
+        user = User(email="article-truncation@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Feed", url=f"https://trunc-{uuid4()}.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        articles = [
+            Article(feed_id=feed.id, source_id=f"t{i}", title=f"Microsoft item {i}", content_text="security")
+            for i in range(10)
+        ]
+        session.add_all(articles)
+        await session.commit()
+
+        result = await article_service.list_articles(
+            session=session,
+            user_id=user.id,
+            scope_type="system",
+            scope_id=None,
+            state="all",
+            q="microsoft AND security",
+            limit=50,
+            offset=0,
+            sort="newest",
+        )
+        assert result.truncated is True
+        assert len(result.items) <= 5
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_mark_scope_as_read_batches_large_result_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    """B2: mark_scope_as_read must batch bulk_patch_state calls to avoid huge IN queries."""
+    import sift.services.article_service as mod
+
+    monkeypatch.setattr(mod, "MARK_SCOPE_BATCH_SIZE", 3)
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with session_maker() as session:
+        user = User(email="article-batch@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Feed", url=f"https://batch-{uuid4()}.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        articles = [
+            Article(feed_id=feed.id, source_id=f"b{i}", title=f"Article {i}", content_text="body") for i in range(10)
+        ]
+        session.add_all(articles)
+        await session.commit()
+
+        updated = await article_service.mark_scope_as_read(
+            session=session,
+            user_id=user.id,
+            scope_type="feed",
+            scope_id=feed.id,
+            state="all",
+            q=None,
+        )
+        assert updated == 10
+
+        rows = await session.execute(select(ArticleState).where(ArticleState.user_id == str(user.id)))
+        states = rows.scalars().all()
+        assert len(states) == 10
+        assert all(s.is_read for s in states)
+
+    await engine.dispose()

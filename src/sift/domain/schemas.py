@@ -223,6 +223,7 @@ class ArticleListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    truncated: bool = False
 
 
 class NavigationFeedNodeOut(BaseModel):
