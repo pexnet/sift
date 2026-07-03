@@ -527,6 +527,27 @@ class StreamClassifierRunOut(BaseModel):
     created_at: datetime
 
 
+class StreamBulkReorderIn(BaseModel):
+    reorders: dict[UUID, int] = Field(
+        default_factory=dict,
+        description="Mapping of stream_id to new priority value",
+    )
+
+
+class StreamBulkReorderOut(BaseModel):
+    updated_count: int
+
+
+class StreamSummaryOut(BaseModel):
+    stream_id: UUID
+    stream_name: str
+    is_active: bool
+    match_count: int
+    latest_match_at: datetime | None = None
+    classifier_run_count: int
+    latest_classifier_run_at: datetime | None = None
+
+
 class PluginCapabilityRuntimeCountersOut(BaseModel):
     success_count: int
     failure_count: int

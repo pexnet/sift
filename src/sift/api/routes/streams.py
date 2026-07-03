@@ -13,7 +13,10 @@ from sift.domain.schemas import (
     KeywordStreamUpdate,
     StreamArticleOut,
     StreamBackfillResultOut,
+    StreamBulkReorderIn,
+    StreamBulkReorderOut,
     StreamClassifierRunOut,
+    StreamSummaryOut,
 )
 from sift.services.stream_service import (
     StreamConflictError,
@@ -87,6 +90,36 @@ async def delete_stream(
         await stream_service.delete_stream(session=session, user_id=current_user.id, stream_id=stream_id)
     except StreamNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/bulk-reorder", response_model=StreamBulkReorderOut)
+async def bulk_reorder_streams(
+    payload: StreamBulkReorderIn,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> StreamBulkReorderOut:
+    updated = await stream_service.bulk_reorder_streams(
+        session=session,
+        user_id=current_user.id,
+        reorder=payload.reorders,
+    )
+    return StreamBulkReorderOut(updated_count=updated)
+
+
+@router.get("/{stream_id}/summary", response_model=StreamSummaryOut)
+async def get_stream_summary(
+    stream_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> StreamSummaryOut:
+    summary = await stream_service.get_stream_summary(
+        session=session,
+        user_id=current_user.id,
+        stream_id=stream_id,
+    )
+    if summary is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Stream {stream_id} not found")
+    return summary
 
 
 @router.get("/{stream_id}/articles", response_model=list[StreamArticleOut])

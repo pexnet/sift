@@ -20,6 +20,7 @@ from sift.domain.schemas import (
     StreamArticleOut,
     StreamBackfillResultOut,
     StreamClassifierRunOut,
+    StreamSummaryOut,
 )
 from sift.plugins.base import ArticleContext, StreamClassifierContext
 from sift.plugins.manager import PluginManager
@@ -896,6 +897,73 @@ class StreamService:
             scanned_count=len(article_rows),
             previous_match_count=previous_match_count,
             matched_count=len(matched_rows),
+        )
+
+    async def bulk_reorder_streams(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        reorder: dict[UUID, int],
+    ) -> int:
+        """Update priorities for multiple streams owned by the user."""
+        if not reorder:
+            return 0
+        stream_ids = list(reorder.keys())
+        query = select(KeywordStream).where(
+            KeywordStream.id.in_(stream_ids),
+            KeywordStream.user_id == user_id,
+        )
+        result = await session.execute(query)
+        streams = {stream.id: stream for stream in result.scalars().all()}
+        updated = 0
+        for stream_id, new_priority in reorder.items():
+            stream = streams.get(stream_id)
+            if stream is not None:
+                stream.priority = new_priority
+                updated += 1
+        if updated:
+            await session.commit()
+        return updated
+
+    async def get_stream_summary(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        stream_id: UUID,
+    ) -> StreamSummaryOut | None:
+        """Return match count, latest match, and classifier stats for a stream."""
+        stream = await self.get_stream(session=session, user_id=user_id, stream_id=stream_id)
+        if stream is None:
+            return None
+
+        match_count_result = await session.execute(
+            select(func.count()).select_from(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id)
+        )
+        match_count = int(match_count_result.scalar_one() or 0)
+
+        latest_match_result = await session.execute(
+            select(func.max(KeywordStreamMatch.matched_at)).where(KeywordStreamMatch.stream_id == stream_id)
+        )
+        latest_match_at = latest_match_result.scalar_one_or_none()
+
+        classifier_count_result = await session.execute(
+            select(func.count()).select_from(StreamClassifierRun).where(StreamClassifierRun.stream_id == stream_id)
+        )
+        classifier_run_count = int(classifier_count_result.scalar_one() or 0)
+
+        latest_classifier_result = await session.execute(
+            select(func.max(StreamClassifierRun.created_at)).where(StreamClassifierRun.stream_id == stream_id)
+        )
+        latest_classifier_run_at = latest_classifier_result.scalar_one_or_none()
+
+        return StreamSummaryOut(
+            stream_id=stream.id,
+            stream_name=stream.name,
+            is_active=stream.is_active,
+            match_count=match_count,
+            latest_match_at=latest_match_at,
+            classifier_run_count=classifier_run_count,
+            latest_classifier_run_at=latest_classifier_run_at,
         )
 
     def to_out(self, stream: KeywordStream) -> KeywordStreamOut:

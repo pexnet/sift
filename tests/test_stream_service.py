@@ -740,3 +740,160 @@ async def test_run_stream_backfill_persists_classifier_runs() -> None:
         assert classifier_run.confidence == pytest.approx(0.95)
 
     await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_bulk_reorder_streams_updates_priorities() -> None:
+    """C2: bulk reorder updates priorities for multiple streams."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-reorder@example.com")
+        session.add(user)
+        await session.commit()
+
+        stream_a = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="stream-a", include_keywords=["ai"]),
+        )
+        stream_b = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="stream-b", include_keywords=["ml"]),
+        )
+        assert stream_a.priority == 100
+        assert stream_b.priority == 100
+
+        updated = await stream_service.bulk_reorder_streams(
+            session=session,
+            user_id=user.id,
+            reorder={stream_a.id: 10, stream_b.id: 20},
+        )
+        assert updated == 2
+
+        await session.refresh(stream_a)
+        await session.refresh(stream_b)
+        assert stream_a.priority == 10
+        assert stream_b.priority == 20
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_bulk_reorder_ignores_other_users_streams() -> None:
+    """C2: bulk reorder must not affect streams owned by other users."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="reorder-owner@example.com")
+        other_user = User(email="reorder-other@example.com")
+        session.add_all([user, other_user])
+        await session.flush()
+
+        my_stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="my-stream", include_keywords=["ai"]),
+        )
+        other_stream = await stream_service.create_stream(
+            session=session,
+            user_id=other_user.id,
+            payload=KeywordStreamCreate(name="other-stream", include_keywords=["ml"]),
+        )
+        await session.commit()
+
+        updated = await stream_service.bulk_reorder_streams(
+            session=session,
+            user_id=user.id,
+            reorder={my_stream.id: 5, other_stream.id: 99},
+        )
+        assert updated == 1
+
+        await session.refresh(other_stream)
+        assert other_stream.priority == 100
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_get_stream_summary_returns_match_stats() -> None:
+    """C2: stream summary returns match count, latest match, and classifier stats."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-summary@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Feed", url="https://summary.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        article = Article(feed_id=feed.id, source_id="s1", title="AI update", content_text="LLM")
+        session.add(article)
+        await session.flush()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="ai", include_keywords=["ai"]),
+        )
+        session.add_all(
+            stream_service.make_match_rows(
+                [
+                    StreamMatchDecision(
+                        stream_id=stream.id,
+                        reason="keyword: ai",
+                        evidence={"matcher_type": "rules"},
+                    )
+                ],
+                article.id,
+            )
+        )
+        await session.commit()
+
+        summary = await stream_service.get_stream_summary(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+        )
+        assert summary is not None
+        assert summary.stream_id == stream.id
+        assert summary.match_count == 1
+        assert summary.latest_match_at is not None
+        assert summary.classifier_run_count == 0
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_get_stream_summary_returns_none_for_nonexistent_stream() -> None:
+    """C2: stream summary returns None for nonexistent stream."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-summary-missing@example.com")
+        session.add(user)
+        await session.commit()
+
+        summary = await stream_service.get_stream_summary(
+            session=session,
+            user_id=user.id,
+            stream_id=uuid4(),
+        )
+        assert summary is None
+
+    await engine.dispose()
