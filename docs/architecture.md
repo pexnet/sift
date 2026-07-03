@@ -173,6 +173,22 @@ Design goals:
 2. per-plugin fault isolation
 3. observable plugin runs (timing, success/failure)
 
+## MCP Server
+
+Sift exposes an MCP (Model Context Protocol) server with dual transport:
+
+1. **stdio** (`sift-mcp` CLI): for local AI agent integration (Hermes, Claude, etc.)
+2. **StreamableHTTP** (`/mcp` route): for remote/VPS deployment over TLS
+
+Key design decisions:
+- MCP tools call service-layer functions directly — no HTTP self-callback overhead
+- Authentication: API token (`ApiToken` model, Bearer header for HTTP, `SIFT_MCP_TOKEN` env for stdio)
+- API token CRUD: `POST/GET/DELETE /api/v1/tokens`
+- Flexible auth dependency: cookie session OR bearer token (for browser + machine clients)
+- ContextVar bridges user_id from HTTP auth layer into MCP tool execution context
+
+See `docs/mcp-integration.md` for setup instructions.
+
 ## Data Model (Initial)
 
 - `feeds`: source catalog

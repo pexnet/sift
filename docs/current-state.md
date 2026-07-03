@@ -15,6 +15,17 @@ For architecture details, use [docs/architecture.md](architecture.md).
 
 ## Implemented Milestones (Recent)
 
+- MCP server v1 implemented:
+  - 9 MCP tools (list feeds, search articles, get article, list folders, navigation, feed health, streams, add feed, mark read)
+  - stdio transport (`sift-mcp` CLI) for local Hermes integration
+  - StreamableHTTP transport (`/mcp` route) for remote/VPS deployment
+  - API token CRUD (`/api/v1/tokens`) with SHA-256 hashed storage and `sft_` prefix
+  - Bearer token auth dependency (`get_current_user_flexible`: cookie OR token)
+  - Monitoring v2 management: bulk reorder (`POST /api/v1/streams/bulk-reorder`), stream summary (`GET /api/v1/streams/{id}/summary`)
+  - Advanced search scan cap and `truncated` flag (B1)
+  - Batched `mark_scope_as_read` (B2)
+  - SearXNG verification: self-hosting required, adapter verified end-to-end against local Docker SearXNG
+
 - Scheduler/ingestion observability v1 completed:
   - request correlation,
   - structured API/scheduler/worker events,
