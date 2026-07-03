@@ -40,6 +40,9 @@ plugins:
             max_results_per_query: 10
         providers:
           searxng:
+            # Self-host SearXNG via Docker for local/production use.
+            # Public instances rate-limit JSON API; self-hosting is required.
+            # See: docs/specs/done/searxng-verification-2026-07-03.md
             base_url: http://localhost:8080/search
           brave_search:
             endpoint: https://api.search.brave.com/res/v1/web/search
