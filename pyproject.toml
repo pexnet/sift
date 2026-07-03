@@ -41,6 +41,7 @@ dev = [
 sift-api = "sift.main:run_dev"
 sift-worker = "sift.tasks.worker:main"
 sift-scheduler = "sift.tasks.scheduler:main"
+sift-mcp = "sift.mcp.stdio:run"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sift"]
