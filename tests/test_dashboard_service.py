@@ -9,6 +9,7 @@ from sift.db.models import (
     Article,
     ArticleState,
     Feed,
+    FeedRecommendation,
     KeywordStream,
     KeywordStreamMatch,
     User,
@@ -300,5 +301,112 @@ async def test_monitoring_signals_card_scores_streams_by_recent_matches_and_unre
         assert card.streams[0].matched_count_window == 1
         assert card.streams[0].unread_count_window == 1
         assert card.streams[0].score_breakdown["recent_matches"] > 0
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_discovery_candidates_card_returns_pending_recommendations() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        now = datetime.now(UTC)
+        user = User(email="dashboard-discovery@example.com")
+        session.add(user)
+        await session.flush()
+        pending_rec = FeedRecommendation(
+            user_id=user.id,
+            status="pending",
+            feed_url="https://dashboard-discovery.example.com/feed.xml",
+            feed_url_normalized="https://dashboard-discovery.example.com/feed.xml",
+            feed_title="Pending Discovery Feed",
+            provider="searxng",
+            evidence_json='{"query_variants": ["python"]}',
+            last_seen_at=now,
+        )
+        accepted_rec = FeedRecommendation(
+            user_id=user.id,
+            status="accepted",
+            feed_url="https://dashboard-discovery.example.com/accepted.xml",
+            feed_url_normalized="https://dashboard-discovery.example.com/accepted.xml",
+            feed_title="Accepted Feed",
+            provider="searxng",
+            decided_at=now,
+        )
+        session.add_all([pending_rec, accepted_rec])
+        await session.flush()
+        await session.commit()
+
+        card = await dashboard_service.get_discovery_candidates_card(session=session, user_id=user.id, limit=5)
+
+        assert card.status == "ready"
+        assert card.pending_recommendation_count == 1
+        assert card.monitoring_candidate_count == 0
+        assert len(card.candidates) == 1
+        assert card.candidates[0].title == "Pending Discovery Feed"
+        assert card.candidates[0].source_kind == "feed_recommendation"
+        assert card.candidates[0].recommendation_id == pending_rec.id
+        assert card.candidates[0].candidate_score > 0
+        assert "Pending feed recommendation" in card.candidates[0].why_candidate[0]
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_trends_card_detects_momentum_for_frequent_recent_keywords() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        now = datetime.now(UTC)
+        user = User(email="dashboard-trends@example.com")
+        session.add(user)
+        await session.flush()
+        feed = Feed(owner_id=user.id, title="Trends Feed", url="https://dashboard-trends.example.com/rss")
+        session.add(feed)
+        await session.flush()
+        # Recent articles in short window — repeated keyword "rust"
+        for i in range(5):
+            session.add(
+                Article(
+                    feed_id=feed.id,
+                    source_id=f"recent-{i}",
+                    title=f"Rust release update {i}",
+                    content_text="body",
+                    published_at=now - timedelta(hours=2),
+                )
+            )
+        # Old articles in baseline — no "rust" mentions
+        for i in range(3):
+            session.add(
+                Article(
+                    feed_id=feed.id,
+                    source_id=f"old-{i}",
+                    title=f"Generic news {i}",
+                    content_text="body",
+                    published_at=now - timedelta(days=10),
+                )
+            )
+        await session.commit()
+
+        card = await dashboard_service.get_trends_card(
+            session=session, user_id=user.id, window_hours=24, baseline_days=14
+        )
+
+        assert card.status == "ready"
+        assert card.window_hours == 24
+        assert card.baseline_days == 14
+        assert len(card.topics) > 0
+        rust_topic = next((t for t in card.topics if "rust" in t.topic.lower()), None)
+        assert rust_topic is not None
+        assert rust_topic.short_window_count >= 5
+        assert rust_topic.momentum_score > 0
+        assert rust_topic.baseline_count == 0
+        assert len(rust_topic.representative_article_ids) > 0
 
     await engine.dispose()

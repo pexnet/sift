@@ -8,6 +8,7 @@ from sift.db.models import User
 from sift.db.session import get_db_session
 from sift.domain.schemas import (
     DashboardCardAvailabilityOut,
+    DashboardDiscoveryCandidatesOut,
     DashboardFeedHealthCardOut,
     DashboardMonitoringSignalsOut,
     DashboardPrioritizedQueueOut,
@@ -15,6 +16,7 @@ from sift.domain.schemas import (
     DashboardPriorityProfileUpdate,
     DashboardSavedFollowupOut,
     DashboardSummaryOut,
+    DashboardTrendsOut,
 )
 from sift.services.dashboard_service import DashboardValidationError, dashboard_service
 
@@ -49,16 +51,12 @@ async def get_dashboard_summary(current_user: User = Depends(get_current_user)) 
         DashboardCardAvailabilityOut(
             id="trends",
             title="Trends",
-            status="unavailable",
-            reason="Trends detection pipeline is not implemented yet.",
-            dependency_spec="docs/specs/trends-detection-dashboard-v1.md",
+            status="ready",
         ),
         DashboardCardAvailabilityOut(
             id="discovery_candidates",
             title="Discovery candidates",
-            status="degraded",
-            reason="Discovery workflow is implemented; dashboard data card endpoint pending.",
-            dependency_spec="docs/specs/done/feed-recommendations-v1.md",
+            status="ready",
         ),
     ]
     return DashboardSummaryOut(cards=cards, last_updated_at=datetime.now(UTC))
@@ -124,4 +122,28 @@ async def get_monitoring_signals_card(
         session=session,
         user_id=current_user.id,
         window_hours=window_hours,
+    )
+
+
+@router.get("/cards/discovery-candidates", response_model=DashboardDiscoveryCandidatesOut)
+async def get_discovery_candidates_card(
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=5, ge=1, le=25),
+) -> DashboardDiscoveryCandidatesOut:
+    return await dashboard_service.get_discovery_candidates_card(session=session, user_id=current_user.id, limit=limit)
+
+
+@router.get("/cards/trends", response_model=DashboardTrendsOut)
+async def get_trends_card(
+    session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+    window_hours: int = Query(default=24, ge=1, le=168),
+    baseline_days: int = Query(default=14, ge=1, le=90),
+) -> DashboardTrendsOut:
+    return await dashboard_service.get_trends_card(
+        session=session,
+        user_id=current_user.id,
+        window_hours=window_hours,
+        baseline_days=baseline_days,
     )

@@ -1,12 +1,23 @@
 import json
+import uuid
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sift.db.models import Article, ArticleState, Feed, KeywordStream, KeywordStreamMatch, UserPrioritizationProfile
+from sift.db.models import (
+    Article,
+    ArticleState,
+    Feed,
+    FeedRecommendation,
+    KeywordStream,
+    KeywordStreamMatch,
+    UserPrioritizationProfile,
+)
 from sift.domain.schemas import (
+    DashboardDiscoveryCandidateOut,
+    DashboardDiscoveryCandidatesOut,
     DashboardFeedHealthCardOut,
     DashboardFeedHealthQueueLagOut,
     DashboardMonitoringSignalsOut,
@@ -17,6 +28,8 @@ from sift.domain.schemas import (
     DashboardPriorityProfileUpdate,
     DashboardSavedFollowupItemOut,
     DashboardSavedFollowupOut,
+    DashboardTrendsOut,
+    DashboardTrendTopicOut,
 )
 
 DEFAULT_SOURCE_WEIGHTS = {"feed": 40, "monitoring_stream": 60}
@@ -68,6 +81,75 @@ def _recency_score(*, article_time: datetime | None, horizon_hours: int, now: da
     if horizon_hours <= 0 or age_hours >= horizon_hours:
         return 0.0
     return round((1.0 - (age_hours / horizon_hours)) * 20.0, 4)
+
+
+_STOP_WORDS = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "this",
+        "that",
+        "these",
+        "those",
+        "it",
+        "its",
+        "as",
+        "if",
+        "then",
+        "than",
+        "so",
+        "not",
+        "no",
+        "yes",
+        "you",
+        "your",
+        "we",
+        "our",
+        "they",
+        "their",
+        "he",
+        "she",
+        "his",
+        "her",
+        "update",
+        "news",
+        "article",
+        "post",
+        "new",
+        "how",
+        "why",
+        "what",
+        "when",
+        "where",
+    }
+)
+
+
+def _extract_keywords(title: str) -> list[str]:
+    import re
+
+    tokens = re.findall(r"[A-Za-z]{3,}", title.lower())
+    return [t for t in tokens if t not in _STOP_WORDS]
 
 
 def _feed_stale_threshold_seconds(feed: Feed) -> float:
@@ -401,6 +483,154 @@ class DashboardService:
             last_updated_at=now,
             window_hours=window_hours,
             streams=stream_items,
+        )
+
+    async def get_discovery_candidates_card(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        limit: int = 5,
+    ) -> DashboardDiscoveryCandidatesOut:
+        now = datetime.now(UTC)
+        pending_result = await session.execute(
+            select(FeedRecommendation)
+            .where(
+                FeedRecommendation.user_id == user_id,
+                FeedRecommendation.status == "pending",
+            )
+            .order_by(FeedRecommendation.last_seen_at.desc().nullslast(), FeedRecommendation.created_at.desc())
+            .limit(limit)
+        )
+        pending_recs = pending_result.scalars().all()
+        pending_count_result = await session.execute(
+            select(func.count(FeedRecommendation.id)).where(
+                FeedRecommendation.user_id == user_id,
+                FeedRecommendation.status == "pending",
+            )
+        )
+        pending_count = int(pending_count_result.scalar_one() or 0)
+        candidates: list[DashboardDiscoveryCandidateOut] = []
+        for rec in pending_recs:
+            evidence = json.loads(rec.evidence_json) if rec.evidence_json else {}
+            query_variants = evidence.get("query_variants", []) if isinstance(evidence, dict) else []
+            why_candidate: list[str] = []
+            if query_variants:
+                why_candidate.append(f"Pending feed recommendation from query: {', '.join(query_variants)}")
+            else:
+                why_candidate.append("Pending feed recommendation")
+            if rec.provider:
+                why_candidate.append(f"Discovered via {rec.provider}")
+            recency_bonus = 0.0
+            if rec.last_seen_at is not None:
+                age_hours = max((now - _utc_datetime(rec.last_seen_at)).total_seconds() / 3600, 0.0)
+                if age_hours < 24:
+                    recency_bonus = round(10.0 * (1.0 - age_hours / 24.0), 4)
+            candidates.append(
+                DashboardDiscoveryCandidateOut(
+                    recommendation_id=rec.id,
+                    title=rec.feed_title or rec.feed_url,
+                    canonical_url=rec.feed_url,
+                    source_kind="feed_recommendation",
+                    candidate_score=round(50.0 + recency_bonus, 4),
+                    why_candidate=why_candidate,
+                )
+            )
+        return DashboardDiscoveryCandidatesOut(
+            status="ready",
+            reason=None,
+            dependency_spec=None,
+            last_updated_at=now,
+            pending_recommendation_count=pending_count,
+            monitoring_candidate_count=0,
+            candidates=candidates,
+        )
+
+    async def get_trends_card(
+        self,
+        *,
+        session: AsyncSession,
+        user_id: UUID,
+        window_hours: int = 24,
+        baseline_days: int = 14,
+        top_n: int = 10,
+    ) -> DashboardTrendsOut:
+        now = datetime.now(UTC)
+        short_threshold = now - timedelta(hours=window_hours)
+        baseline_threshold = now - timedelta(days=baseline_days)
+
+        short_result = await session.execute(
+            select(Article, Feed.title.label("feed_title"))
+            .join(Feed, Feed.id == Article.feed_id)
+            .where(
+                Feed.owner_id == user_id,
+                Article.published_at >= short_threshold,
+            )
+        )
+        short_articles = short_result.all()
+
+        baseline_result = await session.execute(
+            select(Article, Feed.title.label("feed_title"))
+            .join(Feed, Feed.id == Article.feed_id)
+            .where(
+                Feed.owner_id == user_id,
+                Article.published_at >= baseline_threshold,
+                Article.published_at < short_threshold,
+            )
+        )
+        baseline_articles = baseline_result.all()
+
+        # Count keyword frequencies in short window
+        short_counts: dict[str, int] = {}
+        short_article_map: dict[str, list[uuid.UUID]] = {}
+        short_source_set: dict[str, set[str]] = {}
+        for article, feed_title in short_articles:
+            keywords = _extract_keywords(article.title or "")
+            for kw in set(keywords):  # dedupe per article
+                short_counts[kw] = short_counts.get(kw, 0) + 1
+                short_article_map.setdefault(kw, []).append(article.id)
+                short_source_set.setdefault(kw, set()).add(feed_title or "")
+
+        baseline_counts: dict[str, int] = {}
+        baseline_source_set: dict[str, set[str]] = {}
+        for article, feed_title in baseline_articles:
+            keywords = _extract_keywords(article.title or "")
+            for kw in set(keywords):
+                baseline_counts[kw] = baseline_counts.get(kw, 0) + 1
+                baseline_source_set.setdefault(kw, set()).add(feed_title or "")
+
+        topics: list[DashboardTrendTopicOut] = []
+        for kw, short_count in short_counts.items():
+            baseline_count = baseline_counts.get(kw, 0)
+            if short_count < 2:
+                continue
+            source_diversity = len(short_source_set.get(kw, set()))
+            # Momentum: ratio of short window frequency vs baseline
+            if baseline_count > 0:
+                momentum = round((short_count / max(baseline_count, 1)) * (1.0 + source_diversity * 0.1), 4)
+            else:
+                momentum = round(float(short_count) * (1.0 + source_diversity * 0.1), 4)
+            rep_ids = short_article_map.get(kw, [])[:5]
+            topics.append(
+                DashboardTrendTopicOut(
+                    topic=kw,
+                    momentum_score=momentum,
+                    short_window_count=short_count,
+                    baseline_count=baseline_count,
+                    source_diversity_count=source_diversity,
+                    representative_article_ids=rep_ids,
+                )
+            )
+
+        topics.sort(key=lambda t: (t.momentum_score, t.short_window_count), reverse=True)
+        return DashboardTrendsOut(
+            status="ready",
+            reason=None,
+            dependency_spec=None,
+            last_updated_at=now,
+            window_hours=window_hours,
+            baseline_days=baseline_days,
+            topics=topics[:top_n],
         )
 
     async def _get_profile_row(

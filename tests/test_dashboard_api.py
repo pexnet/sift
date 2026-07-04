@@ -1,5 +1,5 @@
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -52,10 +52,8 @@ def test_dashboard_summary_returns_card_availability_for_authenticated_user() ->
             assert len(payload["cards"]) >= 1
             by_id = {item["id"]: item for item in payload["cards"]}
             assert by_id["saved_followup"]["status"] == "ready"
-            assert by_id["trends"]["status"] == "unavailable"
-            assert by_id["trends"]["dependency_spec"] == "docs/specs/trends-detection-dashboard-v1.md"
-            assert by_id["discovery_candidates"]["status"] in {"ready", "degraded"}
-            assert by_id["discovery_candidates"].get("dependency_spec") != "docs/specs/feed-recommendations-v1.md"
+            assert by_id["trends"]["status"] == "ready"
+            assert by_id["discovery_candidates"]["status"] == "ready"
     finally:
         app.dependency_overrides.clear()
 
@@ -397,6 +395,118 @@ def test_dashboard_monitoring_signals_card_returns_stream_scores() -> None:
         assert payload["window_hours"] == 24
         assert payload["streams"][0]["stream_name"] == "Signals API"
         assert payload["streams"][0]["matched_count_window"] == 1
+    finally:
+        client.close()
+        app.dependency_overrides.clear()
+        asyncio.run(engine.dispose())
+        if db_path.exists():
+            db_path.unlink()
+
+
+def test_dashboard_discovery_candidates_card_returns_pending_recommendations() -> None:
+    db_path = _dashboard_api_db_path("test_dashboard_discovery_candidates_card.db")
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async def prepare() -> User:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with session_maker() as session:
+            user = User(email="dashboard-discovery-api@example.com")
+            session.add(user)
+            await session.flush()
+            from sift.db.models import FeedRecommendation
+
+            session.add(
+                FeedRecommendation(
+                    user_id=user.id,
+                    status="pending",
+                    feed_url="https://dashboard-discovery-api.example.com/feed.xml",
+                    feed_url_normalized="https://dashboard-discovery-api.example.com/feed.xml",
+                    feed_title="Pending API Feed",
+                    provider="searxng",
+                )
+            )
+            await session.commit()
+            return user
+
+    user = asyncio.run(prepare())
+
+    async def override_db_session():
+        async with session_maker() as session:
+            yield session
+
+    async def override_current_user() -> User:
+        return user
+
+    app.dependency_overrides[get_db_session] = override_db_session
+    app.dependency_overrides[get_current_user] = override_current_user
+    client = TestClient(app)
+    try:
+        response = client.get("/api/v1/dashboard/cards/discovery-candidates")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "ready"
+        assert payload["pending_recommendation_count"] == 1
+        assert payload["monitoring_candidate_count"] == 0
+        assert payload["candidates"][0]["title"] == "Pending API Feed"
+    finally:
+        client.close()
+        app.dependency_overrides.clear()
+        asyncio.run(engine.dispose())
+        if db_path.exists():
+            db_path.unlink()
+
+
+def test_dashboard_trends_card_returns_topics() -> None:
+    db_path = _dashboard_api_db_path("test_dashboard_trends_card.db")
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async def prepare() -> User:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with session_maker() as session:
+            user = User(email="dashboard-trends-api@example.com")
+            session.add(user)
+            await session.flush()
+            feed = Feed(owner_id=user.id, title="Trends API Feed", url="https://dashboard-trends-api.example.com/rss")
+            session.add(feed)
+            await session.flush()
+            for i in range(3):
+                session.add(
+                    Article(
+                        feed_id=feed.id,
+                        source_id=f"trend-{i}",
+                        title=f"Rust async runtime {i}",
+                        content_text="body",
+                        published_at=datetime.now(UTC) - timedelta(hours=2),
+                    )
+                )
+            await session.commit()
+            return user
+
+    user = asyncio.run(prepare())
+
+    async def override_db_session():
+        async with session_maker() as session:
+            yield session
+
+    async def override_current_user() -> User:
+        return user
+
+    app.dependency_overrides[get_db_session] = override_db_session
+    app.dependency_overrides[get_current_user] = override_current_user
+    client = TestClient(app)
+    try:
+        response = client.get("/api/v1/dashboard/cards/trends")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "ready"
+        assert payload["window_hours"] == 24
+        assert payload["baseline_days"] == 14
+        assert len(payload["topics"]) > 0
+        assert any("rust" in t["topic"].lower() for t in payload["topics"])
     finally:
         client.close()
         app.dependency_overrides.clear()
