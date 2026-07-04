@@ -49,6 +49,14 @@ export const queryKeys = {
   discoverySummary: () => ["discovery", "summary"] as const,
   pluginAreas: () => ["plugin-areas"] as const,
   dashboardSummary: () => ["dashboard-summary"] as const,
+  dashboardPrioritizedQueue: () => ["dashboard", "prioritized-queue"] as const,
+  dashboardFeedHealth: () => ["dashboard", "feed-health"] as const,
+  dashboardSavedFollowup: () => ["dashboard", "saved-followup"] as const,
+  dashboardMonitoringSignals: (windowHours: number) => ["dashboard", "monitoring-signals", windowHours] as const,
+  dashboardDiscoveryCandidates: () => ["dashboard", "discovery-candidates"] as const,
+  dashboardTrends: (windowHours: number, baselineDays: number) =>
+    ["dashboard", "trends", windowHours, baselineDays] as const,
+  dashboardPriorityProfile: () => ["dashboard", "priority-profile"] as const,
   folders: () => ["folders"] as const,
   feeds: () => ["feeds"] as const,
   articles: (search: WorkspaceSearch) =>

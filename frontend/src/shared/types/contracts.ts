@@ -83,6 +83,128 @@ export type DashboardSummary = {
   last_updated_at: string;
 };
 
+export type DashboardPriorityProfile = {
+  source_weights: Record<string, number>;
+  recency_horizon_hours: number;
+};
+
+export type DashboardPriorityProfileUpdate = {
+  source_weights?: Record<string, number>;
+  recency_horizon_hours?: number;
+};
+
+export type DashboardPrioritizedArticle = {
+  article_id: string;
+  title: string;
+  feed_title: string | null;
+  canonical_url: string | null;
+  published_at: string | null;
+  priority_score: number;
+  score_breakdown: Record<string, number>;
+  why_prioritized: string[];
+};
+
+export type DashboardPrioritizedQueue = {
+  status: string;
+  reason: string | null;
+  dependency_spec: string | null;
+  last_updated_at: string;
+  profile: DashboardPriorityProfile;
+  items: DashboardPrioritizedArticle[];
+};
+
+export type DashboardFeedHealthQueueLag = {
+  unavailable_reason?: string | null;
+};
+
+export type DashboardFeedHealthCard = {
+  status: string;
+  reason: string | null;
+  dependency_spec: string | null;
+  last_updated_at: string;
+  stale_feed_count: number;
+  error_feed_count: number;
+  oldest_success_age_hours: number | null;
+  queue_lag: DashboardFeedHealthQueueLag;
+};
+
+export type DashboardSavedFollowupItem = {
+  article_id: string;
+  title: string;
+  feed_title: string | null;
+  canonical_url: string | null;
+  published_at: string | null;
+  saved_at: string | null;
+};
+
+export type DashboardSavedFollowupCard = {
+  status: string;
+  reason: string | null;
+  dependency_spec: string | null;
+  last_updated_at: string;
+  saved_count: number;
+  latest_items: DashboardSavedFollowupItem[];
+};
+
+export type DashboardMonitoringSignalStream = {
+  stream_id: string;
+  stream_name: string;
+  signal_score: number;
+  matched_count_window: number;
+  unread_count_window: number;
+  confidence_summary: { average_confidence: number | null; classifier_run_count: number };
+  latest_match_at: string | null;
+  score_breakdown: Record<string, number>;
+};
+
+export type DashboardMonitoringSignalsCard = {
+  status: string;
+  reason: string | null;
+  dependency_spec: string | null;
+  last_updated_at: string;
+  window_hours: number;
+  streams: DashboardMonitoringSignalStream[];
+};
+
+export type DashboardDiscoveryCandidate = {
+  article_id: string | null;
+  recommendation_id: string | null;
+  title: string;
+  canonical_url: string | null;
+  source_kind: "feed_recommendation" | "monitoring_article";
+  candidate_score: number;
+  why_candidate: string[];
+};
+
+export type DashboardDiscoveryCandidatesCard = {
+  status: string;
+  reason: string | null;
+  dependency_spec: string | null;
+  last_updated_at: string;
+  pending_recommendation_count: number;
+  monitoring_candidate_count: number;
+  candidates: DashboardDiscoveryCandidate[];
+};
+
+export type DashboardTrendTopic = {
+  topic: string;
+  momentum_score: number;
+  short_window_count: number;
+  baseline_count: number;
+  source_diversity_count: number;
+  representative_article_ids: string[];
+};
+
+export type DashboardTrendsCard = {
+  status: string;
+  reason: string | null;
+  dependency_spec: string | null;
+  last_updated_at: string;
+  window_hours: number;
+  baseline_days: number;
+  topics: DashboardTrendTopic[];
+};
+
 export type DiscoveryStream = {
   id: string;
   user_id: string;

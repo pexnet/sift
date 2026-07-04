@@ -323,7 +323,7 @@ describe("WorkspacePage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-    expect(screen.getByText("Command-center shell is active with card availability contracts.")).toBeVisible();
+    expect(screen.getByText("Command-center with live card data from all six dashboard endpoints.")).toBeVisible();
     expect(screen.queryByRole("separator", { name: "Resize reader pane" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Dashboard" }));
     expect(navigateMock).toHaveBeenCalledWith({ to: "/app/dashboard" });

@@ -1,10 +1,18 @@
-import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Chip, CircularProgress, Link, Paper, Stack, Typography } from "@mui/material";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-import type { DashboardCardAvailability, DashboardSummary } from "../../../shared/types/contracts";
+import {
+  useDashboardDiscoveryCandidatesQuery,
+  useDashboardFeedHealthQuery,
+  useDashboardMonitoringSignalsQuery,
+  useDashboardPrioritizedQueueQuery,
+  useDashboardSavedFollowupQuery,
+  useDashboardTrendsQuery,
+} from "../api/dashboardHooks";
+import type { DashboardCardAvailability } from "../../../shared/types/contracts";
 
 type DashboardHostProps = {
-  summary: DashboardSummary | undefined;
+  summary: import("../../../shared/types/contracts").DashboardSummary | undefined;
   isLoading: boolean;
   isError: boolean;
   registryById?: Record<string, DashboardCardRegistration>;
@@ -21,15 +29,283 @@ export type DashboardCardRegistration = {
   source: "builtin" | "plugin";
 };
 
-function SavedFollowupCard({ card }: DashboardCardViewProps) {
+function CardLoading() {
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <CircularProgress size={16} />
+      <Typography variant="body2" color="text.secondary">
+        Loading…
+      </Typography>
+    </Stack>
+  );
+}
+
+function CardError() {
+  return <Alert severity="warning">Failed to load card data.</Alert>;
+}
+
+function ScoreChip({ score }: { score: number }) {
+  const tone = score >= 60 ? "success" : "default";
+  return <Chip label={score.toFixed(0)} size="small" color={tone} />;
+}
+
+function PrioritizedQueueCard({ card }: DashboardCardViewProps) {
+  const query = useDashboardPrioritizedQueueQuery();
+  if (query.isLoading) return <CardLoading />;
+  if (query.isError) return <CardError />;
+  const data = query.data;
+  if (!data || data.items.length === 0) {
+    return (
+      <Stack spacing={0.7}>
+        <Typography variant="h6" component="h2">
+          {card.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No prioritized articles right now.
+        </Typography>
+      </Stack>
+    );
+  }
   return (
     <Stack spacing={0.7}>
       <Typography variant="h6" component="h2">
         {card.title}
       </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Card host is ready. Saved follow-up data wiring is planned in the command-center data slice.
+      <Typography variant="caption" color="text.secondary">
+        Weights: feed={data.profile.source_weights.feed ?? 40}, stream={data.profile.source_weights.monitoring_stream ?? 60}
       </Typography>
+      {data.items.slice(0, 5).map((item) => (
+        <Stack key={item.article_id} spacing={0.2}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <ScoreChip score={item.priority_score} />
+            <Typography variant="body2" noWrap>
+              {item.canonical_url ? (
+                <Link href={item.canonical_url} target="_blank" rel="noopener" underline="hover">
+                  {item.title}
+                </Link>
+              ) : (
+                item.title
+              )}
+            </Typography>
+          </Stack>
+          {item.feed_title ? (
+            <Typography variant="caption" color="text.secondary">
+              {item.feed_title}
+            </Typography>
+          ) : null}
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function FeedHealthCard({ card }: DashboardCardViewProps) {
+  const query = useDashboardFeedHealthQuery();
+  if (query.isLoading) return <CardLoading />;
+  if (query.isError) return <CardError />;
+  const data = query.data;
+  if (!data) return <CardError />;
+  return (
+    <Stack spacing={0.7}>
+      <Typography variant="h6" component="h2">
+        {card.title}
+      </Typography>
+      <Stack direction="row" spacing={1}>
+        {data.stale_feed_count > 0 ? (
+          <Chip label={`${data.stale_feed_count} stale`} size="small" color="warning" />
+        ) : (
+          <Chip label="No stale feeds" size="small" color="success" />
+        )}
+        {data.error_feed_count > 0 ? (
+          <Chip label={`${data.error_feed_count} errors`} size="small" color="error" />
+        ) : null}
+      </Stack>
+      {data.oldest_success_age_hours !== null ? (
+        <Typography variant="caption" color="text.secondary">
+          Oldest success: {data.oldest_success_age_hours}h ago
+        </Typography>
+      ) : null}
+      {data.queue_lag?.unavailable_reason ? (
+        <Typography variant="caption" color="text.secondary">
+          {data.queue_lag.unavailable_reason}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
+}
+
+function SavedFollowupCard({ card }: DashboardCardViewProps) {
+  const query = useDashboardSavedFollowupQuery();
+  if (query.isLoading) return <CardLoading />;
+  if (query.isError) return <CardError />;
+  const data = query.data;
+  if (!data || data.latest_items.length === 0) {
+    return (
+      <Stack spacing={0.7}>
+        <Typography variant="h6" component="h2">
+          {card.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No saved articles yet.
+        </Typography>
+      </Stack>
+    );
+  }
+  return (
+    <Stack spacing={0.7}>
+      <Typography variant="h6" component="h2">
+        {card.title}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {data.saved_count} saved
+      </Typography>
+      {data.latest_items.slice(0, 5).map((item) => (
+        <Stack key={item.article_id} spacing={0.2}>
+          <Typography variant="body2" noWrap>
+            {item.canonical_url ? (
+              <Link href={item.canonical_url} target="_blank" rel="noopener" underline="hover">
+                {item.title}
+              </Link>
+            ) : (
+              item.title
+            )}
+          </Typography>
+          {item.feed_title ? (
+            <Typography variant="caption" color="text.secondary">
+              {item.feed_title}
+            </Typography>
+          ) : null}
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function MonitoringSignalsCard({ card }: DashboardCardViewProps) {
+  const query = useDashboardMonitoringSignalsQuery(24);
+  if (query.isLoading) return <CardLoading />;
+  if (query.isError) return <CardError />;
+  const data = query.data;
+  if (!data || data.streams.length === 0) {
+    return (
+      <Stack spacing={0.7}>
+        <Typography variant="h6" component="h2">
+          {card.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No active monitoring streams.
+        </Typography>
+      </Stack>
+    );
+  }
+  return (
+    <Stack spacing={0.7}>
+      <Typography variant="h6" component="h2">
+        {card.title}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        Last {data.window_hours}h
+      </Typography>
+      {data.streams.slice(0, 5).map((stream) => (
+        <Stack key={stream.stream_id} spacing={0.2}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <ScoreChip score={stream.signal_score} />
+            <Typography variant="body2" noWrap>
+              {stream.stream_name}
+            </Typography>
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            {stream.matched_count_window} matches, {stream.unread_count_window} unread
+          </Typography>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function DiscoveryCandidatesCard({ card }: DashboardCardViewProps) {
+  const query = useDashboardDiscoveryCandidatesQuery();
+  if (query.isLoading) return <CardLoading />;
+  if (query.isError) return <CardError />;
+  const data = query.data;
+  if (!data || data.candidates.length === 0) {
+    return (
+      <Stack spacing={0.7}>
+        <Typography variant="h6" component="h2">
+          {card.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {data?.pending_recommendation_count ?? 0} pending recommendations.
+        </Typography>
+      </Stack>
+    );
+  }
+  return (
+    <Stack spacing={0.7}>
+      <Typography variant="h6" component="h2">
+        {card.title}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {data.pending_recommendation_count} pending
+      </Typography>
+      {data.candidates.slice(0, 5).map((candidate, idx) => (
+        <Stack key={candidate.recommendation_id ?? idx} spacing={0.2}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <ScoreChip score={candidate.candidate_score} />
+            <Typography variant="body2" noWrap>
+              {candidate.canonical_url ? (
+                <Link href={candidate.canonical_url} target="_blank" rel="noopener" underline="hover">
+                  {candidate.title}
+                </Link>
+              ) : (
+                candidate.title
+              )}
+            </Typography>
+          </Stack>
+          {candidate.why_candidate[0] ? (
+            <Typography variant="caption" color="text.secondary">
+              {candidate.why_candidate[0]}
+            </Typography>
+          ) : null}
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function TrendsCard({ card }: DashboardCardViewProps) {
+  const query = useDashboardTrendsQuery(24, 14);
+  if (query.isLoading) return <CardLoading />;
+  if (query.isError) return <CardError />;
+  const data = query.data;
+  if (!data || data.topics.length === 0) {
+    return (
+      <Stack spacing={0.7}>
+        <Typography variant="h6" component="h2">
+          {card.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          No trending topics detected.
+        </Typography>
+      </Stack>
+    );
+  }
+  return (
+    <Stack spacing={0.7}>
+      <Typography variant="h6" component="h2">
+        {card.title}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        {data.window_hours}h window vs {data.baseline_days}d baseline
+      </Typography>
+      {data.topics.slice(0, 8).map((topic) => (
+        <Stack key={topic.topic} direction="row" spacing={1} alignItems="center">
+          <Chip label={topic.topic} size="small" />
+          <Typography variant="caption" color="text.secondary">
+            {topic.short_window_count} recent (vs {topic.baseline_count} baseline), {topic.source_diversity_count} sources
+          </Typography>
+        </Stack>
+      ))}
     </Stack>
   );
 }
@@ -48,12 +324,12 @@ function createDashboardCardRegistry(
 }
 
 const dashboardCardRegistry = createDashboardCardRegistry([
-  {
-    id: "saved_followup",
-    title: "Saved follow-up",
-    mount: SavedFollowupCard,
-    source: "builtin",
-  },
+  { id: "prioritized_queue", title: "Prioritized queue", mount: PrioritizedQueueCard, source: "builtin" },
+  { id: "feed_health", title: "Feed ops health", mount: FeedHealthCard, source: "builtin" },
+  { id: "saved_followup", title: "Saved follow-up", mount: SavedFollowupCard, source: "builtin" },
+  { id: "monitoring_signals", title: "Monitoring signal", mount: MonitoringSignalsCard, source: "builtin" },
+  { id: "trends", title: "Trends", mount: TrendsCard, source: "builtin" },
+  { id: "discovery_candidates", title: "Discovery candidates", mount: DiscoveryCandidatesCard, source: "builtin" },
 ]);
 
 type DashboardCardErrorBoundaryProps = {
@@ -169,7 +445,7 @@ export function DashboardHost({
           Dashboard
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Command-center shell is active with card availability contracts.
+          Command-center with live card data from all six dashboard endpoints.
         </Typography>
       </Stack>
       <Box className="dashboard-grid">
