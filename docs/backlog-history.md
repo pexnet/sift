@@ -6,6 +6,58 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
 
 ## Archived Backlog History (Archive Initiated on 2026-02-17)
 
+### Monitoring Feed Search Management v2 Follow-Ups (Completed on 2026-07-04)
+
+1. Backend management APIs completed:
+   - `POST /api/v1/streams/bulk-reorder`
+   - `GET /api/v1/streams/{stream_id}/summary`
+2. Frontend management UI completed:
+   - monitoring-page multi-select + bulk priority reorder action,
+   - per-stream summary chips and expandable summary detail rows.
+3. Optional historical matching on save completed:
+   - `backfill_on_create` and `backfill_on_update` payload flags,
+   - bounded `run_historical_match()` path with a 5000-article scan cap,
+   - frontend `Match existing articles on save` toggle.
+4. Remaining monitoring follow-up stays active in `docs/backlog.md`:
+   - plugin/query evidence surface explainability refinements.
+
+### SearXNG Self-Hosted Integration (Completed on 2026-07-04)
+
+1. SearXNG verification completed:
+   - public instances rate-limit/block JSON API,
+   - self-hosted SearXNG is the only reliable supported path,
+   - adapter verified end-to-end against local Docker SearXNG.
+2. Dev-container integration completed:
+   - `searxng` service added to `.devcontainer/docker-compose.yml`,
+   - JSON format enabled through `.devcontainer/searxng/settings.yml`,
+   - `config/plugins.yaml` points at `http://searxng:8080/search`,
+   - smoke test returned 27 JSON results for "python rss feed" with zero warnings.
+3. Verification report archived:
+   - `docs/specs/done/searxng-verification-2026-07-03.md`
+
+### Plugin UI Organization v1 (Completed on 2026-03-01)
+
+1. Workspace plugin IA completed:
+   - `Plugins` navigation section,
+   - `/app/plugins/$areaId` route,
+   - plugin area host/error boundary,
+   - discover-feeds plugin area wiring.
+2. Spec archived:
+   - `docs/specs/done/plugin-ui-organization-v1.md`
+
+### Plugin Configuration Registry v1 (Completed on 2026-03-01)
+
+1. Centralized plugin registry completed:
+   - `config/plugins.yaml` is the runtime source of truth,
+   - enabled/disabled plugins control backend activation and UI areas,
+   - diagnostics/status surfaces and runtime registry snapshot consumption are implemented.
+2. Registry hardening completed:
+   - sensitive settings require environment-variable references,
+   - search-provider budget/rate-limit contracts are validated,
+   - capability metadata contract is shared between validation and runtime.
+3. Spec archived:
+   - `docs/specs/done/plugin-configuration-registry-v1.md`
+
 ### Discover Feeds v1 (Completed on 2026-03-01)
 
 1. Completed discovery stream workflow foundation:
@@ -100,8 +152,8 @@ Active backlog source of truth: [docs/backlog.md](backlog.md)
    - sensitive settings keys now require env-var references (plaintext secrets rejected)
    - discover-feeds provider budget/rate-limit config contract validation added
    - registry test coverage added for security and budget contract scenarios
-   - active spec remains for later discovery-runtime enforcement work:
-     `docs/specs/plugin-configuration-registry-v1.md`
+   - spec is archived as completed:
+     `docs/specs/done/plugin-configuration-registry-v1.md`
 
 ### Monitoring UI Milestones (Previously in Active Next UI Slice)
 

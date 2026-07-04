@@ -1,6 +1,6 @@
 # Current State Snapshot
 
-Last updated: 2026-03-01
+Last updated: 2026-07-04
 
 This file is a compact, high-signal snapshot for session startup.
 For active priorities, use [docs/backlog.md](backlog.md).
@@ -22,9 +22,16 @@ For architecture details, use [docs/architecture.md](architecture.md).
   - API token CRUD (`/api/v1/tokens`) with SHA-256 hashed storage and `sft_` prefix
   - Bearer token auth dependency (`get_current_user_flexible`: cookie OR token)
   - Monitoring v2 management: bulk reorder (`POST /api/v1/streams/bulk-reorder`), stream summary (`GET /api/v1/streams/{id}/summary`)
+  - Monitoring v2 frontend wiring: bulk reorder UI with multi-select + priority input, stream summary chips and expandable detail row
+  - Create/update-triggered historical matching: `backfill_on_create`/`backfill_on_update` flags on create/update payloads,
+    bounded `run_historical_match` service method (scan limit 5000, most recent first, preserves existing matches),
+    frontend "Match existing articles on save" toggle in monitoring form
   - Advanced search scan cap and `truncated` flag (B1)
   - Batched `mark_scope_as_read` (B2)
-  - SearXNG verification: self-hosting required, adapter verified end-to-end against local Docker SearXNG
+  - SearXNG verification: self-hosting required, adapter verified end-to-end against local Docker SearXNG.
+  - SearXNG dev-container integration: SearXNG service in `.devcontainer/docker-compose.yml` with JSON format
+    enabled via `.devcontainer/searxng/settings.yml`, `config/plugins.yaml` pointed at compose service
+    `http://searxng:8080/search`, smoke-tested (27 results, zero warnings).
 
 - Scheduler/ingestion observability v1 completed:
   - request correlation,
@@ -103,8 +110,8 @@ For architecture details, use [docs/architecture.md](architecture.md).
 
 ## Active Priorities
 
-1. Monitoring feed search management v2 follow-ups.
-2. Discovery search-provider verification pass for SearXNG instance compatibility and test endpoint selection.
+1. Monitoring feed search management v2 continued:
+   - continue explainability refinements for plugin/query evidence surfaces.
 
 Deferred for now:
 

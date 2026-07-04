@@ -121,7 +121,7 @@ Execution rule:
 2. [x] Startup/runtime tests for deterministic ordering and enable/disable behavior.
 3. [x] Regression tests ensuring ingest/classifier dispatch still works post-cutover.
 4. [ ] Deferred follow-up: config security tests for env-ref handling and forbidden plaintext secret fields
-   (`docs/specs/plugin-configuration-registry-v1.md`).
+   (`docs/specs/done/plugin-configuration-registry-v1.md`).
 
 ## Rollout Notes
 
@@ -133,5 +133,5 @@ Execution rule:
 
 - Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
-  - [docs/specs/plugin-configuration-registry-v1.md](../plugin-configuration-registry-v1.md)
-  - [docs/specs/plugin-ui-organization-v1.md](../plugin-ui-organization-v1.md)
+  - [docs/specs/done/plugin-configuration-registry-v1.md](plugin-configuration-registry-v1.md)
+  - [docs/specs/done/plugin-ui-organization-v1.md](plugin-ui-organization-v1.md)

@@ -26,6 +26,7 @@ export const queryKeys = {
     ] as const,
   navigation: () => ["navigation"] as const,
   streams: () => ["streams"] as const,
+  streamSummary: (streamId: string) => ["streams", "summary", streamId] as const,
   discoveryStreams: () => ["discovery", "streams"] as const,
   discoveryRecommendations: (filters: {
     status: "pending" | "accepted" | "denied" | "resolved_existing" | "all";

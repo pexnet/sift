@@ -897,3 +897,101 @@ async def test_get_stream_summary_returns_none_for_nonexistent_stream() -> None:
         assert summary is None
 
     await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_run_historical_match_inserts_new_matches_without_deleting_existing() -> None:
+    """Historical match adds new matches but preserves existing ones (no delete-then-reinsert)."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-historical@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Feed", url="https://historical.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        article_a = Article(feed_id=feed.id, source_id="a1", title="Microsoft Sentinel", content_text="security ops")
+        article_b = Article(feed_id=feed.id, source_id="b2", title="Python release", content_text="python 3.14")
+        session.add_all([article_a, article_b])
+        await session.flush()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="security", include_keywords=["microsoft"]),
+        )
+        session.add(KeywordStreamMatch(stream_id=stream.id, article_id=article_b.id))
+        await session.commit()
+
+        result = await stream_service.run_historical_match(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            plugin_manager=FakePluginManager(),  # type: ignore[arg-type]
+        )
+        assert result.scanned_count == 2
+        assert result.previous_match_count == 1
+        assert result.matched_count == 1
+
+        matches = await stream_service.list_stream_articles(
+            session=session, user_id=user.id, stream_id=stream.id, limit=10
+        )
+        match_ids = {m.article.id for m in matches}
+        assert article_a.id in match_ids
+        assert article_b.id in match_ids
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_run_historical_match_respects_scan_limit() -> None:
+    """Historical match scan is bounded by the scan_limit parameter."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+    async with session_maker() as session:
+        user = User(email="streams-historical-limit@example.com")
+        session.add(user)
+        await session.flush()
+
+        feed = Feed(owner_id=user.id, title="Feed", url="https://limit.example.com/rss")
+        session.add(feed)
+        await session.flush()
+
+        for i in range(10):
+            session.add(
+                Article(
+                    feed_id=feed.id,
+                    source_id=f"s{i}",
+                    title=f"Article {i}",
+                    content_text="keyword" if i % 2 == 0 else "other",
+                )
+            )
+        await session.flush()
+
+        stream = await stream_service.create_stream(
+            session=session,
+            user_id=user.id,
+            payload=KeywordStreamCreate(name="kw", include_keywords=["keyword"]),
+        )
+        await session.commit()
+
+        result = await stream_service.run_historical_match(
+            session=session,
+            user_id=user.id,
+            stream_id=stream.id,
+            plugin_manager=FakePluginManager(),  # type: ignore[arg-type]
+            scan_limit=3,
+        )
+        assert result.scanned_count == 3
+        assert result.matched_count <= 3
+
+    await engine.dispose()

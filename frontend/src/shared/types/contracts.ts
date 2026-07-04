@@ -45,6 +45,24 @@ export type StreamBackfillResult = {
   previous_match_count: number;
   matched_count: number;
 };
+
+export type StreamBulkReorderRequest = {
+  reorders: Record<string, number>;
+};
+
+export type StreamBulkReorderResponse = {
+  updated_count: number;
+};
+
+export type StreamSummary = {
+  stream_id: string;
+  stream_name: string;
+  is_active: boolean;
+  match_count: number;
+  latest_match_at: string | null;
+  classifier_run_count: number;
+  latest_classifier_run_at: string | null;
+};
 export type PluginArea = {
   id: string;
   title: string;

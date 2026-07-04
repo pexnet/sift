@@ -52,6 +52,16 @@ async def create_stream(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except StreamValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if payload.backfill_on_create:
+        try:
+            await stream_service.run_historical_match(
+                session=session,
+                user_id=current_user.id,
+                stream_id=stream.id,
+                plugin_manager=get_plugin_manager(),
+            )
+        except StreamValidationError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return stream_service.to_out(stream)
 
 
@@ -77,6 +87,16 @@ async def update_stream(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except StreamValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if payload.backfill_on_update:
+        try:
+            await stream_service.run_historical_match(
+                session=session,
+                user_id=current_user.id,
+                stream_id=stream.id,
+                plugin_manager=get_plugin_manager(),
+            )
+        except StreamValidationError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return stream_service.to_out(stream)
 
 

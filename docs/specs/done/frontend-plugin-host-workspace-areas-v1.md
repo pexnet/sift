@@ -120,5 +120,5 @@ Note:
 
 - Product backlog: [docs/backlog.md](../../backlog.md)
 - Related specs:
-  - [docs/specs/plugin-ui-organization-v1.md](../plugin-ui-organization-v1.md)
+  - [docs/specs/done/plugin-ui-organization-v1.md](plugin-ui-organization-v1.md)
   - [docs/specs/done/plugin-platform-foundation-v1.md](plugin-platform-foundation-v1.md)

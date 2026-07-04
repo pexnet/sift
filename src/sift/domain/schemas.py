@@ -362,6 +362,10 @@ class KeywordStreamCreate(BaseModel):
     classifier_plugin: str | None = Field(default=None, max_length=128)
     classifier_config: dict[str, Any] | None = None
     classifier_min_confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+    backfill_on_create: bool = Field(
+        default=False,
+        description="If true, run a bounded historical matching pass against existing articles after creation.",
+    )
 
 
 class KeywordStreamUpdate(BaseModel):
@@ -381,6 +385,10 @@ class KeywordStreamUpdate(BaseModel):
     classifier_plugin: str | None = Field(default=None, max_length=128)
     classifier_config: dict[str, Any] | None = None
     classifier_min_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    backfill_on_update: bool = Field(
+        default=False,
+        description="If true, run a bounded historical matching pass against existing articles after update.",
+    )
 
 
 class KeywordStreamOut(BaseModel):
@@ -585,6 +593,117 @@ class DashboardCardAvailabilityOut(BaseModel):
 class DashboardSummaryOut(BaseModel):
     cards: list[DashboardCardAvailabilityOut]
     last_updated_at: datetime
+
+
+class DashboardCardBaseOut(BaseModel):
+    status: Literal["ready", "unavailable", "degraded"] = "ready"
+    reason: str | None = None
+    dependency_spec: str | None = None
+    last_updated_at: datetime
+
+
+class DashboardPriorityProfileOut(BaseModel):
+    source_weights: dict[str, int]
+    recency_horizon_hours: int
+
+
+class DashboardPriorityProfileUpdate(BaseModel):
+    source_weights: dict[str, int] | None = None
+    recency_horizon_hours: int | None = Field(default=None, ge=1, le=720)
+
+
+class DashboardPrioritizedArticleOut(BaseModel):
+    article_id: UUID
+    title: str
+    feed_title: str
+    canonical_url: str | None
+    published_at: datetime | None
+    created_at: datetime
+    is_read: bool
+    is_starred: bool
+    priority_score: float
+    score_breakdown: dict[str, float]
+    why_prioritized: list[str]
+
+
+class DashboardPrioritizedQueueOut(DashboardCardBaseOut):
+    profile: DashboardPriorityProfileOut
+    items: list[DashboardPrioritizedArticleOut]
+
+
+class DashboardFeedHealthQueueLagOut(BaseModel):
+    queue_length: int | None = None
+    oldest_job_age_seconds: float | None = None
+    failed_jobs_24h: int | None = None
+    unavailable_reason: str | None = None
+
+
+class DashboardFeedHealthCardOut(DashboardCardBaseOut):
+    stale_feed_count: int
+    error_feed_count: int
+    oldest_success_age_hours: float | None
+    queue_lag: DashboardFeedHealthQueueLagOut
+
+
+class DashboardSavedFollowupItemOut(BaseModel):
+    article_id: UUID
+    title: str
+    feed_title: str
+    canonical_url: str | None
+    published_at: datetime | None
+    saved_at: datetime | None
+
+
+class DashboardSavedFollowupOut(DashboardCardBaseOut):
+    saved_count: int
+    latest_items: list[DashboardSavedFollowupItemOut]
+
+
+class DashboardMonitoringSignalStreamOut(BaseModel):
+    stream_id: UUID
+    stream_name: str
+    signal_score: float
+    matched_count_window: int
+    unread_count_window: int
+    confidence_summary: dict[str, float | int | None]
+    latest_match_at: datetime | None
+    score_breakdown: dict[str, float]
+
+
+class DashboardMonitoringSignalsOut(DashboardCardBaseOut):
+    window_hours: int
+    streams: list[DashboardMonitoringSignalStreamOut]
+
+
+class DashboardDiscoveryCandidateOut(BaseModel):
+    article_id: UUID | None = None
+    recommendation_id: UUID | None = None
+    title: str
+    canonical_url: str | None
+    source_kind: Literal["feed_recommendation", "monitoring_article"]
+    candidate_score: float
+    why_candidate: list[str]
+
+
+class DashboardDiscoveryCandidatesOut(DashboardCardBaseOut):
+    pending_recommendation_count: int
+    monitoring_candidate_count: int
+    candidates: list[DashboardDiscoveryCandidateOut]
+
+
+class DashboardTrendTopicOut(BaseModel):
+    topic: str
+    momentum_score: float
+    short_window_count: int
+    baseline_count: int
+    source_diversity_count: int
+    representative_article_ids: list[UUID]
+
+
+class DashboardTrendsOut(DashboardCardBaseOut):
+    window_hours: int
+    baseline_days: int
+    topics: list[DashboardTrendTopicOut]
 
 
 class SearchProviderBudgetOut(BaseModel):

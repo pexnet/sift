@@ -11,7 +11,7 @@
   - strict run/day/min-interval budget enforcement (persistent daily ledger)
   - adapter hardening with structured warning-coded provider error handling
   - explicit response warning metadata (`warning_details`)
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 
 ## Context
 
@@ -154,5 +154,5 @@ Enforcement requirements:
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)
 - Dependent workflow spec: [docs/specs/done/feed-recommendations-v1.md](feed-recommendations-v1.md)

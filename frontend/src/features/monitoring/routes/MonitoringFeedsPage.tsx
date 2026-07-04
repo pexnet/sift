@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Collapse,
   CircularProgress,
   Divider,
@@ -31,9 +32,11 @@ import type {
   KeywordStreamUpdateRequest,
 } from "../../../shared/types/contracts";
 import {
+  useBulkReorderStreamsMutation,
   useCreateStreamMutation,
   useDeleteStreamMutation,
   useRunStreamBackfillMutation,
+  useStreamSummaryQuery,
   useStreamsQuery,
   useUpdateStreamMutation,
 } from "../api/monitoringHooks";
@@ -57,6 +60,7 @@ type StreamFormState = {
   classifierPlugin: string;
   classifierConfig: string;
   classifierMinConfidence: string;
+  backfillOnSave: boolean;
 };
 
 const DEFAULT_FORM_STATE: StreamFormState = {
@@ -76,6 +80,7 @@ const DEFAULT_FORM_STATE: StreamFormState = {
   classifierPlugin: "",
   classifierConfig: "",
   classifierMinConfidence: "0.7",
+  backfillOnSave: false,
 };
 
 function parseKeywordsInput(value: string): string[] {
@@ -143,6 +148,7 @@ function toFormState(stream: KeywordStream): StreamFormState {
     classifierPlugin: stream.classifier_plugin ?? "",
     classifierConfig,
     classifierMinConfidence: String(stream.classifier_min_confidence),
+    backfillOnSave: false,
   };
 }
 
@@ -180,6 +186,214 @@ type Feedback = {
   message: string;
 };
 
+function formatRelativeTime(iso: string | null): string {
+  if (!iso) return "never";
+  const date = new Date(iso);
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
+}
+
+type StreamRowProps = {
+  stream: KeywordStream;
+  folderName: string;
+  isEditingRow: boolean;
+  isSelected: boolean;
+  onToggleSelection: () => void;
+  onStartEdit: () => void;
+  onToggleActive: () => void;
+  onRunBackfill: () => void;
+  onDelete: () => void;
+  backfillPending: boolean;
+  deletePending: boolean;
+};
+
+function StreamRow({
+  stream,
+  folderName,
+  isEditingRow,
+  isSelected,
+  onToggleSelection,
+  onStartEdit,
+  onToggleActive,
+  onRunBackfill,
+  onDelete,
+  backfillPending,
+  deletePending,
+}: StreamRowProps) {
+  const summaryQuery = useStreamSummaryQuery(stream.id);
+  const summary = summaryQuery.data;
+  const [showSummary, setShowSummary] = useState(false);
+
+  return (
+    <>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        sx={{
+          px: 1,
+          py: 0.55,
+          borderRadius: 1,
+          backgroundColor: isEditingRow ? "action.selected" : isSelected ? "action.hover" : "transparent",
+          cursor: "pointer",
+        }}
+        className="monitoring-table__row"
+        role="button"
+        tabIndex={0}
+        aria-label={`Select monitoring feed ${stream.name}`}
+        onClick={onStartEdit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onStartEdit();
+          }
+        }}
+      >
+        <Checkbox
+          size="small"
+          checked={isSelected}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          onChange={onToggleSelection}
+          inputProps={{ "aria-label": `Select ${stream.name}` }}
+          sx={{ p: 0.3, mr: 0.3 }}
+        />
+        <Box sx={{ flex: 2.2, minWidth: 0 }} className="monitoring-table__name-cell">
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              whiteSpace: "normal",
+              wordBreak: "break-word",
+              lineHeight: 1.25,
+            }}
+          >
+            {stream.name}
+          </Typography>
+          {summary ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", fontSize: "0.72rem", lineHeight: 1.2 }}
+            >
+              {summary.match_count} match{summary.match_count === 1 ? "" : "es"}
+              {" · last "}
+              {formatRelativeTime(summary.latest_match_at)}
+              {summary.classifier_run_count > 0
+                ? ` · ${summary.classifier_run_count} classifier run${summary.classifier_run_count === 1 ? "" : "s"}`
+                : ""}
+            </Typography>
+          ) : null}
+        </Box>
+        <Box sx={{ flex: 1.6, minWidth: 0 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: "0.82rem", lineHeight: 1.34, whiteSpace: "normal", overflowWrap: "anywhere" }}
+          >
+            {folderName}
+            {" · "}
+            {formatMode(stream.classifier_mode)}
+            {" · "}
+            P{stream.priority}
+            {" · "}
+            {stream.match_query ? "Query" : "No query"}
+          </Typography>
+        </Box>
+        <Box sx={{ width: 66 }}>
+          <Switch
+            size="small"
+            checked={stream.is_active}
+            inputProps={{ "aria-label": `Toggle active for ${stream.name}` }}
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+            onChange={onToggleActive}
+          />
+        </Box>
+        <Stack direction="row" spacing={0.2} sx={{ width: 96, justifyContent: "flex-end" }}>
+          <Tooltip title="Stream summary">
+            <IconButton
+              size="small"
+              aria-label={`Show summary for ${stream.name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowSummary((prev) => !prev);
+              }}
+            >
+              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: "0.7rem" }}>
+                i
+              </Typography>
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Run backfill">
+            <IconButton
+              size="small"
+              aria-label={`Run backfill for ${stream.name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onRunBackfill();
+              }}
+              disabled={backfillPending}
+            >
+              <PlayArrowRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              color="error"
+              aria-label={`Delete ${stream.name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
+              disabled={deletePending}
+            >
+              <DeleteOutlineRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Stack>
+      <Collapse in={showSummary} unmountOnExit>
+        <Box sx={{ px: 2, py: 1, ml: 5, borderRadius: 1, backgroundColor: "background.default" }}>
+          {summaryQuery.isLoading ? (
+            <CircularProgress size={16} />
+          ) : summaryQuery.isError ? (
+            <Typography variant="caption" color="error">
+              Failed to load summary.
+            </Typography>
+          ) : summary ? (
+            <Stack direction="row" spacing={2} className="monitoring-table__summary-detail">
+              <Typography variant="caption" color="text.secondary">
+                Matches: <strong>{summary.match_count}</strong>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Latest match: <strong>{formatRelativeTime(summary.latest_match_at)}</strong>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Classifier runs: <strong>{summary.classifier_run_count}</strong>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Latest run: <strong>{formatRelativeTime(summary.latest_classifier_run_at)}</strong>
+              </Typography>
+            </Stack>
+          ) : null}
+        </Box>
+      </Collapse>
+    </>
+  );
+}
+
 export function MonitoringFeedsPage() {
   const streamsQuery = useStreamsQuery();
   const foldersQuery = useFoldersQuery();
@@ -193,6 +407,9 @@ export function MonitoringFeedsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkPriority, setBulkPriority] = useState("100");
+  const [showBulkReorder, setShowBulkReorder] = useState(false);
 
   const streams = streamsQuery.data;
   const streamItems = streams ?? [];
@@ -300,6 +517,7 @@ export function MonitoringFeedsPage() {
           classifier_plugin: classifierEnabled ? classifierPlugin : null,
           classifier_config: classifierConfig,
           classifier_min_confidence: classifierMinConfidence,
+          backfill_on_update: form.backfillOnSave,
         };
         await updateStreamMutation.mutateAsync({ streamId: editingStreamId, payload });
         setFeedback({ severity: "success", message: "Monitoring feed updated." });
@@ -321,6 +539,7 @@ export function MonitoringFeedsPage() {
           classifier_plugin: classifierEnabled ? classifierPlugin : null,
           classifier_config: classifierConfig,
           classifier_min_confidence: classifierMinConfidence,
+          backfill_on_create: form.backfillOnSave,
         };
         await createStreamMutation.mutateAsync(payload);
         setFeedback({ severity: "success", message: "Monitoring feed created." });
@@ -381,6 +600,49 @@ export function MonitoringFeedsPage() {
         return;
       }
       const message = error instanceof Error ? error.message : "Failed to run backfill.";
+      setFeedback({ severity: "error", message });
+    }
+  };
+
+  const bulkReorderMutation = useBulkReorderStreamsMutation();
+
+  const toggleSelection = (streamId: string) => {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(streamId)) {
+        next.delete(streamId);
+      } else {
+        next.add(streamId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === streamItems.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(streamItems.map((s) => s.id)));
+    }
+  };
+
+  const submitBulkReorder = async () => {
+    const priority = Math.max(0, Math.min(10_000, toNumber(bulkPriority, 100)));
+    const reorders: Record<string, number> = {};
+    for (const id of selectedIds) {
+      reorders[id] = priority;
+    }
+    setFeedback(null);
+    try {
+      const result = await bulkReorderMutation.mutateAsync({ reorders });
+      setFeedback({
+        severity: "success",
+        message: `Reordered ${result.updated_count} monitoring feed${result.updated_count === 1 ? "" : "s"} to priority ${priority}.`,
+      });
+      setSelectedIds(new Set());
+      setShowBulkReorder(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reorder monitoring feeds.";
       setFeedback({ severity: "error", message });
     }
   };
@@ -455,6 +717,17 @@ export function MonitoringFeedsPage() {
                     />
                   }
                   label="Active"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.backfillOnSave}
+                      onChange={(event) =>
+                        setForm((previous) => ({ ...previous, backfillOnSave: event.target.checked }))
+                      }
+                    />
+                  }
+                  label="Match existing articles on save"
                 />
                 <Divider sx={{ my: 0.4 }} />
                 <Typography variant="subtitle2" color="text.secondary">
@@ -644,6 +917,18 @@ export function MonitoringFeedsPage() {
               alignItems="center"
               spacing={1}
             >
+              {streamItems.length > 0 ? (
+                <Checkbox
+                  size="small"
+                  checked={selectedIds.size === streamItems.length && streamItems.length > 0}
+                  indeterminate={selectedIds.size > 0 && selectedIds.size < streamItems.length}
+                  onChange={toggleSelectAll}
+                  inputProps={{ "aria-label": "Select all monitoring feeds" }}
+                  sx={{ p: 0.3, mr: 0.3 }}
+                />
+              ) : (
+                <Box sx={{ width: 28 }} />
+              )}
               <Typography variant="caption" sx={{ flex: 2.2, fontWeight: 700 }}>
                 Name
               </Typography>
@@ -658,6 +943,59 @@ export function MonitoringFeedsPage() {
               </Typography>
             </Stack>
 
+            {selectedIds.size > 0 ? (
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ px: 1, py: 0.7, backgroundColor: "action.hover", borderRadius: 1 }}
+                className="monitoring-table__bulk-bar"
+              >
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {selectedIds.size} selected
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setShowBulkReorder((prev) => !prev)}
+                >
+                  Reorder
+                </Button>
+                <Button size="small" variant="text" onClick={() => setSelectedIds(new Set())}>
+                  Clear
+                </Button>
+              </Stack>
+            ) : null}
+
+            <Collapse in={showBulkReorder && selectedIds.size > 0} unmountOnExit>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ px: 1, py: 0.7, borderRadius: 1, backgroundColor: "background.default" }}
+                className="monitoring-table__bulk-reorder-form"
+              >
+                <TextField
+                  label="New priority"
+                  size="small"
+                  type="number"
+                  inputProps={{ min: 0, max: 10000 }}
+                  sx={{ width: 140 }}
+                  value={bulkPriority}
+                  onChange={(event) => setBulkPriority(event.target.value)}
+                  helperText="0-10000"
+                />
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => void submitBulkReorder()}
+                  disabled={bulkReorderMutation.isPending}
+                >
+                  Apply
+                </Button>
+              </Stack>
+            </Collapse>
+
             {streamsQuery.isLoading ? (
               <Box sx={{ py: 2, px: 1 }}>
                 <CircularProgress size={22} />
@@ -671,100 +1009,22 @@ export function MonitoringFeedsPage() {
 
             {streamItems.map((stream) => {
               const isEditingRow = editingStreamId === stream.id;
+              const isSelected = selectedIds.has(stream.id);
               return (
-                <Stack
+                <StreamRow
                   key={stream.id}
-                  direction="row"
-                  alignItems="center"
-                  spacing={1}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Select monitoring feed ${stream.name}`}
-                  onClick={() => startEdit(stream)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      startEdit(stream);
-                    }
-                  }}
-                  sx={{
-                    px: 1,
-                    py: 0.55,
-                    borderRadius: 1,
-                    backgroundColor: isEditingRow ? "action.selected" : "transparent",
-                    cursor: "pointer",
-                  }}
-                  className="monitoring-table__row"
-                >
-                  <Box sx={{ flex: 2.2, minWidth: 0 }} className="monitoring-table__name-cell">
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 600,
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {stream.name}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ flex: 1.6, minWidth: 0 }}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ fontSize: "0.82rem", lineHeight: 1.34, whiteSpace: "normal", overflowWrap: "anywhere" }}
-                    >
-                      {(stream.folder_id ? (folderNameById.get(stream.folder_id) ?? "Folder") : "Unfiled")}
-                      {" · "}
-                      {formatMode(stream.classifier_mode)}
-                      {" · "}
-                      P{stream.priority}
-                      {" · "}
-                      {stream.match_query ? "Query" : "No query"}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 66 }}>
-                    <Switch
-                      size="small"
-                      checked={stream.is_active}
-                      inputProps={{ "aria-label": `Toggle active for ${stream.name}` }}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                      }}
-                      onChange={() => void toggleActive(stream)}
-                    />
-                  </Box>
-                  <Stack direction="row" spacing={0.2} sx={{ width: 96, justifyContent: "flex-end" }}>
-                    <Tooltip title="Run backfill">
-                      <IconButton
-                        size="small"
-                        aria-label={`Run backfill for ${stream.name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void runBackfill(stream.id);
-                        }}
-                        disabled={runBackfillMutation.isPending}
-                      >
-                        <PlayArrowRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        aria-label={`Delete ${stream.name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void deleteStreamById(stream.id);
-                        }}
-                        disabled={deleteStreamMutation.isPending}
-                      >
-                        <DeleteOutlineRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </Stack>
+                  stream={stream}
+                  folderName={stream.folder_id ? (folderNameById.get(stream.folder_id) ?? "Folder") : "Unfiled"}
+                  isEditingRow={isEditingRow}
+                  isSelected={isSelected}
+                  onToggleSelection={() => toggleSelection(stream.id)}
+                  onStartEdit={() => startEdit(stream)}
+                  onToggleActive={() => void toggleActive(stream)}
+                  onRunBackfill={() => void runBackfill(stream.id)}
+                  onDelete={() => void deleteStreamById(stream.id)}
+                  backfillPending={runBackfillMutation.isPending}
+                  deletePending={deleteStreamMutation.isPending}
+                />
               );
             })}
           </Stack>

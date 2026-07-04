@@ -40,10 +40,13 @@ plugins:
             max_results_per_query: 10
         providers:
           searxng:
-            # Self-host SearXNG via Docker for local/production use.
+            # Self-hosted SearXNG via dev-container Docker Compose.
+            # The searxng service is defined in .devcontainer/docker-compose.yml
+            # with JSON format enabled in .devcontainer/searxng/settings.yml.
             # Public instances rate-limit JSON API; self-hosting is required.
             # See: docs/specs/done/searxng-verification-2026-07-03.md
-            base_url: http://localhost:8080/search
+            # For standalone local Docker (outside compose): http://localhost:8080/search
+            base_url: http://searxng:8080/search
           brave_search:
             endpoint: https://api.search.brave.com/res/v1/web/search
             api_key: ${SIFT_BRAVE_SEARCH_API_KEY}

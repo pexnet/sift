@@ -3,6 +3,9 @@ import type {
   KeywordStreamCreateRequest,
   StreamBackfillResult,
   KeywordStreamUpdateRequest,
+  StreamBulkReorderRequest,
+  StreamBulkReorderResponse,
+  StreamSummary,
 } from "../types/contracts";
 import { apiClient } from "./client";
 
@@ -26,4 +29,17 @@ export async function deleteStream(streamId: string): Promise<void> {
 
 export async function runStreamBackfill(streamId: string): Promise<StreamBackfillResult> {
   return apiClient.post<Record<string, never>, StreamBackfillResult>(`${STREAMS_ENDPOINT}/${streamId}/backfill`, {});
+}
+
+export async function bulkReorderStreams(
+  payload: StreamBulkReorderRequest
+): Promise<StreamBulkReorderResponse> {
+  return apiClient.post<StreamBulkReorderRequest, StreamBulkReorderResponse>(
+    `${STREAMS_ENDPOINT}/bulk-reorder`,
+    payload
+  );
+}
+
+export async function getStreamSummary(streamId: string): Promise<StreamSummary> {
+  return apiClient.get<StreamSummary>(`${STREAMS_ENDPOINT}/${streamId}/summary`);
 }

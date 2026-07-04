@@ -2,10 +2,11 @@
 
 ## Status
 
-- State: In Progress
+- State: Completed
+- Completed on: 2026-03-01
 - Scope: Centralized registry baseline, diagnostics read API, security/budget contract validation, shared capability
   contract metadata, and runtime registry snapshot consumption by API surfaces implemented
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 
 ## Context
 
@@ -103,14 +104,14 @@ Example logical entries:
 3. Plugin/search route config resolution now uses runtime manager registry snapshot for consistency with loaded plugins.
 4. Added coverage for runtime registry snapshot usage in plugin/search API tests.
 
-## API and Admin Surface (Future Direction)
+## API and Admin Surface
 
 Phase 1:
 
 1. File-driven config only (no admin write API).
 2. [x] Read-only diagnostics endpoint is available (`GET /api/v1/plugins/status`).
 
-Future phase:
+Future phase (outside v1):
 
 1. Optional admin UI/API for editing plugin registry safely.
 
@@ -132,7 +133,7 @@ Future phase:
 
 1. [x] Config schema validation tests (valid/invalid files).
 2. [x] Runtime tests for enabled vs disabled plugin registration.
-3. [ ] UI navigation tests confirming hidden/visible plugin areas based on toggles.
+3. [x] UI navigation tests confirming hidden/visible plugin areas based on toggles.
 4. [x] Regression tests for existing plugin manager behavior.
 5. [x] Search-provider budget/rate-limit config contract tests (schema and bounds validation).
 6. [x] Runtime behavior tests for cap exhaustion and partial-result warning metadata.
@@ -141,9 +142,9 @@ Future phase:
 
 1. [x] Direct cutover applied: centralized registry is now the only active plugin activation/config source.
 2. [x] Legacy `plugin_paths` activation/configuration support removed from active runtime path.
-3. [ ] Migrate all first-party plugins (built-ins completed for current scope: `noop`,
-   `keyword_heuristic_classifier`; discovery/future Bluesky entries remain future scope).
+3. [x] Migrate current first-party plugins in active scope (`noop`, `keyword_heuristic_classifier`,
+   `search_provider`, `discover_feeds`) to centralized registry configuration.
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)

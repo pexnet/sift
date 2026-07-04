@@ -127,6 +127,16 @@ class User(TimestampMixin, Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
 
+class UserPrioritizationProfile(TimestampMixin, Base):
+    __tablename__ = "user_prioritization_profiles"
+    __table_args__ = (UniqueConstraint("user_id", name="uq_user_prioritization_profiles_user"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    source_weights_json: Mapped[str] = mapped_column(Text, default='{"feed": 40, "monitoring_stream": 60}')
+    recency_horizon_hours: Mapped[int] = mapped_column(Integer, default=24)
+
+
 class AuthIdentity(TimestampMixin, Base):
     __tablename__ = "auth_identities"
     __table_args__ = (
@@ -272,6 +282,33 @@ class FeedRecommendationSource(Base):
     provider_confidence: Mapped[float | None] = mapped_column(Float)
     evidence_json: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class TrendSnapshot(TimestampMixin, Base):
+    __tablename__ = "trend_snapshots"
+    __table_args__ = (Index("ix_trend_snapshots_user_scope_created", "user_id", "scope_type", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    scope_type: Mapped[str] = mapped_column(String(32), default="system", index=True)
+    scope_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
+    short_window_hours: Mapped[int] = mapped_column(Integer, default=24)
+    baseline_days: Mapped[int] = mapped_column(Integer, default=14)
+    status: Mapped[str] = mapped_column(String(32), default="ready", index=True)
+
+
+class TrendTopic(TimestampMixin, Base):
+    __tablename__ = "trend_topics"
+    __table_args__ = (Index("ix_trend_topics_snapshot_score", "snapshot_id", "momentum_score"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("trend_snapshots.id", ondelete="CASCADE"), index=True)
+    topic: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    momentum_score: Mapped[float] = mapped_column(Float, default=0.0)
+    short_window_count: Mapped[int] = mapped_column(Integer, default=0)
+    baseline_count: Mapped[int] = mapped_column(Integer, default=0)
+    source_diversity_count: Mapped[int] = mapped_column(Integer, default=0)
+    representative_article_ids_json: Mapped[str] = mapped_column(Text, default="[]")
 
 
 class KeywordStreamMatch(Base):

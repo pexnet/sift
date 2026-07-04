@@ -179,10 +179,10 @@ Frontend:
 
 1. Deliver as manual on-demand only (no auto-generate).
 2. Keep capability plugin-based so it can be toggled off cleanly.
-3. Keep plugin registry/config centralization as follow-up under existing planning:
-   [docs/specs/plugin-configuration-registry-v1.md](plugin-configuration-registry-v1.md).
+3. Build on the completed plugin registry/config centralization baseline:
+   [docs/specs/done/plugin-configuration-registry-v1.md](done/plugin-configuration-registry-v1.md).
 
 ## Backlog References
 
 - Product backlog: [docs/backlog.md](../backlog.md)
-- Related planning: [docs/specs/plugin-configuration-registry-v1.md](plugin-configuration-registry-v1.md)
+- Related planning: [docs/specs/done/plugin-configuration-registry-v1.md](done/plugin-configuration-registry-v1.md)

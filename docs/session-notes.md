@@ -3,6 +3,83 @@
 This file is a rolling recent execution log for fast session startup.
 Historical notes are archived by month under `docs/session-notes/archive/`.
 
+## 2026-07-04 (SearXNG Dev-Container Integration + Monitoring v2 Frontend Wiring + Historical Matching)
+
+### Implemented This Session
+
+- Added SearXNG as a first-class dev-container service:
+  - `.devcontainer/docker-compose.yml`: `searxng` service (searxng/searxng:latest) with healthcheck and port
+    `8888:8080`, added to `app` depends_on and `devcontainer.json` runServices + forwardPorts.
+  - `.devcontainer/searxng/settings.yml`: mounted into the container, enables `json` format in `search.formats`,
+    disables rate limiter for dev, configures DuckDuckGo/Google/Bing/Wikipedia engines.
+  - `config/plugins.yaml`: `searxng.base_url` updated from `http://localhost:8080/search` to
+    `http://searxng:8080/search` (Docker Compose service address), with updated comments.
+- Smoke-tested the self-hosted SearXNG instance:
+  - `docker compose up -d searxng` → healthy,
+  - JSON search API returned 27 results for "python rss feed" with zero warnings,
+  - adapter contract (format=json, User-Agent, response shape) verified compatible.
+- Monitoring v2 frontend wiring (bulk reorder + stream summary):
+  - `frontend/src/shared/types/contracts.ts`: added `StreamBulkReorderRequest`, `StreamBulkReorderResponse`,
+    `StreamSummary` types.
+  - `frontend/src/shared/api/streamsApi.ts`: added `bulkReorderStreams()` and `getStreamSummary()` functions.
+  - `frontend/src/shared/api/queryKeys.ts`: added `streamSummary(streamId)` query key.
+  - `frontend/src/features/monitoring/api/monitoringHooks.ts`: added `useStreamSummaryQuery` and
+    `useBulkReorderStreamsMutation` hooks.
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.tsx`: refactored stream rows into `StreamRow`
+    component with per-row checkbox, inline summary chips (match count, latest match, classifier runs),
+    expandable summary detail row, bulk selection toolbar with "Reorder" action and priority input.
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.test.tsx`: added mocks for new hooks,
+    3 new tests (bulk reorder flow, summary display, select-all toggle).
+- Create/update-triggered historical matching:
+  - `src/sift/domain/schemas.py`: added `backfill_on_create: bool` to `KeywordStreamCreate` and
+    `backfill_on_update: bool` to `KeywordStreamUpdate`.
+  - `src/sift/services/stream_service.py`: added `HISTORICAL_MATCH_SCAN_LIMIT=5000` constant and
+    `run_historical_match()` method — bounded scan (most recent articles first), preserves existing matches
+    (no delete-then-reinsert), skips articles with existing match rows.
+  - `src/sift/api/routes/streams.py`: create/update endpoints now call `run_historical_match` when the
+    respective `backfill_on_*` flag is True.
+  - `tests/test_stream_service.py`: 2 new tests (preserves existing matches + respects scan limit).
+  - `frontend/src/shared/types/generated.ts`: added `backfill_on_create`/`backfill_on_update` fields.
+  - `frontend/src/features/monitoring/routes/MonitoringFeedsPage.tsx`: added "Match existing articles on save"
+    toggle to the monitoring form, wired to `backfill_on_create`/`backfill_on_update` in payloads.
+- Planning/documentation cleanup:
+  - removed completed SearXNG self-hosted integration from active `Next`,
+  - archived completed monitoring v2 follow-ups and SearXNG integration in `docs/backlog-history.md`,
+  - moved completed plugin UI organization and plugin configuration registry specs from active `docs/specs/` to
+    `docs/specs/done/`,
+  - updated active backlog linked-spec section so it only lists still-active specs,
+  - fixed moved-spec references in active docs and done-spec cross-links.
+- Dashboard command center backend checkpoint:
+  - added `user_prioritization_profiles`, `trend_snapshots`, and `trend_topics` SQLAlchemy models plus Alembic
+    migration `20260704_0020_dashboard_prioritization_and_trends.py`,
+  - added dashboard card/priority/trend response contracts in `src/sift/domain/schemas.py`,
+  - added `src/sift/services/dashboard_service.py` with prioritization profile persistence, prioritized queue,
+    feed-health, saved follow-up, and monitoring signal card data,
+  - added dashboard API endpoints for prioritization profile and backend-ready cards:
+    prioritized queue, feed health, saved follow-up, monitoring signals,
+  - added `tests/test_dashboard_service.py` and expanded `tests/test_dashboard_api.py` coverage.
+
+### Verification
+
+- `docker compose -f .devcontainer/docker-compose.yml config --quiet` — valid,
+- SearXNG healthcheck → healthy,
+- JSON API smoke test → 27 results, 0 warnings,
+- YAML validation of `settings.yml` → json format enabled,
+- Backend: `ruff check` — clean,
+- Backend: `ruff format --check` — clean (after format),
+- Backend: `mypy src/sift/` — no issues in 75 source files,
+- Backend: `pytest tests/test_stream_service.py` — 21 passed (19 existing + 2 new),
+- Frontend: `npx tsc --noEmit` — clean,
+- Frontend: `npx eslint .` — clean,
+- Frontend: `npx vitest run MonitoringFeedsPage.test.tsx` — 10/10 passed,
+- Frontend: `npm run build` — pass, existing >500k chunk warning remains.
+- Docs: active spec inventory checked; completed plugin specs now live under `docs/specs/done/`.
+- Dashboard backend focused slice:
+  - `pytest tests/test_dashboard_service.py ...dashboard API focused tests...` — 17 passed,
+  - `ruff check` / `ruff format --check` for dashboard backend touched files — clean,
+  - `mypy src/sift/services/dashboard_service.py src/sift/db/models.py src/sift/domain/schemas.py src/sift/api/routes/dashboard.py`
+    — clean.
+
 ## 2026-07-03 (Workstream B+C: Performance Fixes + SearXNG Verification + Monitoring v2)
 
 ### Implemented This Session
@@ -169,7 +246,7 @@ Historical notes are archived by month under `docs/session-notes/archive/`.
   - `docs/current-state.md`
   - `docs/architecture.md`
   - `docs/specs/done/feed-recommendations-v1.md`
-  - `docs/specs/plugin-ui-organization-v1.md`
+  - `docs/specs/done/plugin-ui-organization-v1.md`
   - `docs/session-notes.md`
 - Cleaned active backlog status so completed search-provider v1 is no longer listed as active `Next` work.
 - Updated stale discovery status references (current-state and spec) to reflect implemented slices 1-4.
@@ -183,7 +260,7 @@ Historical notes are archived by month under `docs/session-notes/archive/`.
 - `rg -n "slices 1-4 implemented|recommendation workflow hardening|discovery frontend wiring" docs/current-state.md`
 - `rg -n "/account/discovery|Frontend owns routes" docs/architecture.md`
 - `rg -n "Implemented slices|Remaining scope|tracks remaining closeout scope" docs/specs/done/feed-recommendations-v1.md`
-- `rg -n "State: In progress|Baseline implementation is complete" docs/specs/plugin-ui-organization-v1.md`
+- `rg -n "State: Completed|Baseline plugin workspace organization" docs/specs/done/plugin-ui-organization-v1.md`
 - `rg -n "^## " docs/session-notes.md`
 
 ## Rolling Window Policy

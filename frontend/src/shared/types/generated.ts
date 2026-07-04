@@ -1258,6 +1258,11 @@ export interface components {
              * @default 0.7
              */
             classifier_min_confidence: number;
+            /**
+             * Backfill On Create
+             * @default false
+             */
+            backfill_on_create?: boolean;
         };
         /** KeywordStreamOut */
         KeywordStreamOut: {
@@ -1355,6 +1360,11 @@ export interface components {
             } | null;
             /** Classifier Min Confidence */
             classifier_min_confidence?: number | null;
+            /**
+             * Backfill On Update
+             * @default false
+             */
+            backfill_on_update?: boolean;
         };
         /** NavigationFeedNodeOut */
         NavigationFeedNodeOut: {

@@ -43,6 +43,9 @@ class StreamFolderNotFoundError(Exception):
     pass
 
 
+HISTORICAL_MATCH_SCAN_LIMIT = 5000
+
+
 @dataclass(slots=True)
 class CompiledKeywordStream:
     id: UUID
@@ -888,6 +891,97 @@ class StreamService:
         previous_match_count = int(previous_count_result.scalar_one() or 0)
 
         await session.execute(delete(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id))
+        session.add_all(matched_rows)
+        session.add_all(classifier_run_rows)
+        await session.commit()
+
+        return StreamBackfillResultOut(
+            stream_id=stream_id,
+            scanned_count=len(article_rows),
+            previous_match_count=previous_match_count,
+            matched_count=len(matched_rows),
+        )
+
+    async def run_historical_match(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        stream_id: UUID,
+        *,
+        plugin_manager: PluginManager,
+        scan_limit: int = HISTORICAL_MATCH_SCAN_LIMIT,
+    ) -> StreamBackfillResultOut:
+        """Run a bounded historical matching pass for a stream.
+
+        Unlike run_stream_backfill, this does NOT delete existing matches first —
+        it only inserts new matches for articles that don't already have a match row.
+        The scan is capped at ``scan_limit`` articles (most recent first) to avoid
+        loading the entire article table.
+        """
+        stream = await self.get_stream(session=session, user_id=user_id, stream_id=stream_id)
+        if stream is None:
+            raise StreamNotFoundError(f"Stream {stream_id} not found")
+
+        try:
+            compiled_stream = compile_stream(stream)
+        except SearchQuerySyntaxError as exc:
+            raise StreamValidationError(str(exc)) from exc
+
+        article_rows_result = await session.execute(
+            select(
+                Article.id,
+                Article.feed_id,
+                Article.title,
+                Article.content_text,
+                Article.language,
+                RawEntry.source_url,
+            )
+            .join(Feed, Feed.id == Article.feed_id)
+            .outerjoin(
+                RawEntry,
+                and_(RawEntry.feed_id == Article.feed_id, RawEntry.source_id == Article.source_id),
+            )
+            .where(Feed.owner_id == user_id)
+            .order_by(Article.created_at.desc())
+            .limit(scan_limit)
+        )
+        article_rows = article_rows_result.all()
+
+        existing_match_result = await session.execute(
+            select(KeywordStreamMatch.article_id).where(KeywordStreamMatch.stream_id == stream_id)
+        )
+        existing_article_ids = {row[0] for row in existing_match_result.all()}
+
+        previous_count_result = await session.execute(
+            select(func.count()).select_from(KeywordStreamMatch).where(KeywordStreamMatch.stream_id == stream_id)
+        )
+        previous_match_count = int(previous_count_result.scalar_one() or 0)
+
+        matched_rows: list[KeywordStreamMatch] = []
+        classifier_run_rows: list[StreamClassifierRun] = []
+        for article_id, feed_id, title, content_text, language, source_url in article_rows:
+            if article_id in existing_article_ids:
+                continue
+            matching_decisions, classifier_runs = await self.collect_matching_stream_decisions_with_classifier_runs(
+                [compiled_stream],
+                title=title,
+                content_text=content_text,
+                source_url=source_url,
+                language=language,
+                plugin_manager=plugin_manager,
+            )
+            if matching_decisions:
+                matched_rows.extend(self.make_match_rows(matching_decisions, article_id))
+            if classifier_runs:
+                classifier_run_rows.extend(
+                    self.make_classifier_run_rows(
+                        classifier_runs,
+                        user_id=user_id,
+                        article_id=article_id,
+                        feed_id=feed_id,
+                    )
+                )
+
         session.add_all(matched_rows)
         session.add_all(classifier_run_rows)
         await session.commit()

@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "../../../shared/api/queryKeys";
 import {
+  bulkReorderStreams,
   createStream,
   deleteStream,
+  getStreamSummary,
   getStreams,
   runStreamBackfill,
   updateStream,
@@ -11,12 +13,21 @@ import {
 import type {
   KeywordStreamCreateRequest,
   KeywordStreamUpdateRequest,
+  StreamBulkReorderRequest,
 } from "../../../shared/types/contracts";
 
 export function useStreamsQuery() {
   return useQuery({
     queryKey: queryKeys.streams(),
     queryFn: getStreams,
+  });
+}
+
+export function useStreamSummaryQuery(streamId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.streamSummary(streamId ?? ""),
+    queryFn: () => getStreamSummary(streamId!),
+    enabled: streamId !== null,
   });
 }
 
@@ -72,6 +83,16 @@ export function useRunStreamBackfillMutation() {
         queryClient.invalidateQueries({ queryKey: queryKeys.navigation() }),
         queryClient.invalidateQueries({ queryKey: ["articles"] }),
       ]);
+    },
+  });
+}
+
+export function useBulkReorderStreamsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: StreamBulkReorderRequest) => bulkReorderStreams(payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.streams() });
     },
   });
 }

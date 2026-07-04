@@ -1,0 +1,35 @@
+# SearXNG settings for Sift dev-container
+# Enables JSON API format required by the Sift search-provider adapter.
+# See: docs/specs/done/searxng-verification-2026-07-03.md
+
+use_default_settings: true
+
+general:
+  instance_name: "Sift SearXNG (dev)"
+  debug: false
+
+search:
+  formats:
+    - html
+    - json
+  safe_search: 0
+  autocomplete: ""
+
+server:
+  secret_key: "sift-dev-searxng-secret-key-change-in-prod"
+  limiter: false
+  image_proxy: false
+
+engines:
+  - name: duckduckgo
+    engine: duckduckgo
+    disabled: false
+  - name: google
+    engine: google
+    disabled: false
+  - name: bing
+    engine: bing
+    disabled: false
+  - name: wikipedia
+    engine: wikipedia
+    disabled: false

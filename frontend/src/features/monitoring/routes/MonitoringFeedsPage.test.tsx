@@ -10,9 +10,11 @@ import type {
   KeywordStreamUpdateRequest,
 } from "../../../shared/types/contracts";
 import {
+  useBulkReorderStreamsMutation,
   useCreateStreamMutation,
   useDeleteStreamMutation,
   useRunStreamBackfillMutation,
+  useStreamSummaryQuery,
   useStreamsQuery,
   useUpdateStreamMutation,
 } from "../api/monitoringHooks";
@@ -20,17 +22,21 @@ import { MonitoringFeedsPage } from "./MonitoringFeedsPage";
 
 vi.mock("../api/monitoringHooks", () => ({
   useStreamsQuery: vi.fn(),
+  useStreamSummaryQuery: vi.fn(),
   useCreateStreamMutation: vi.fn(),
   useUpdateStreamMutation: vi.fn(),
   useDeleteStreamMutation: vi.fn(),
   useRunStreamBackfillMutation: vi.fn(),
+  useBulkReorderStreamsMutation: vi.fn(),
 }));
 
 const useStreamsQueryMock = vi.mocked(useStreamsQuery);
+const useStreamSummaryQueryMock = vi.mocked(useStreamSummaryQuery);
 const useCreateStreamMutationMock = vi.mocked(useCreateStreamMutation);
 const useUpdateStreamMutationMock = vi.mocked(useUpdateStreamMutation);
 const useDeleteStreamMutationMock = vi.mocked(useDeleteStreamMutation);
 const useRunStreamBackfillMutationMock = vi.mocked(useRunStreamBackfillMutation);
+const useBulkReorderStreamsMutationMock = vi.mocked(useBulkReorderStreamsMutation);
 
 function makeStream(overrides: Partial<KeywordStream> = {}): KeywordStream {
   const base: KeywordStream = {
@@ -81,6 +87,11 @@ describe("MonitoringFeedsPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useStreamsQuery>);
+    useStreamSummaryQueryMock.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamSummaryQuery>);
     useCreateStreamMutationMock.mockReturnValue({
       mutateAsync: createMutateAsync,
       isPending: false,
@@ -97,6 +108,10 @@ describe("MonitoringFeedsPage", () => {
       mutateAsync: backfillMutateAsync,
       isPending: false,
     } as unknown as ReturnType<typeof useRunStreamBackfillMutation>);
+    useBulkReorderStreamsMutationMock.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof useBulkReorderStreamsMutation>);
   });
 
   it("renders existing monitoring feeds and settings entry links", () => {
@@ -233,5 +248,74 @@ describe("MonitoringFeedsPage", () => {
         })
       );
     });
+  });
+
+  it("selects streams and triggers bulk reorder", async () => {
+    const bulkMutateAsync = vi.fn<(payload: { reorders: Record<string, number> }) => Promise<{ updated_count: number }>>();
+    bulkMutateAsync.mockResolvedValue({ updated_count: 1 });
+    useBulkReorderStreamsMutationMock.mockReturnValue({
+      mutateAsync: bulkMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useBulkReorderStreamsMutation>);
+
+    renderPage();
+
+    const checkbox = screen.getByRole("checkbox", { name: /Select Threat watch/i });
+    fireEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(screen.getByText("1 selected")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reorder" }));
+    const priorityField = await screen.findByLabelText(/New priority/i);
+    fireEvent.change(priorityField, { target: { value: "50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => {
+      expect(bulkMutateAsync).toHaveBeenCalledWith({
+        reorders: { "66ee748f-957b-4c5f-8d6c-5f8fab4dbf2d": 50 },
+      });
+    });
+  });
+
+  it("displays stream summary info when summary data is available", () => {
+    useStreamSummaryQueryMock.mockReturnValue({
+      data: {
+        stream_id: "66ee748f-957b-4c5f-8d6c-5f8fab4dbf2d",
+        stream_name: "Threat watch",
+        is_active: true,
+        match_count: 12,
+        latest_match_at: "2026-07-04T10:00:00Z",
+        classifier_run_count: 3,
+        latest_classifier_run_at: "2026-07-04T09:00:00Z",
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamSummaryQuery>);
+
+    renderPage();
+
+    expect(screen.getByText(/12 matches/)).toBeVisible();
+    expect(screen.getByText(/3 classifier runs/)).toBeVisible();
+  });
+
+  it("toggles select-all checkbox to select and deselect all streams", () => {
+    useStreamsQueryMock.mockReturnValue({
+      data: [makeStream({ name: "Stream A" }), makeStream({ id: "aaa-aaa", name: "Stream B" })],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStreamsQuery>);
+
+    renderPage();
+
+    const selectAll = screen.getByRole("checkbox", { name: /Select all monitoring feeds/i });
+    fireEvent.click(selectAll);
+
+    expect(screen.getByText("2 selected")).toBeVisible();
+
+    fireEvent.click(selectAll);
+
+    expect(screen.queryByText("2 selected")).not.toBeInTheDocument();
   });
 });

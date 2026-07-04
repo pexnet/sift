@@ -2,10 +2,11 @@
 
 ## Status
 
-- State: In progress
-- Scope: Baseline implementation is complete (`Plugins` nav section + workspace area host + discover-feeds area).
-  Remaining scope is standardization follow-up for additional plugin areas and contracts.
-- Backlog reference: [docs/backlog.md](../backlog.md)
+- State: Completed
+- Completed on: 2026-03-01
+- Scope: Baseline plugin workspace organization is implemented (`Plugins` nav section, `/app/plugins/$areaId`
+  workspace area host, discovery plugin area, disabled-plugin hiding, and route/error-boundary host behavior).
+- Backlog reference: [docs/backlog.md](../../backlog.md)
 
 ## Context
 
@@ -48,7 +49,7 @@ without mixing them into unrelated core areas.
 2. Internal ids must be namespaced by plugin id (for example, `plugin.discover_feeds.main`).
 3. Ordering is deterministic and configurable from plugin config.
 
-## Route/View Model (Planned)
+## Route/View Model
 
 1. Route state must support plugin areas as first-class scopes.
 2. Workspace should switch panes/views when selecting plugin areas.
@@ -60,20 +61,20 @@ without mixing them into unrelated core areas.
 2. Provide `aria-label` and tooltip parity for icon-heavy controls.
 3. Maintain keyboard navigation parity with existing system/folder/feed/stream sections.
 
-## Acceptance Criteria (for later implementation)
+## Acceptance Criteria
 
-1. Plugin areas are visible in a dedicated workspace `Plugins` nav section.
-2. Discover feeds appears in its own area when discovery plugin is enabled.
-3. Bluesky appears in its own area when Bluesky plugin is enabled.
-4. Disabled plugins do not render nav areas.
-5. Existing core workspace scopes continue to function unchanged.
+1. [x] Plugin areas are visible in a dedicated workspace `Plugins` nav section.
+2. [x] Discover feeds appears in its own area when discovery plugin is enabled.
+3. [x] Disabled plugins do not render nav areas.
+4. [x] Existing core workspace scopes continue to function unchanged.
+5. [ ] Bluesky appears in its own area when a future Bluesky plugin ships.
 
-## Test Plan (for later implementation)
+## Test Plan
 
-1. Navigation model tests for plugin area mapping and ordering.
-2. Workspace route tests for plugin-scope selection/rendering.
-3. Accessibility tests for keyboard and labels.
-4. Regression tests for existing nav/list/reader behavior.
+1. [x] Navigation model tests for plugin area mapping and ordering.
+2. [x] Workspace route tests for plugin-scope selection/rendering.
+3. [x] Regression tests for existing nav/list/reader behavior.
+4. [ ] Future plugin-specific tests for any new plugin area such as Bluesky.
 
 ## Rollout Notes
 
@@ -83,4 +84,4 @@ without mixing them into unrelated core areas.
 
 ## Backlog References
 
-- Product backlog: [docs/backlog.md](../backlog.md)
+- Product backlog: [docs/backlog.md](../../backlog.md)

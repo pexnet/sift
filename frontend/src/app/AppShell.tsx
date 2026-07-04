@@ -13,7 +13,7 @@ export function AppShell() {
   const workspaceSearch = loadPersistedWorkspaceSearch();
 
   const isWorkspaceRoute =
-    location.pathname === "/app" || location.pathname.startsWith("/account") || location.pathname === "/help";
+    location.pathname.startsWith("/app") || location.pathname.startsWith("/account") || location.pathname === "/help";
 
   if (isWorkspaceRoute) {
     return (

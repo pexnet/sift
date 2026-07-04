@@ -2,7 +2,7 @@
   "name": "sift-dev",
   "dockerComposeFile": "docker-compose.yml",
   "service": "dev",
-  "runServices": ["dev", "app", "frontend", "worker", "scheduler", "db", "redis", "traefik"],
+  "runServices": ["dev", "app", "frontend", "worker", "scheduler", "db", "redis", "traefik", "searxng"],
   "workspaceFolder": "/workspaces/sift",
   "shutdownAction": "stopCompose",
   "overrideCommand": false,
@@ -18,7 +18,7 @@
       ]
     }
   },
-  "forwardPorts": [80, 5173, 8000, 8081, 5432, 6379],
+  "forwardPorts": [80, 5173, 8000, 8081, 8888, 5432, 6379],
   "portsAttributes": {
     "80": {
       "label": "Traefik (API route)"
@@ -31,6 +31,9 @@
     },
     "8081": {
       "label": "Traefik dashboard"
+    },
+    "8888": {
+      "label": "SearXNG (self-hosted search)"
     },
     "5432": {
       "label": "PostgreSQL"

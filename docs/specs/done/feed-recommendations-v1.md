@@ -271,5 +271,5 @@ Frontend:
 
 ## Backlog References
 
-- Primary backlog item index: [docs/backlog.md](../backlog.md)
+- Primary backlog item index: [docs/backlog.md](../../backlog.md)
 - Linked spec entry target: `Next (Prioritized) -> Linked Specifications`

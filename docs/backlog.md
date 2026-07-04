@@ -15,23 +15,15 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 ### Core Platform Priorities
 
 1. Monitoring feed search management v2 continued:
-   - implement optional create/update-triggered historical matching pass,
-   - continue explainability refinements for plugin/query evidence surfaces,
-   - frontend UI for bulk reorder and stream summary.
-2. SearXNG self-hosted integration:
-   - add SearXNG to dev-container `docker-compose.yml`,
-   - enable JSON format in SearXNG settings,
-   - verify end-to-end discovery workflow against self-hosted instance.
+   - continue explainability refinements for plugin/query evidence surfaces.
 
 ### Next UI Slice
 
 1. No additional UI-only polish slice is active; core platform priorities are now primary.
 2. Completed UI milestones are tracked in `docs/backlog-history.md` and `docs/specs/done/`.
 
-### Linked Specifications
+### Active Linked Specifications
 
-- Plugin UI organization v1: [docs/specs/plugin-ui-organization-v1.md](specs/plugin-ui-organization-v1.md)
-- Plugin configuration registry v1: [docs/specs/plugin-configuration-registry-v1.md](specs/plugin-configuration-registry-v1.md)
 - Silent feeds v1: [docs/specs/silent-feeds-v1.md](specs/silent-feeds-v1.md)
 - Dashboard command center v1: [docs/specs/dashboard-command-center-v1.md](specs/dashboard-command-center-v1.md)
 - Stream ranking/prioritization controls v1:
@@ -39,15 +31,6 @@ Current implementation snapshot is maintained in [docs/current-state.md](current
 - Feed health ops panel v1: [docs/specs/feed-health-ops-panel-v1.md](specs/feed-health-ops-panel-v1.md)
 - Monitoring signal scoring v1: [docs/specs/monitoring-signal-scoring-v1.md](specs/monitoring-signal-scoring-v1.md)
 - Trends detection dashboard v1: [docs/specs/trends-detection-dashboard-v1.md](specs/trends-detection-dashboard-v1.md)
-- Planning decision (2026-02-17): Discover feeds v1 is stream-driven via separate `discovery_streams` and does not
-  use saved/starred article seeds in v1.
-- Planning decision (2026-02-17): Discover feeds provider strategy should start with an ordered provider chain and
-  enforce free-tier-safe per-provider request budgets/rate limits by default.
-- Planning decision (2026-02-22): Search provider infrastructure is split into
-  `docs/specs/done/search-provider-plugin-v1.md`; discover-feeds workflow is archived at
-  `docs/specs/done/feed-recommendations-v1.md`.
-- Completed spec archive:
-  - Discover feeds v1: [docs/specs/done/feed-recommendations-v1.md](specs/done/feed-recommendations-v1.md)
 
 ## Deferred (Not Prioritized Yet)
 
