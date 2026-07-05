@@ -6,6 +6,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - ./config:/app/config:ro
     env_file:
       - .env
     environment:
@@ -16,8 +17,12 @@ services:
       SIFT_DEV_SEED_DEFAULT_USER_DISPLAY_NAME: Dev User
       SIFT_DEV_SEED_OPML_PATH: /app/dev-data/local-seed.opml
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+      searxng:
+        condition: service_started
 
   frontend:
     image: node:22
@@ -40,6 +45,7 @@ services:
     command: /bin/sh -c "uv run sift-worker"
     volumes:
       - .:/app
+      - ./config:/app/config:ro
     env_file:
       - .env
     environment:
@@ -54,6 +60,7 @@ services:
     command: /bin/sh -c "uv run sift-scheduler"
     volumes:
       - .:/app
+      - ./config:/app/config:ro
     env_file:
       - .env
     environment:
@@ -62,6 +69,18 @@ services:
       - app
       - db
       - redis
+
+  searxng:
+    image: searxng/searxng:latest
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      SEARXNG_BASE_URL: http://searxng:8080
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   db:
     image: postgres:17
