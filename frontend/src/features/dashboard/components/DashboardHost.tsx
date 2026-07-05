@@ -9,10 +9,10 @@ import {
   useDashboardSavedFollowupQuery,
   useDashboardTrendsQuery,
 } from "../api/dashboardHooks";
-import type { DashboardCardAvailability } from "../../../shared/types/contracts";
+import type { DashboardCardAvailability, DashboardSummary } from "../../../shared/types/contracts";
 
 type DashboardHostProps = {
-  summary: import("../../../shared/types/contracts").DashboardSummary | undefined;
+  summary: DashboardSummary | undefined;
   isLoading: boolean;
   isError: boolean;
   registryById?: Record<string, DashboardCardRegistration>;
