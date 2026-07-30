@@ -222,7 +222,7 @@ jobs:
 
       - name: Publish backend image (multi-arch)
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/backend.Dockerfile
@@ -267,7 +267,7 @@ jobs:
 
       - name: Publish frontend image (multi-arch)
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/frontend.Dockerfile
